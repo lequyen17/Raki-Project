@@ -5,10 +5,13 @@ import api from '../api/api';
 
 const Profile = () => {
     const navigate = useNavigate();
-    const { currentUser, logout } = useContext(AuthContext);
+    const { currentUser, logout, setCurrentUser } = useContext(AuthContext);
     const [profileData, setProfileData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [editData, setEditData] = useState({});
 
     const fetchProfileData = useCallback(async () => {
         try {
@@ -21,6 +24,12 @@ const Profile = () => {
 
             const res = await api.get('/api/user/profile/');
             setProfileData(res.data);
+            setEditData({
+                email: res.data.email,
+                first_name: res.data.first_name,
+                last_name: res.data.last_name,
+                phone: res.data.phone,
+            });
             setError('');
         } catch (err) {
             console.error('Error fetching profile:', err);
@@ -42,21 +51,52 @@ const Profile = () => {
         fetchProfileData();
     }, [currentUser, navigate, fetchProfileData]);
 
+    const handleEditChange = (e) => {
+        const { name, value } = e.target;
+        setEditData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSaveProfile = async () => {
+        try {
+            setIsSaving(true);
+            setError('');
+
+            const res = await api.put('/api/user/profile/update/', editData);
+            
+            if (res.data.success) {
+                setProfileData(res.data.user);
+                setCurrentUser(res.data.user);
+                setIsEditing(false);
+                console.log('Profile updated successfully');
+            }
+        } catch (err) {
+            console.error('Error updating profile:', err);
+            if (err.response?.data?.error) {
+                setError(err.response.data.error);
+            } else {
+                setError('Không thể cập nhật hồ sơ');
+            }
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleCancel = () => {
+        setIsEditing(false);
+        setError('');
+        setEditData({
+            email: profileData.email,
+            first_name: profileData.first_name,
+            last_name: profileData.last_name,
+            phone: profileData.phone,
+        });
+    };
+
     if (loading) {
         return <div style={styles.container}><p>Đang tải...</p></div>;
-    }
-
-    if (error) {
-        return (
-            <div style={styles.container}>
-                <div style={styles.errorBox}>
-                    <p>{error}</p>
-                    <button onClick={fetchProfileData} style={styles.button}>
-                        Thử lại
-                    </button>
-                </div>
-            </div>
-        );
     }
 
     if (!profileData) {
@@ -68,64 +108,149 @@ const Profile = () => {
             <div style={styles.card}>
                 <h1 style={styles.title}>Hồ Sơ Cá Nhân</h1>
 
-                <div style={styles.section}>
-                    <h2 style={styles.sectionTitle}>Thông Tin Cá Nhân</h2>
-                    <div style={styles.infoGrid}>
-                        <div style={styles.infoRow}>
-                            <span style={styles.label}>Tên đăng nhập:</span>
-                            <span style={styles.value}>{profileData.username}</span>
-                        </div>
-                        <div style={styles.infoRow}>
-                            <span style={styles.label}>Email:</span>
-                            <span style={styles.value}>{profileData.email}</span>
-                        </div>
-                        <div style={styles.infoRow}>
-                            <span style={styles.label}>Tên đầu:</span>
-                            <span style={styles.value}>{profileData.first_name || 'Chưa cập nhật'}</span>
-                        </div>
-                        <div style={styles.infoRow}>
-                            <span style={styles.label}>Họ:</span>
-                            <span style={styles.value}>{profileData.last_name || 'Chưa cập nhật'}</span>
-                        </div>
-                        <div style={styles.infoRow}>
-                            <span style={styles.label}>Số điện thoại:</span>
-                            <span style={styles.value}>{profileData.phone || 'Chưa cập nhật'}</span>
-                        </div>
-                    </div>
-                </div>
+                {error && <div style={styles.errorBox}>{error}</div>}
 
-                <div style={styles.section}>
-                    <h2 style={styles.sectionTitle}>Thống Kê Học Tập</h2>
-                    <div style={styles.statsGrid}>
-                        <div style={styles.statCard}>
-                            <div style={styles.statNumber}>{profileData.total_cards}</div>
-                            <div style={styles.statLabel}>Thẻ Đang Sở Hữu</div>
+                {!isEditing ? (
+                    <>
+                        <div style={styles.section}>
+                            <h2 style={styles.sectionTitle}>Thông Tin Cá Nhân</h2>
+                            <div style={styles.infoGrid}>
+                                <div style={styles.infoRow}>
+                                    <span style={styles.label}>Tên đăng nhập:</span>
+                                    <span style={styles.value}>{profileData.username}</span>
+                                </div>
+                                <div style={styles.infoRow}>
+                                    <span style={styles.label}>Email:</span>
+                                    <span style={styles.value}>{profileData.email}</span>
+                                </div>
+                                <div style={styles.infoRow}>
+                                    <span style={styles.label}>Tên đầu:</span>
+                                    <span style={styles.value}>{profileData.first_name || 'Chưa cập nhật'}</span>
+                                </div>
+                                <div style={styles.infoRow}>
+                                    <span style={styles.label}>Họ:</span>
+                                    <span style={styles.value}>{profileData.last_name || 'Chưa cập nhật'}</span>
+                                </div>
+                                <div style={styles.infoRow}>
+                                    <span style={styles.label}>Số điện thoại:</span>
+                                    <span style={styles.value}>{profileData.phone || 'Chưa cập nhật'}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div style={styles.statCard}>
-                            <div style={styles.statNumber}>{profileData.total_learned_cards}</div>
-                            <div style={styles.statLabel}>Thẻ Đã Học</div>
-                        </div>
-                        <div style={styles.statCard}>
-                            <div style={styles.statNumber}>{profileData.streak}</div>
-                            <div style={styles.statLabel}>Chuỗi Học Liên Tục (Ngày)</div>
-                        </div>
-                    </div>
-                </div>
 
-                <div style={styles.buttonGroup}>
-                    <button 
-                        onClick={() => navigate('/')}
-                        style={{...styles.button, backgroundColor: '#2196F3'}}
-                    >
-                        Quay Lại Trang Chủ
-                    </button>
-                    <button 
-                        onClick={logout}
-                        style={{...styles.button, backgroundColor: '#f44336'}}
-                    >
-                        Đăng Xuất
-                    </button>
-                </div>
+                        <div style={styles.section}>
+                            <h2 style={styles.sectionTitle}>Thống Kê Học Tập</h2>
+                            <div style={styles.statsGrid}>
+                                <div style={styles.statCard}>
+                                    <div style={styles.statNumber}>{profileData.total_cards}</div>
+                                    <div style={styles.statLabel}>Thẻ Đang Sở Hữu</div>
+                                </div>
+                                <div style={styles.statCard}>
+                                    <div style={styles.statNumber}>{profileData.total_learned_cards}</div>
+                                    <div style={styles.statLabel}>Thẻ Đã Học</div>
+                                </div>
+                                <div style={styles.statCard}>
+                                    <div style={styles.statNumber}>{profileData.streak}</div>
+                                    <div style={styles.statLabel}>Chuỗi Học Liên Tục (Ngày)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={styles.buttonGroup}>
+                            <button 
+                                onClick={() => navigate('/')}
+                                style={{...styles.button, backgroundColor: '#2196F3'}}
+                            >
+                                Quay Lại Trang Chủ
+                            </button>
+                            <button 
+                                onClick={() => setIsEditing(true)}
+                                style={{...styles.button, backgroundColor: '#4CAF50'}}
+                            >
+                                Chỉnh Sửa Hồ Sơ
+                            </button>
+                            <button 
+                                onClick={logout}
+                                style={{...styles.button, backgroundColor: '#f44336'}}
+                            >
+                                Đăng Xuất
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div style={styles.section}>
+                            <h2 style={styles.sectionTitle}>Chỉnh Sửa Thông Tin</h2>
+                            <div style={styles.formGroup}>
+                                <label style={styles.formLabel}>Email:</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={editData.email}
+                                    onChange={handleEditChange}
+                                    style={styles.formInput}
+                                />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={styles.formLabel}>Tên đầu:</label>
+                                <input
+                                    type="text"
+                                    name="first_name"
+                                    value={editData.first_name}
+                                    onChange={handleEditChange}
+                                    style={styles.formInput}
+                                />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={styles.formLabel}>Họ:</label>
+                                <input
+                                    type="text"
+                                    name="last_name"
+                                    value={editData.last_name}
+                                    onChange={handleEditChange}
+                                    style={styles.formInput}
+                                />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={styles.formLabel}>Số điện thoại:</label>
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    value={editData.phone}
+                                    onChange={handleEditChange}
+                                    style={styles.formInput}
+                                />
+                            </div>
+                        </div>
+
+                        <div style={styles.buttonGroup}>
+                            <button 
+                                onClick={handleSaveProfile}
+                                disabled={isSaving}
+                                style={{
+                                    ...styles.button,
+                                    backgroundColor: '#4CAF50',
+                                    opacity: isSaving ? 0.7 : 1,
+                                    cursor: isSaving ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                {isSaving ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+                            </button>
+                            <button 
+                                onClick={handleCancel}
+                                disabled={isSaving}
+                                style={{
+                                    ...styles.button,
+                                    backgroundColor: '#9E9E9E',
+                                    opacity: isSaving ? 0.7 : 1,
+                                    cursor: isSaving ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                Hủy
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
@@ -191,6 +316,25 @@ const styles = {
         borderRadius: '5px',
         border: '1px solid #e0e0e0',
     },
+    formGroup: {
+        marginBottom: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+    },
+    formLabel: {
+        fontSize: '14px',
+        color: '#2c3e50',
+        fontWeight: '600',
+    },
+    formInput: {
+        padding: '12px',
+        borderRadius: '5px',
+        border: '1px solid #ddd',
+        fontSize: '16px',
+        boxSizing: 'border-box',
+        fontFamily: 'inherit',
+    },
     statsGrid: {
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
@@ -223,6 +367,7 @@ const styles = {
         marginTop: '30px',
         paddingTop: '20px',
         borderTop: '2px solid #e0e0e0',
+        flexWrap: 'wrap',
     },
     button: {
         padding: '12px 30px',
@@ -237,9 +382,11 @@ const styles = {
     errorBox: {
         backgroundColor: '#ffebee',
         color: '#c62828',
-        padding: '20px',
+        padding: '12px 16px',
         borderRadius: '5px',
+        marginBottom: '20px',
         textAlign: 'center',
+        border: '1px solid #ef5350',
     },
 };
 

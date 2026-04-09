@@ -141,6 +141,98 @@ def get_user_profile(request):
     })
 
 
+@api_view(['PUT'])
+def update_user_profile(request):
+    """
+    Update user profile: email, first_name, last_name, phone
+    Requires authentication via Bearer token
+    """
+    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+    if not auth_header.startswith('Bearer '):
+        return Response({'detail': 'Authorization header missing or invalid.'}, status=401)
+
+    token = auth_header.split(' ', 1)[1]
+    user, error = _get_user_from_token(token)
+    if error:
+        return Response({'detail': error}, status=401)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return Response({'error': 'Invalid JSON'}, status=400)
+
+    # Get fields from request (all optional)
+    email = data.get('email', user.email).strip()
+    first_name = data.get('first_name', user.first_name).strip()
+    last_name = data.get('last_name', user.last_name).strip()
+    phone = data.get('phone', user.profile.phone or '').strip()
+
+    # Validate email format if provided
+    if email != user.email:
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response({'error': 'Email không hợp lệ'}, status=400)
+
+        # Check if email already exists
+        if User.objects.filter(email=email).exclude(id=user.id).exists():
+            return Response({'error': 'Email này đã được đăng ký'}, status=400)
+
+    # Validate first_name and last_name length if provided
+    if first_name and (len(first_name) < 2 or len(first_name) > 150):
+        return Response({
+            'error': 'Tên đầu phải từ 2 đến 150 ký tự'
+        }, status=400)
+    
+    if last_name and (len(last_name) < 2 or len(last_name) > 150):
+        return Response({
+            'error': 'Họ phải từ 2 đến 150 ký tự'
+        }, status=400)
+
+    # Validate phone length if provided
+    if phone and len(phone) > 15:
+        return Response({
+            'error': 'Số điện thoại không hợp lệ'
+        }, status=400)
+
+    try:
+        # Update user fields
+        user.email = email
+        user.first_name = first_name
+        user.last_name = last_name
+        user.save()
+
+        # Update profile phone
+        user.profile.phone = phone
+        user.profile.save()
+
+        # Count total cards
+        from flashcards.models import Card
+        total_cards = Card.objects.filter(deck__user=user).count()
+        total_learned_cards = user.profile.total_learned_cards
+
+        return Response({
+            'success': True,
+            'message': 'Cập nhật hồ sơ thành công!',
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'phone': user.profile.phone,
+                'streak': user.profile.streak,
+                'total_cards': total_cards,
+                'total_learned_cards': total_learned_cards,
+            }
+        }, status=200)
+
+    except Exception as e:
+        return Response({
+            'error': f'Lỗi cập nhật hồ sơ: {str(e)}'
+        }, status=500)
+
+
 @csrf_exempt
 @api_view(['POST'])
 def register_view(request):
