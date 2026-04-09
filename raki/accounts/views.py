@@ -81,15 +81,23 @@ def login_view(request):
         token = _make_token(user)
         first_name, last_name, phone, streak = _get_user_profile_data(user)
         
+        # Count total cards owned by the user
+        from flashcards.models import Card
+        total_cards = Card.objects.filter(deck__user=user).count()
+        total_learned_cards = user.profile.total_learned_cards
+        
         return JsonResponse({
             'access': token,
             'user': {
                 'id': user.id,
                 'username': user.username,
+                'email': user.email,
                 'first_name': first_name,
                 'last_name': last_name,
                 'phone': phone,
                 'streak': streak,
+                'total_cards': total_cards,
+                'total_learned_cards': total_learned_cards,
                 'is_staff': user.is_staff,
                 'groups': list(user.groups.values_list('name', flat=True)),
             }
@@ -111,6 +119,13 @@ def get_user_profile(request):
 
     first_name, last_name, phone, streak = _get_user_profile_data(user)
     
+    # Count total cards owned by the user
+    from flashcards.models import Card
+    total_cards = Card.objects.filter(deck__user=user).count()
+    
+    # Get total learned cards from profile
+    total_learned_cards = user.profile.total_learned_cards
+    
     return Response({
         'id': user.id,
         'username': user.username,
@@ -119,6 +134,8 @@ def get_user_profile(request):
         'last_name': last_name,
         'phone': phone,
         'streak': streak,
+        'total_cards': total_cards,
+        'total_learned_cards': total_learned_cards,
         'is_staff': user.is_staff,
         'groups': list(user.groups.values_list('name', flat=True)),
     })
