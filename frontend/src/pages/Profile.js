@@ -124,15 +124,15 @@ const Profile = () => {
                                     <span style={styles.value}>{profileData.email}</span>
                                 </div>
                                 <div style={styles.infoRow}>
-                                    <span style={styles.label}>Tên đầu:</span>
+                                    <span style={styles.label}>First Name:</span>
                                     <span style={styles.value}>{profileData.first_name || 'Chưa cập nhật'}</span>
                                 </div>
                                 <div style={styles.infoRow}>
-                                    <span style={styles.label}>Họ:</span>
+                                    <span style={styles.label}>Last Name:</span>
                                     <span style={styles.value}>{profileData.last_name || 'Chưa cập nhật'}</span>
                                 </div>
                                 <div style={styles.infoRow}>
-                                    <span style={styles.label}>Số điện thoại:</span>
+                                    <span style={styles.label}>Phone Number:</span>
                                     <span style={styles.value}>{profileData.phone || 'Chưa cập nhật'}</span>
                                 </div>
                             </div>
@@ -169,12 +169,7 @@ const Profile = () => {
                             >
                                 Chỉnh Sửa Hồ Sơ
                             </button>
-                            <button 
-                                onClick={logout}
-                                style={{...styles.button, backgroundColor: '#f44336'}}
-                            >
-                                Đăng Xuất
-                            </button>
+                            
                         </div>
                     </>
                 ) : (
@@ -192,7 +187,7 @@ const Profile = () => {
                                 />
                             </div>
                             <div style={styles.formGroup}>
-                                <label style={styles.formLabel}>Tên đầu:</label>
+                                <label style={styles.formLabel}>First Name:</label>
                                 <input
                                     type="text"
                                     name="first_name"
@@ -202,7 +197,7 @@ const Profile = () => {
                                 />
                             </div>
                             <div style={styles.formGroup}>
-                                <label style={styles.formLabel}>Họ:</label>
+                                <label style={styles.formLabel}>Last Name:</label>
                                 <input
                                     type="text"
                                     name="last_name"
@@ -212,7 +207,7 @@ const Profile = () => {
                                 />
                             </div>
                             <div style={styles.formGroup}>
-                                <label style={styles.formLabel}>Số điện thoại:</label>
+                                <label style={styles.formLabel}>Phone Number:</label>
                                 <input
                                     type="tel"
                                     name="phone"
