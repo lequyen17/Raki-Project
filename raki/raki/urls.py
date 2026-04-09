@@ -26,4 +26,6 @@ urlpatterns = [
     path('api/user/profile/update/', views.update_user_profile, name='update_user_profile'),
     path('api/user/decks/', views.get_user_decks, name='user_decks'),
     path('api/user/decks/move/', views.move_user_deck, name='move_user_deck'),
+    path('api/user/decks/<int:deck_id>/', views.user_deck_detail, name='user_deck_detail'),
+    path('api/user/decks/<int:deck_id>/cards/', views.add_card_to_deck, name='add_card_to_deck'),
 ]

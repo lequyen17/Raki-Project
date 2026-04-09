@@ -35,6 +35,15 @@ const Decks = () => {
   const [draggingDeckId, setDraggingDeckId] = useState(null);
   const [dropTargetId, setDropTargetId] = useState(null);
   const [moveError, setMoveError] = useState('');
+  const [selectedDeckId, setSelectedDeckId] = useState(null);
+  const [selectedDeckInfo, setSelectedDeckInfo] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState('');
+  const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [newCard, setNewCard] = useState({ front: '', back: '' });
+  const [addCardError, setAddCardError] = useState('');
+  const [isAddingCard, setIsAddingCard] = useState(false);
+  const [deletingDeck, setDeletingDeck] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -204,6 +213,28 @@ const Decks = () => {
     return Boolean(target?.closest && target.closest('.deck-tree-row'));
   };
 
+  const handleSelectDeck = async (deckId, deckName) => {
+    setStatsError('');
+    setStatsLoading(true);
+    try {
+      const res = await api.get(`/api/user/decks/${deckId}/`);
+      if (!res.data?.is_leaf) {
+        setSelectedDeckId(null);
+        setSelectedDeckInfo(null);
+        setStatsError(`Deck "${deckName}" chua phai deck con nho nhat.`);
+        return;
+      }
+      setSelectedDeckId(deckId);
+      setSelectedDeckInfo(res.data);
+    } catch (err) {
+      setSelectedDeckId(null);
+      setSelectedDeckInfo(null);
+      setStatsError(err.response?.data?.error || 'Khong the tai thong ke deck.');
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   const renderNode = (node, depth = 0) => {
     const hasChildren = node.children.length > 0;
     const isExpanded = expandedIds.has(node.id);
@@ -237,8 +268,23 @@ const Decks = () => {
           </button>
           <div className="deck-drag-handle">::</div>
           <div className="deck-row-main">
-            <span className="deck-row-name">{node.name}</span>
+            <button
+              type="button"
+              className={`deck-row-name ${selectedDeckId === node.id ? 'deck-row-name--selected' : ''}`}
+              onClick={() => handleSelectDeck(node.id, node.name)}
+            >
+              {node.name}
+            </button>
             <span className="deck-row-count">{node.total_cards || 0} cards</span>
+            {!hasChildren && (
+              <button
+                type="button"
+                className="deck-view-btn"
+                onClick={() => handleSelectDeck(node.id, node.name)}
+              >
+                View
+              </button>
+            )}
           </div>
         </div>
 
@@ -270,6 +316,7 @@ const Decks = () => {
         }
       }}
     >
+      <div className="decks-layout">
       <div className="decks-container">
         <h1 className="decks-title">My Decks</h1>
 
@@ -299,6 +346,71 @@ const Decks = () => {
             )}
           </>
         )}
+      </div>
+      <div className="deck-detail-panel">
+        <h2 className="deck-detail-title">Deck Statistic</h2>
+        {!selectedDeckId && <p className="decks-state">Chon 1 deck con nho nhat de xem thong ke.</p>}
+        {statsError && <p className="decks-error">{statsError}</p>}
+        {statsLoading && <p className="decks-state">Dang tai thong ke...</p>}
+
+        {selectedDeckInfo && !statsLoading && (
+          <>
+            <p className="deck-detail-name">{selectedDeckInfo.name}</p>
+            <div className="deck-stat-grid">
+              <div className="deck-stat-card">
+                <span className="deck-stat-label">New</span>
+                <strong>{selectedDeckInfo.stats.new}</strong>
+              </div>
+              <div className="deck-stat-card">
+                <span className="deck-stat-label">Learn</span>
+                <strong>{selectedDeckInfo.stats.learn}</strong>
+              </div>
+              <div className="deck-stat-card">
+                <span className="deck-stat-label">Review</span>
+                <strong>{selectedDeckInfo.stats.review}</strong>
+              </div>
+            </div>
+
+            <div className="deck-detail-actions">
+              <button
+                type="button"
+                className="deck-action-btn deck-action-btn--danger"
+                disabled={deletingDeck}
+                onClick={async () => {
+                  if (!window.confirm('Ban chac chan muon xoa deck nay?')) {
+                    return;
+                  }
+                  try {
+                    setDeletingDeck(true);
+                    await api.delete(`/api/user/decks/${selectedDeckId}/`);
+                    setDecks((prev) => prev.filter((d) => d.id !== selectedDeckId));
+                    setSelectedDeckId(null);
+                    setSelectedDeckInfo(null);
+                    setStatsError('');
+                  } catch (err) {
+                    setStatsError(err.response?.data?.error || 'Xoa deck that bai.');
+                  } finally {
+                    setDeletingDeck(false);
+                  }
+                }}
+              >
+                {deletingDeck ? 'Deleting...' : 'Delete Deck'}
+              </button>
+              <button
+                type="button"
+                className="deck-action-btn deck-action-btn--primary"
+                onClick={() => {
+                  setAddCardError('');
+                  setNewCard({ front: '', back: '' });
+                  setShowAddCardModal(true);
+                }}
+              >
+                Add Card
+              </button>
+            </div>
+          </>
+        )}
+      </div>
       </div>
 
       {showCreateModal && (
@@ -347,6 +459,88 @@ const Decks = () => {
                   disabled={isCreating}
                 >
                   {isCreating ? 'Creating...' : 'Create Deck'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showAddCardModal && (
+        <div className="deck-modal-overlay" onClick={() => !isAddingCard && setShowAddCardModal(false)}>
+          <div className="deck-modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="deck-modal-title">Add Card</h2>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!selectedDeckId) {
+                  return;
+                }
+                try {
+                  setIsAddingCard(true);
+                  setAddCardError('');
+                  await api.post(`/api/user/decks/${selectedDeckId}/cards/`, {
+                    front: newCard.front.trim(),
+                    back: newCard.back.trim(),
+                  });
+                  setShowAddCardModal(false);
+                  setNewCard({ front: '', back: '' });
+                  const res = await api.get(`/api/user/decks/${selectedDeckId}/`);
+                  setSelectedDeckInfo(res.data);
+                  setDecks((prev) =>
+                    prev.map((deck) =>
+                      deck.id === selectedDeckId
+                        ? { ...deck, total_cards: (deck.total_cards || 0) + 1 }
+                        : deck
+                    )
+                  );
+                } catch (err) {
+                  setAddCardError(err.response?.data?.error || 'Them card that bai.');
+                } finally {
+                  setIsAddingCard(false);
+                }
+              }}
+            >
+              <label className="deck-modal-label" htmlFor="card-front">
+                Front
+              </label>
+              <textarea
+                id="card-front"
+                className="deck-modal-textarea"
+                rows={3}
+                value={newCard.front}
+                onChange={(e) => setNewCard((prev) => ({ ...prev, front: e.target.value }))}
+                required
+              />
+
+              <label className="deck-modal-label" htmlFor="card-back">
+                Back
+              </label>
+              <textarea
+                id="card-back"
+                className="deck-modal-textarea"
+                rows={3}
+                value={newCard.back}
+                onChange={(e) => setNewCard((prev) => ({ ...prev, back: e.target.value }))}
+                required
+              />
+
+              {addCardError && <p className="deck-modal-error">{addCardError}</p>}
+
+              <div className="deck-modal-actions">
+                <button
+                  type="button"
+                  className="deck-modal-btn deck-modal-btn--cancel"
+                  disabled={isAddingCard}
+                  onClick={() => setShowAddCardModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="deck-modal-btn deck-modal-btn--submit"
+                  disabled={isAddingCard}
+                >
+                  {isAddingCard ? 'Saving...' : 'Save Card'}
                 </button>
               </div>
             </form>
