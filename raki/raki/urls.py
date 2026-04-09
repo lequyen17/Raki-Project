@@ -24,4 +24,6 @@ urlpatterns = [
     path('api/register/', views.register_view, name='register'),
     path('api/user/profile/', views.get_user_profile, name='user_profile'),
     path('api/user/profile/update/', views.update_user_profile, name='update_user_profile'),
+    path('api/user/decks/', views.get_user_decks, name='user_decks'),
+    path('api/user/decks/move/', views.move_user_deck, name='move_user_deck'),
 ]

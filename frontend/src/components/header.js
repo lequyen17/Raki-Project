@@ -24,6 +24,11 @@ const Header = () => {
     navigate('/profile');
   };
 
+  const handleDecksClick = () => {
+    setMenuOpen(false);
+    navigate('/decks');
+  };
+
   const handleToggleMenu = () => {
     setMenuOpen((open) => !open);
   };
@@ -57,6 +62,13 @@ const Header = () => {
             </button>
             {menuOpen && (
               <div className="raki-profile__menu">
+                <button
+                  type="button"
+                  className="raki-profile__item"
+                  onClick={handleDecksClick}
+                >
+                  My Decks
+                </button>
                 <button
                   type="button"
                   className="raki-profile__item"
