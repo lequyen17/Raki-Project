@@ -29,7 +29,7 @@ const Login = () => {
             if (res.data.user.is_staff) {
                 window.location.href = 'http://127.0.0.1:8000/admin/';
             } else {
-                navigate('/');
+                navigate('/decks');
             }
         } catch (err) {
             if (err.response && (err.response.status === 400 || err.response.status === 401)) {
