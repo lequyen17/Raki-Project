@@ -1,37 +1,46 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../api/api';
+import { setAuthToken } from '../api/api';
+import { AuthContext } from '../context/AuthContext';
 
 const Login = () => {
-    // 1. Quản lý trạng thái của các ô nhập
-    const [formData, setFormData] = useState({
-        username: '',
-        password: ''
-    });
+    const [formData, setFormData] = useState({ username: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+    const { setCurrentUser } = useContext(AuthContext);
 
-    // 2. Hàm xử lý khi gõ phím
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
-    e.preventDefault();
-    const { username, password } = formData;
-    try {
-        await axios.post('http://127.0.0.1:8000/api/login/', 
-            { username, password },
-            { withCredentials: true } // Dòng này cực quan trọng để gửi/nhận Cookie
-        );
-        alert("Đã đăng nhập!");
-        window.location.href = '/dashboard';
-    } catch (err) {
-        alert("Lỗi rồi!");
-    }
-};
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+            const res = await api.post('/api/login/', formData);
+            const token = res.data.access;
+            localStorage.setItem('access_token', token);
+            setAuthToken(token);
+            setCurrentUser(res.data.user);
+            if (res.data.user.is_staff) {
+                window.location.href = 'http://127.0.0.1:8000/admin/';
+            } else {
+                navigate('/');
+            }
+        } catch (err) {
+            if (err.response && err.response.status === 401) {
+                setError("Sai tên đăng nhập hoặc mật khẩu!");
+            } else {
+                setError("Có lỗi hệ thống, vui lòng thử lại sau.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div style={styles.wrapper}>
@@ -76,7 +85,7 @@ const Login = () => {
     );
 };
 
-// CSS nội bộ để bạn copy một phát là đẹp luôn
+// CSS nội bộ
 const styles = {
     wrapper: {
         display: 'flex', justifyContent: 'center', alignItems: 'center',

@@ -21,5 +21,6 @@ from accounts import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/login/', views.login_view, name='login'),
-    path('user/profile/', views.get_user_profile, name='user_profile'),
+    path('api/register/', views.register_view, name='register'),
+    path('api/user/profile/', views.get_user_profile,name='user_profile'),
 ]

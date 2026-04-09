@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api, { setAuthToken } from '../api/api';
 
 export const AuthContext = createContext();
 
@@ -7,22 +7,23 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Hàm kiểm tra User ngay khi load trang (F5 không bị mất login)
   useEffect(() => {
     const checkLoggedIn = async () => {
-      const token = localStorage.getItem('access');
-      if (token) {
-        try {
-          // Gọi API của Django để lấy thông tin user dựa trên token
-          // Giả sử link là: /api/user/profile/
-          const res = await axios.get('http://127.0.0.1:8000/api/user/profile/', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          setCurrentUser(res.data);
-        } catch (error) {
-          console.log("Token hết hạn hoặc lỗi:", error);
-          localStorage.removeItem('access');
-        }
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        setCurrentUser(null);
+        setLoading(false);
+        return;
+      }
+
+      setAuthToken(token);
+      try {
+        const res = await api.get('/api/user/profile/');
+        setCurrentUser(res.data);
+      } catch (error) {
+        localStorage.removeItem('access_token');
+        setAuthToken(null);
+        setCurrentUser(null);
       }
       setLoading(false);
     };
@@ -30,7 +31,8 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const logout = () => {
-    localStorage.removeItem('access');
+    localStorage.removeItem('access_token');
+    setAuthToken(null);
     setCurrentUser(null);
     window.location.href = '/login';
   };
@@ -39,12 +41,12 @@ export const AuthProvider = ({ children }) => {
     currentUser,
     setCurrentUser,
     logout,
-    loading
+    loading,
   };
 
   return (
     <AuthContext.Provider value={data}>
-      {!loading && children} 
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
