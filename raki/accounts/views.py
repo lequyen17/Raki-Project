@@ -328,22 +328,21 @@ def move_user_deck(request):
     except Deck.DoesNotExist:
         return Response({'error': 'Deck not found.'}, status=404)
 
-    if parent_id in (None, '', 'null'):
-        return Response({'error': 'Dropping to empty space is not allowed.'}, status=400)
+    parent = None
+    if parent_id not in (None, '', 'null'):
+        try:
+            parent = Deck.objects.get(id=parent_id, user=user)
+        except Deck.DoesNotExist:
+            return Response({'error': 'Target parent deck not found.'}, status=404)
 
-    try:
-        parent = Deck.objects.get(id=parent_id, user=user)
-    except Deck.DoesNotExist:
-        return Response({'error': 'Target parent deck not found.'}, status=404)
+        if parent.id == deck.id:
+            return Response({'error': 'A deck cannot be moved into itself.'}, status=400)
 
-    if parent.id == deck.id:
-        return Response({'error': 'A deck cannot be moved into itself.'}, status=400)
-
-    cursor = parent
-    while cursor is not None:
-        if cursor.id == deck.id:
-            return Response({'error': 'Cannot move a deck into its own subdeck.'}, status=400)
-        cursor = cursor.parent
+        cursor = parent
+        while cursor is not None:
+            if cursor.id == deck.id:
+                return Response({'error': 'Cannot move a deck into its own subdeck.'}, status=400)
+            cursor = cursor.parent
 
     deck.parent = parent
     deck.save(update_fields=['parent'])

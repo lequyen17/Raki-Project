@@ -175,6 +175,35 @@ const Decks = () => {
     }
   };
 
+  const handleDropToRoot = async () => {
+    if (!draggingDeckId) {
+      return;
+    }
+
+    try {
+      setMoveError('');
+      await api.post('/api/user/decks/move/', {
+        deck_id: draggingDeckId,
+        parent_id: null,
+      });
+
+      setDecks((prev) =>
+        prev.map((deck) =>
+          deck.id === draggingDeckId ? { ...deck, parent_id: null } : deck
+        )
+      );
+    } catch (err) {
+      setMoveError(err.response?.data?.error || 'Di chuyen deck that bai.');
+    } finally {
+      setDraggingDeckId(null);
+      setDropTargetId(null);
+    }
+  };
+
+  const isInsideDeckRow = (target) => {
+    return Boolean(target?.closest && target.closest('.deck-tree-row'));
+  };
+
   const renderNode = (node, depth = 0) => {
     const hasChildren = node.children.length > 0;
     const isExpanded = expandedIds.has(node.id);
@@ -195,6 +224,7 @@ const Decks = () => {
           onDragLeave={() => setDropTargetId(null)}
           onDrop={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             handleDropOnDeck(node.id);
           }}
         >
@@ -218,7 +248,28 @@ const Decks = () => {
   };
 
   return (
-    <div className="decks-page">
+    <div
+      className="decks-page"
+      onDragOver={(e) => {
+        if (!draggingDeckId) {
+          return;
+        }
+        if (!isInsideDeckRow(e.target)) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          setDropTargetId('root');
+        }
+      }}
+      onDrop={(e) => {
+        if (!draggingDeckId) {
+          return;
+        }
+        if (!isInsideDeckRow(e.target)) {
+          e.preventDefault();
+          handleDropToRoot();
+        }
+      }}
+    >
       <div className="decks-container">
         <h1 className="decks-title">My Decks</h1>
 
