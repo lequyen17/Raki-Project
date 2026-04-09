@@ -32,10 +32,10 @@ const Login = () => {
                 navigate('/');
             }
         } catch (err) {
-            if (err.response && err.response.status === 401) {
-                setError("Sai tên đăng nhập hoặc mật khẩu!");
+            if (err.response && (err.response.status === 400 || err.response.status === 401)) {
+                setError('Invalid username or password.');
             } else {
-                setError("Có lỗi hệ thống, vui lòng thử lại sau.");
+                setError('System error. Please try again later.');
             }
         } finally {
             setLoading(false);
@@ -45,7 +45,7 @@ const Login = () => {
     return (
         <div style={styles.wrapper}>
             <form onSubmit={handleSubmit} style={styles.card}>
-                <h2 style={styles.title}>Anki Login</h2>
+                <h2 style={styles.title}>Login</h2>
                 
                 {error && <div style={styles.error}>{error}</div>}
 
@@ -78,14 +78,14 @@ const Login = () => {
                     style={{...styles.button, opacity: loading ? 0.7 : 1}}
                     disabled={loading}
                 >
-                    {loading ? 'Đang xử lý...' : 'Đăng nhập'}
+                    {loading ? 'Please wait...' : 'Sign In'}
                 </button>
             </form>
         </div>
     );
 };
 
-// CSS nội bộ
+// Page styles
 const styles = {
     wrapper: {
         display: 'flex', justifyContent: 'center', alignItems: 'center',

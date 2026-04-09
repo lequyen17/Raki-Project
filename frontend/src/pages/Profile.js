@@ -33,7 +33,7 @@ const Profile = () => {
             setError('');
         } catch (err) {
             console.error('Error fetching profile:', err);
-            setError('Không thể tải thông tin hồ sơ');
+            setError('Cannot load profile data');
             if (err.response?.status === 401) {
                 logout();
             }
@@ -77,7 +77,7 @@ const Profile = () => {
             if (err.response?.data?.error) {
                 setError(err.response.data.error);
             } else {
-                setError('Không thể cập nhật hồ sơ');
+                setError('Cannot update profile');
             }
         } finally {
             setIsSaving(false);
@@ -96,27 +96,27 @@ const Profile = () => {
     };
 
     if (loading) {
-        return <div style={styles.container}><p>Đang tải...</p></div>;
+        return <div style={styles.container}><p>Loading...</p></div>;
     }
 
     if (!profileData) {
-        return <div style={styles.container}><p>Không tìm thấy thông tin hồ sơ</p></div>;
+        return <div style={styles.container}><p>Profile data not found</p></div>;
     }
 
     return (
         <div style={styles.container}>
             <div style={styles.card}>
-                <h1 style={styles.title}>Hồ Sơ Cá Nhân</h1>
+                <h1 style={styles.title}>My Profile</h1>
 
                 {error && <div style={styles.errorBox}>{error}</div>}
 
                 {!isEditing ? (
                     <>
                         <div style={styles.section}>
-                            <h2 style={styles.sectionTitle}>Thông Tin Cá Nhân</h2>
+                            <h2 style={styles.sectionTitle}>Personal Information</h2>
                             <div style={styles.infoGrid}>
                                 <div style={styles.infoRow}>
-                                    <span style={styles.label}>Tên đăng nhập:</span>
+                                    <span style={styles.label}>Username:</span>
                                     <span style={styles.value}>{profileData.username}</span>
                                 </div>
                                 <div style={styles.infoRow}>
@@ -125,33 +125,33 @@ const Profile = () => {
                                 </div>
                                 <div style={styles.infoRow}>
                                     <span style={styles.label}>First Name:</span>
-                                    <span style={styles.value}>{profileData.first_name || 'Chưa cập nhật'}</span>
+                                    <span style={styles.value}>{profileData.first_name || 'Not updated yet'}</span>
                                 </div>
                                 <div style={styles.infoRow}>
                                     <span style={styles.label}>Last Name:</span>
-                                    <span style={styles.value}>{profileData.last_name || 'Chưa cập nhật'}</span>
+                                    <span style={styles.value}>{profileData.last_name || 'Not updated yet'}</span>
                                 </div>
                                 <div style={styles.infoRow}>
                                     <span style={styles.label}>Phone Number:</span>
-                                    <span style={styles.value}>{profileData.phone || 'Chưa cập nhật'}</span>
+                                    <span style={styles.value}>{profileData.phone || 'Not updated yet'}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div style={styles.section}>
-                            <h2 style={styles.sectionTitle}>Thống Kê Học Tập</h2>
+                            <h2 style={styles.sectionTitle}>Learning Statistics</h2>
                             <div style={styles.statsGrid}>
                                 <div style={styles.statCard}>
                                     <div style={styles.statNumber}>{profileData.total_cards}</div>
-                                    <div style={styles.statLabel}>Thẻ Đang Sở Hữu</div>
+                                    <div style={styles.statLabel}>Total Cards</div>
                                 </div>
                                 <div style={styles.statCard}>
                                     <div style={styles.statNumber}>{profileData.total_learned_cards}</div>
-                                    <div style={styles.statLabel}>Thẻ Đã Học</div>
+                                    <div style={styles.statLabel}>Learned Cards</div>
                                 </div>
                                 <div style={styles.statCard}>
                                     <div style={styles.statNumber}>{profileData.streak}</div>
-                                    <div style={styles.statLabel}>Chuỗi Học Liên Tục (Ngày)</div>
+                                    <div style={styles.statLabel}>Learning Streak (days)</div>
                                 </div>
                             </div>
                         </div>
@@ -161,13 +161,13 @@ const Profile = () => {
                                 onClick={() => navigate('/')}
                                 style={{...styles.button, backgroundColor: '#2196F3'}}
                             >
-                                Quay Lại Trang Chủ
+                                Back to Home
                             </button>
                             <button 
                                 onClick={() => setIsEditing(true)}
                                 style={{...styles.button, backgroundColor: '#4CAF50'}}
                             >
-                                Chỉnh Sửa Hồ Sơ
+                                Edit Profile
                             </button>
                             
                         </div>
@@ -175,7 +175,7 @@ const Profile = () => {
                 ) : (
                     <>
                         <div style={styles.section}>
-                            <h2 style={styles.sectionTitle}>Chỉnh Sửa Thông Tin</h2>
+                            <h2 style={styles.sectionTitle}>Edit Information</h2>
                             <div style={styles.formGroup}>
                                 <label style={styles.formLabel}>Email:</label>
                                 <input
@@ -229,7 +229,7 @@ const Profile = () => {
                                     cursor: isSaving ? 'not-allowed' : 'pointer'
                                 }}
                             >
-                                {isSaving ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+                                {isSaving ? 'Saving...' : 'Save Changes'}
                             </button>
                             <button 
                                 onClick={handleCancel}
@@ -241,7 +241,7 @@ const Profile = () => {
                                     cursor: isSaving ? 'not-allowed' : 'pointer'
                                 }}
                             >
-                                Hủy
+                                Cancel
                             </button>
                         </div>
                     </>

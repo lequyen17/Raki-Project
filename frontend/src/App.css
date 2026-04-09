@@ -39,9 +39,11 @@
 
 .raki-header {
   width: 100%;
+  box-sizing: border-box;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding: 0.75rem 1.5rem;
   background: #141a2d;
   color: #ffffff;
@@ -64,6 +66,7 @@
 .raki-actions {
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .raki-button {
@@ -108,6 +111,10 @@
   border-radius: 999px;
   padding: 0.6rem 1rem;
   cursor: pointer;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .raki-profile__menu {
@@ -197,4 +204,19 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   color: #888;
   font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .raki-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .raki-logo {
+    font-size: 1.1rem;
+  }
+
+  .raki-button {
+    padding: 0.45rem 0.8rem;
+    font-size: 0.85rem;
+  }
 }

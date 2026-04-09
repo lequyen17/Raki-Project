@@ -31,49 +31,49 @@ const Register = () => {
         const newErrors = {};
 
         if (!formData.username.trim()) {
-            newErrors.username = 'Tên đăng nhập là bắt buộc';
+            newErrors.username = 'Username is required';
         } else if (formData.username.trim().length < 3) {
-            newErrors.username = 'Tên đăng nhập phải có ít nhất 3 ký tự';
+            newErrors.username = 'Username must be at least 3 characters';
         } else if (formData.username.trim().length > 150) {
-            newErrors.username = 'Tên đăng nhập không được vượt quá 150 ký tự';
+            newErrors.username = 'Username must be 150 characters or less';
         }
 
         if (!formData.email.trim()) {
-            newErrors.email = 'Email là bắt buộc';
+            newErrors.email = 'Email is required';
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-            newErrors.email = 'Email không hợp lệ';
+            newErrors.email = 'Invalid email address';
         }
 
         if (!formData.first_name.trim()) {
-            newErrors.first_name = 'Tên đầu là bắt buộc';
+            newErrors.first_name = 'First name is required';
         } else if (formData.first_name.trim().length < 2) {
-            newErrors.first_name = 'Tên đầu phải có ít nhất 2 ký tự';
+            newErrors.first_name = 'First name must be at least 2 characters';
         } else if (formData.first_name.trim().length > 150) {
-            newErrors.first_name = 'Tên đầu không được vượt quá 150 ký tự';
+            newErrors.first_name = 'First name must be 150 characters or less';
         }
 
         if (!formData.last_name.trim()) {
-            newErrors.last_name = 'Họ là bắt buộc';
+            newErrors.last_name = 'Last name is required';
         } else if (formData.last_name.trim().length < 2) {
-            newErrors.last_name = 'Họ phải có ít nhất 2 ký tự';
+            newErrors.last_name = 'Last name must be at least 2 characters';
         } else if (formData.last_name.trim().length > 150) {
-            newErrors.last_name = 'Họ không được vượt quá 150 ký tự';
+            newErrors.last_name = 'Last name must be 150 characters or less';
         }
 
         if (!formData.password) {
-            newErrors.password = 'Mật khẩu là bắt buộc';
+            newErrors.password = 'Password is required';
         } else if (formData.password.length < 6) {
-            newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+            newErrors.password = 'Password must be at least 6 characters';
         }
 
         if (!formData.confirm_password) {
-            newErrors.confirm_password = 'Xác nhận mật khẩu là bắt buộc';
+            newErrors.confirm_password = 'Please confirm your password';
         } else if (formData.password !== formData.confirm_password) {
-            newErrors.confirm_password = 'Mật khẩu xác nhận không khớp';
+            newErrors.confirm_password = 'Password confirmation does not match';
         }
 
         if (formData.phone && formData.phone.length > 15) {
-            newErrors.phone = 'Số điện thoại không hợp lệ';
+            newErrors.phone = 'Invalid phone number';
         }
 
         return newErrors;
@@ -117,13 +117,13 @@ const Register = () => {
 
             setTimeout(() => {
                 navigate('/login');
-            }, 2000);
+            }, 1000);
 
         } catch (err) {
             if (err.response && err.response.data && err.response.data.error) {
                 setGeneralError(err.response.data.error);
             } else {
-                setGeneralError('Có lỗi hệ thống, vui lòng thử lại sau.');
+                setGeneralError('System error. Please try again later.');
             }
         } finally {
             setLoading(false);
@@ -133,9 +133,9 @@ const Register = () => {
     return (
         <div style={styles.wrapper}>
             <form onSubmit={handleSubmit} style={styles.card}>
-                <h2 style={styles.title}>Đăng Ký Tài Khoản</h2>
+                <h2 style={styles.title}>Create Account</h2>
 
-                {success && <div style={styles.success}>Đăng ký thành công! Chuyển hướng tới đăng nhập...</div>}
+                {success && <div style={styles.success}>Registration successful! Redirecting to login...</div>}
                 {generalError && <div style={styles.error}>{generalError}</div>}
 
                 <div style={styles.inputGroup}>
@@ -146,7 +146,7 @@ const Register = () => {
                         style={{...styles.input, borderColor: errors.first_name ? '#c62828' : '#ddd'}}
                         value={formData.first_name}
                         onChange={handleChange}
-                        placeholder="Nhập tên đầu"
+                        placeholder="Enter first name"
                     />
                     {errors.first_name && <span style={styles.errorText}>{errors.first_name}</span>}
                 </div>
@@ -159,20 +159,20 @@ const Register = () => {
                         style={{...styles.input, borderColor: errors.last_name ? '#c62828' : '#ddd'}}
                         value={formData.last_name}
                         onChange={handleChange}
-                        placeholder="Nhập họ"
+                        placeholder="Enter last name"
                     />
                     {errors.last_name && <span style={styles.errorText}>{errors.last_name}</span>}
                 </div>
 
                 <div style={styles.inputGroup}>
-                    <label>Tên Đăng Nhập *</label>
+                    <label>Username *</label>
                     <input
                         name="username"
                         type="text"
                         style={{...styles.input, borderColor: errors.username ? '#c62828' : '#ddd'}}
                         value={formData.username}
                         onChange={handleChange}
-                        placeholder="Nhập tên đăng nhập"
+                        placeholder="Enter username"
                     />
                     {errors.username && <span style={styles.errorText}>{errors.username}</span>}
                 </div>
@@ -185,46 +185,46 @@ const Register = () => {
                         style={{...styles.input, borderColor: errors.email ? '#c62828' : '#ddd'}}
                         value={formData.email}
                         onChange={handleChange}
-                        placeholder="Nhập email"
+                        placeholder="Enter email"
                     />
                     {errors.email && <span style={styles.errorText}>{errors.email}</span>}
                 </div>
 
                 <div style={styles.inputGroup}>
-                    <label>Số Điện Thoại</label>
+                    <label>Phone Number</label>
                     <input
                         name="phone"
                         type="tel"
                         style={{...styles.input, borderColor: errors.phone ? '#c62828' : '#ddd'}}
                         value={formData.phone}
                         onChange={handleChange}
-                        placeholder="Nhập số điện thoại (không bắt buộc)"
+                        placeholder="Enter phone (optional)"
                     />
                     {errors.phone && <span style={styles.errorText}>{errors.phone}</span>}
                 </div>
 
                 <div style={styles.inputGroup}>
-                    <label>Mật Khẩu *</label>
+                    <label>Password *</label>
                     <input
                         name="password"
                         type="password"
                         style={{...styles.input, borderColor: errors.password ? '#c62828' : '#ddd'}}
                         value={formData.password}
                         onChange={handleChange}
-                        placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                        placeholder="Enter password (at least 6 characters)"
                     />
                     {errors.password && <span style={styles.errorText}>{errors.password}</span>}
                 </div>
 
                 <div style={styles.inputGroup}>
-                    <label>Xác Nhận Mật Khẩu *</label>
+                    <label>Confirm Password *</label>
                     <input
                         name="confirm_password"
                         type="password"
                         style={{...styles.input, borderColor: errors.confirm_password ? '#c62828' : '#ddd'}}
                         value={formData.confirm_password}
                         onChange={handleChange}
-                        placeholder="Nhập lại mật khẩu"
+                        placeholder="Confirm password"
                     />
                     {errors.confirm_password && <span style={styles.errorText}>{errors.confirm_password}</span>}
                 </div>
@@ -234,11 +234,11 @@ const Register = () => {
                     style={{...styles.button, opacity: loading ? 0.7 : 1}}
                     disabled={loading}
                 >
-                    {loading ? 'Đang xử lý...' : 'Đăng Ký'}
+                    {loading ? 'Please wait...' : 'Register'}
                 </button>
 
                 <div style={styles.loginLink}>
-                    Đã có tài khoản? <Link to="/login" style={styles.link}>Đăng nhập tại đây</Link>
+                    Already have an account? <Link to="/login" style={styles.link}>Login here</Link>
                 </div>
             </form>
         </div>
