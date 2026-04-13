@@ -23,13 +23,11 @@ const Decks = () => {
   const navigate = useNavigate();
   const [decks, setDecks] = useState([]);
   const [searchText, setSearchText] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newDeck, setNewDeck] = useState({ name: '', description: '' });
   const [createError, setCreateError] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
 
   const [expandedIds, setExpandedIds] = useState(() => new Set());
   const [draggingDeckId, setDraggingDeckId] = useState(null);
@@ -44,6 +42,10 @@ const Decks = () => {
   const [addCardError, setAddCardError] = useState('');
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [deletingDeck, setDeletingDeck] = useState(false);
+
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -71,7 +73,7 @@ const Decks = () => {
     };
 
     fetchDecks();
-  }, [navigate]);
+  }, []);
 
   const filteredDecks = useMemo(() => {
     const keyword = searchText.trim().toLowerCase();

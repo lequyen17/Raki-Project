@@ -11,8 +11,8 @@ class Profile(models.Model):
     streak = models.IntegerField(default=0)
     total_learned_cards = models.IntegerField(default=0)
     
-    def __str__(self):
-        return f"Profile of {self.user.username}"
+def __str__(self):
+ return f"Profile of {self.user.username}"
     
 
 @receiver(post_save, sender=User)

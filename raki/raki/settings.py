@@ -80,8 +80,12 @@ WSGI_APPLICATION = 'raki.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'myproject',       # Tên DB bạn vừa tạo
+        'USER': 'postgres',     # User bạn vừa tạo
+        'PASSWORD': '123456',    # Mật khẩu bạn vừa đặt
+        'HOST': 'localhost',          # Thường là localhost
+        'PORT': '5432',               # Cổng mặc định của Postgres
     }
 }
 
