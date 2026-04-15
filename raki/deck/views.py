@@ -184,35 +184,4 @@ def user_deck_detail(request, deck_id):
     })
 
 
-@api_view(['POST'])
-def add_card_to_deck(request, deck_id):
-    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-    if not auth_header.startswith('Bearer '):
-        return Response({'detail': 'Authorization header missing or invalid.'}, status=401)
-
-    token = auth_header.split(' ', 1)[1]
-    user, error = _get_user_from_token(token)
-    if error:
-        return Response({'detail': error}, status=401)
-
-    from deck.models import Deck, Card
-
-    try:
-        deck = Deck.objects.get(id=deck_id, user=user)
-    except Deck.DoesNotExist:
-        return Response({'error': 'Deck not found.'}, status=404)
-
-    front = str(request.data.get('front', '')).strip()
-    back = str(request.data.get('back', '')).strip()
-
-    if not front or not back:
-        return Response({'error': 'front and back are required.'}, status=400)
-
-    card = Card.objects.create(deck=deck, front=front, back=back)
-    return Response({
-        'id': card.id,
-        'deck_id': deck.id,
-        'front': card.front,
-        'back': card.back,
-    }, status=201)
 
