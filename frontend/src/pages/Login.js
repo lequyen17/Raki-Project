@@ -16,21 +16,19 @@ const Login = () => {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
+    e.preventDefault();
+    setLoading(true);
 
-        try {
-            const res = await api.post('/api/login/', formData);
-            const token = res.data.access;
-            localStorage.setItem('access_token', token);
-            setAuthToken(token);
-            setCurrentUser(res.data.user);
-            if (res.data.user.is_staff) {
-                window.location.href = 'http://127.0.0.1:8000/admin/';
-            } else {
-                navigate('/decks');
-            }
+    try {
+        const res = await api.post('/api/login/', formData);
+        const { access, user } = res.data;
+
+        localStorage.setItem('access_token', access);
+        localStorage.setItem('user_data', JSON.stringify(user));
+        setAuthToken(access);
+        setCurrentUser(user);
+
+        navigate('/decks');
         } catch (err) {
             if (err.response && (err.response.status === 400 || err.response.status === 401)) {
                 setError('Invalid username or password.');

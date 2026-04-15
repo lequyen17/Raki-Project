@@ -36,7 +36,7 @@ const Header = () => {
   return (
     <header className="raki-header">
       <div className="raki-brand">
-        <Link to="/" className="raki-logo">
+        <Link to="/decks" className="raki-logo">
           raki
         </Link>
       </div>

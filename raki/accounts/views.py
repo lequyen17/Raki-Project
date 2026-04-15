@@ -1,7 +1,4 @@
 import json
-from datetime import datetime, timedelta
-from django.db.models import Count
-from django.utils import timezone
 
 django_jwt = True
 
@@ -10,10 +7,14 @@ from django.contrib.auth import authenticate, get_user_model
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from accounts.models import Profile
+
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import MyTokenObtainPairSerializer # Import cái vừa tạo
 import jwt
 
 User = get_user_model()
@@ -21,142 +22,55 @@ JWT_ALGORITHM = 'HS256'
 JWT_EXP_DELTA_SECONDS = 60 * 60 * 24  # 1 day
 
 
-def _make_token(user):
-    payload = {
-        'user_id': user.id,
-        'exp': datetime.utcnow() + timedelta(seconds=JWT_EXP_DELTA_SECONDS),
-    }
-    token = jwt.encode(payload, settings.SECRET_KEY, algorithm=JWT_ALGORITHM)
-    if isinstance(token, bytes):
-        token = token.decode('utf-8')
-    return token
 
 
-def _get_user_profile_data(user):
-    """
-    Get user profile data. If profile doesn't exist, create one automatically.
-    Returns tuple: (first_name, last_name, phone, streak)
-    """
-    try:
-        profile = user.profile
-    except Profile.DoesNotExist:
-        # Auto-create profile if it doesn't exist
-        profile = Profile.objects.create(user=user)
-    
-    first_name = user.first_name or ''
-    last_name = user.last_name or ''
-    phone = profile.phone or ''
-    streak = profile.streak
-    
-    return first_name, last_name, phone, streak
-
-
-def _get_user_from_token(token):
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[JWT_ALGORITHM])
-    except jwt.ExpiredSignatureError:
-        return None, 'Token expired'
-    except jwt.InvalidTokenError:
-        return None, 'Invalid token'
-
-    user_id = payload.get('user_id')
-    if user_id is None:
-        return None, 'Invalid token payload'
-
-    try:
-        user = User.objects.get(id=user_id)
-    except User.DoesNotExist:
-        return None, 'User not found'
-
-    return user, None
-
-
-@csrf_exempt
-@api_view(['POST'])
-def login_view(request):
-    data = request.data
-    username = data.get('username')
-    password = data.get('password')
-    user = authenticate(username=username, password=password)
-
-    if user is not None:
-        token = _make_token(user)
-        first_name, last_name, phone, streak = _get_user_profile_data(user)
-        
-        # Count total cards owned by the user
-        from card.models import Card
-        total_cards = Card.objects.filter(note_id__deck_id__user=user).count()
-        total_learned_cards = user.profile.total_learned_cards
-        
-        return JsonResponse({
-            'access': token,
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'first_name': first_name,
-                'last_name': last_name,
-                'phone': phone,
-                'streak': streak,
-                'total_cards': total_cards,
-                'total_learned_cards': total_learned_cards,
-                'is_staff': user.is_staff,
-                'groups': list(user.groups.values_list('name', flat=True)),
-            }
-        }, status=200)
-
-    return JsonResponse({'error': 'Sai tên đăng nhập hoặc mật khẩu'}, status=400)
-
+class MyTokenLoginView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_user_profile(request):
-    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-    if not auth_header.startswith('Bearer '):
-        return Response({'detail': 'Authorization header missing or invalid.'}, status=401)
-
-    token = auth_header.split(' ', 1)[1]
-    user, error = _get_user_from_token(token)
-    if error:
-        return Response({'detail': error}, status=401)
-
-    first_name, last_name, phone, streak = _get_user_profile_data(user)
+    user = request.user
     
-    # Count total cards owned by the user
+    # 1. Đếm số thẻ (Card)
     from card.models import Card
     total_cards = Card.objects.filter(note_id__deck_id__user=user).count()
     
-    # Get total learned cards from profile
-    total_learned_cards = user.profile.total_learned_cards
-    
+    # 2. Lấy thông tin từ bảng Profile
+    # Sử dụng try-except để an toàn tuyệt đối nếu user chưa có Profile
+    try:
+        profile = user.profile 
+        phone = profile.phone
+        streak = profile.streak
+        total_learned_cards = profile.total_learned_cards
+    except AttributeError:
+        # Nếu chưa có profile thì trả về giá trị mặc định
+        phone = ""
+        streak = 0
+        total_learned_cards = 0
+
     return Response({
         'id': user.id,
         'username': user.username,
         'email': user.email,
-        'first_name': first_name,
-        'last_name': last_name,
-        'phone': phone,
-        'streak': streak,
+        'first_name': user.first_name, # Lấy từ bảng User
+        'last_name': user.last_name,   # Lấy từ bảng User
+        'phone': phone,               # Lấy từ bảng Profile
+        'streak': streak,             # Lấy từ bảng Profile
         'total_cards': total_cards,
         'total_learned_cards': total_learned_cards,
         'is_staff': user.is_staff,
         'groups': list(user.groups.values_list('name', flat=True)),
     })
 
-
 @api_view(['PUT'])
+@permission_classes([IsAuthenticated])
 def update_user_profile(request):
     """
     Update user profile: email, first_name, last_name, phone
     Requires authentication via Bearer token
     """
-    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-    if not auth_header.startswith('Bearer '):
-        return Response({'detail': 'Authorization header missing or invalid.'}, status=401)
-
-    token = auth_header.split(' ', 1)[1]
-    user, error = _get_user_from_token(token)
-    if error:
-        return Response({'detail': error}, status=401)
+    user = request.user
 
     try:
         data = json.loads(request.body)

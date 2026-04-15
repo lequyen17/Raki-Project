@@ -37,10 +37,10 @@ const Decks = () => {
   const [selectedDeckInfo, setSelectedDeckInfo] = useState(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState('');
-  const [showAddCardModal, setShowAddCardModal] = useState(false);
-  const [newCard, setNewCard] = useState({ front: '', back: '' });
-  const [addCardError, setAddCardError] = useState('');
-  const [isAddingCard, setIsAddingCard] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editDeck, setEditDeck] = useState({ name: '', description: '' });
+  const [editError, setEditError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
   const [deletingDeck, setDeletingDeck] = useState(false);
 
   const [error, setError] = useState('');
@@ -147,6 +147,84 @@ const Decks = () => {
     }
   };
 
+  const handleOpenEditModal = () => {
+    if (!selectedDeckId) {
+      return;
+    }
+    const deckInList = decks.find((deck) => deck.id === selectedDeckId);
+    setEditDeck({
+      name: selectedDeckInfo?.name || deckInList?.name || '',
+      description: selectedDeckInfo?.description || deckInList?.description || '',
+    });
+    setEditError('');
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    if (isEditing) {
+      return;
+    }
+    setShowEditModal(false);
+    setEditError('');
+  };
+
+  const handleEditDeck = async (e) => {
+    e.preventDefault();
+    if (!selectedDeckId) {
+      setEditError('Khong co deck de chinh sua.');
+      return;
+    }
+
+    const payload = {
+      name: editDeck.name.trim(),
+      description: editDeck.description.trim(),
+    };
+
+    if (!payload.name) {
+      setEditError('Deck name is required.');
+      return;
+    }
+
+    try {
+      setIsEditing(true);
+      setEditError('');
+      const res = await api.put(`/api/user/decks/${selectedDeckId}/`, payload);
+      const updatedDeck = res.data;
+
+      setDecks((prev) =>
+        prev.map((deck) =>
+          deck.id === selectedDeckId
+            ? {
+                ...deck,
+                name: updatedDeck?.name ?? payload.name,
+                description: updatedDeck?.description ?? payload.description,
+              }
+            : deck
+        )
+      );
+
+      setSelectedDeckInfo((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: updatedDeck?.name ?? payload.name,
+              description: updatedDeck?.description ?? payload.description,
+            }
+          : prev
+      );
+      setShowEditModal(false);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        localStorage.removeItem('access_token');
+        navigate('/login');
+        return;
+      }
+      setEditError(err.response?.data?.error || 'Cap nhat deck that bai.');
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
   const handleDragStart = (e, deckId) => {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', String(deckId));
@@ -215,17 +293,11 @@ const Decks = () => {
     return Boolean(target?.closest && target.closest('.deck-tree-row'));
   };
 
-  const handleSelectDeck = async (deckId, deckName) => {
+  const handleSelectDeck = async (deckId) => {
     setStatsError('');
     setStatsLoading(true);
     try {
       const res = await api.get(`/api/user/decks/${deckId}/`);
-      if (!res.data?.is_leaf) {
-        setSelectedDeckId(null);
-        setSelectedDeckInfo(null);
-        setStatsError(`Deck "${deckName}" chua phai deck con nho nhat.`);
-        return;
-      }
       setSelectedDeckId(deckId);
       setSelectedDeckInfo(res.data);
     } catch (err) {
@@ -273,20 +345,18 @@ const Decks = () => {
             <button
               type="button"
               className={`deck-row-name ${selectedDeckId === node.id ? 'deck-row-name--selected' : ''}`}
-              onClick={() => handleSelectDeck(node.id, node.name)}
+              onClick={() => handleSelectDeck(node.id)}
             >
               {node.name}
             </button>
             <span className="deck-row-count">{node.total_cards || 0} cards</span>
-            {!hasChildren && (
-              <button
-                type="button"
-                className="deck-view-btn"
-                onClick={() => handleSelectDeck(node.id, node.name)}
-              >
-                View
-              </button>
-            )}
+            <button
+              type="button"
+              className="deck-view-btn"
+                onClick={() => handleSelectDeck(node.id)}
+            >
+              View
+            </button>
           </div>
         </div>
 
@@ -351,13 +421,16 @@ const Decks = () => {
       </div>
       <div className="deck-detail-panel">
         <h2 className="deck-detail-title">Deck Statistic</h2>
-        {!selectedDeckId && <p className="decks-state">Chon 1 deck con nho nhat de xem thong ke.</p>}
+        {!selectedDeckId && <p className="decks-state">Chon 1 deck de xem thong ke.</p>}
         {statsError && <p className="decks-error">{statsError}</p>}
         {statsLoading && <p className="decks-state">Dang tai thong ke...</p>}
 
         {selectedDeckInfo && !statsLoading && (
           <>
             <p className="deck-detail-name">{selectedDeckInfo.name}</p>
+            <p className="decks-state">
+              {selectedDeckInfo.description?.trim() || ' '}
+            </p>
             <div className="deck-stat-grid">
               <div className="deck-stat-card">
                 <span className="deck-stat-label">New</span>
@@ -374,6 +447,13 @@ const Decks = () => {
             </div>
 
             <div className="deck-detail-actions">
+              <button
+                type="button"
+                className="deck-action-btn"
+                onClick={handleOpenEditModal}
+              >
+                Edit Deck
+              </button>
               <button
                 type="button"
                 className="deck-action-btn deck-action-btn--danger"
@@ -401,13 +481,9 @@ const Decks = () => {
               <button
                 type="button"
                 className="deck-action-btn deck-action-btn--primary"
-                onClick={() => {
-                  setAddCardError('');
-                  setNewCard({ front: '', back: '' });
-                  setShowAddCardModal(true);
-                }}
+                onClick={() => navigate(`/decks/${selectedDeckId}/cards`)}
               >
-                Add Card
+                View Card
               </button>
             </div>
           </>
@@ -467,82 +543,52 @@ const Decks = () => {
           </div>
         </div>
       )}
-      {showAddCardModal && (
-        <div className="deck-modal-overlay" onClick={() => !isAddingCard && setShowAddCardModal(false)}>
+      {showEditModal && (
+        <div className="deck-modal-overlay" onClick={handleCloseEditModal}>
           <div className="deck-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="deck-modal-title">Add Card</h2>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!selectedDeckId) {
-                  return;
-                }
-                try {
-                  setIsAddingCard(true);
-                  setAddCardError('');
-                  await api.post(`/api/user/decks/${selectedDeckId}/cards/`, {
-                    front: newCard.front.trim(),
-                    back: newCard.back.trim(),
-                  });
-                  setShowAddCardModal(false);
-                  setNewCard({ front: '', back: '' });
-                  const res = await api.get(`/api/user/decks/${selectedDeckId}/`);
-                  setSelectedDeckInfo(res.data);
-                  setDecks((prev) =>
-                    prev.map((deck) =>
-                      deck.id === selectedDeckId
-                        ? { ...deck, total_cards: (deck.total_cards || 0) + 1 }
-                        : deck
-                    )
-                  );
-                } catch (err) {
-                  setAddCardError(err.response?.data?.error || 'Them card that bai.');
-                } finally {
-                  setIsAddingCard(false);
-                }
-              }}
-            >
-              <label className="deck-modal-label" htmlFor="card-front">
-                Front
+            <h2 className="deck-modal-title">Edit Deck</h2>
+            <form onSubmit={handleEditDeck}>
+              <label className="deck-modal-label" htmlFor="edit-deck-name">
+                Deck name
               </label>
-              <textarea
-                id="card-front"
-                className="deck-modal-textarea"
-                rows={3}
-                value={newCard.front}
-                onChange={(e) => setNewCard((prev) => ({ ...prev, front: e.target.value }))}
+              <input
+                id="edit-deck-name"
+                type="text"
+                className="deck-modal-input"
+                value={editDeck.name}
+                maxLength={100}
+                onChange={(e) => setEditDeck((prev) => ({ ...prev, name: e.target.value }))}
                 required
               />
 
-              <label className="deck-modal-label" htmlFor="card-back">
-                Back
+              <label className="deck-modal-label" htmlFor="edit-deck-description">
+                Description
               </label>
               <textarea
-                id="card-back"
+                id="edit-deck-description"
                 className="deck-modal-textarea"
-                rows={3}
-                value={newCard.back}
-                onChange={(e) => setNewCard((prev) => ({ ...prev, back: e.target.value }))}
-                required
+                rows={4}
+                value={editDeck.description}
+                onChange={(e) => setEditDeck((prev) => ({ ...prev, description: e.target.value }))}
               />
 
-              {addCardError && <p className="deck-modal-error">{addCardError}</p>}
+              {editError && <p className="deck-modal-error">{editError}</p>}
 
               <div className="deck-modal-actions">
                 <button
                   type="button"
                   className="deck-modal-btn deck-modal-btn--cancel"
-                  disabled={isAddingCard}
-                  onClick={() => setShowAddCardModal(false)}
+                  onClick={handleCloseEditModal}
+                  disabled={isEditing}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   className="deck-modal-btn deck-modal-btn--submit"
-                  disabled={isAddingCard}
+                  disabled={isEditing}
                 >
-                  {isAddingCard ? 'Saving...' : 'Save Card'}
+                  {isEditing ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

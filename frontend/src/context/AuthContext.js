@@ -8,44 +8,35 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkLoggedIn = async () => {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        setCurrentUser(null);
-        setLoading(false);
-        return;
-      }
+    // Không cần khai báo hàm checkLoggedIn async phức tạp nữa
+    // vì ta đọc từ LocalStorage là đồng bộ (synchronous)
+    const token = localStorage.getItem('access_token');
+    const savedUser = localStorage.getItem('user_data');
 
+    if (token && savedUser) {
       setAuthToken(token);
       try {
-        const res = await api.get('/api/user/profile/');
-        setCurrentUser(res.data);
-      } catch (error) {
-        localStorage.removeItem('access_token');
-        setAuthToken(null);
-        setCurrentUser(null);
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (e) {
+        // Phòng trường hợp user_data trong máy bị lỗi format JSON
+        localStorage.removeItem('user_data');
       }
-      setLoading(false);
-    };
-    checkLoggedIn();
+    }
+    setLoading(false);
   }, []);
 
   const logout = () => {
-    localStorage.removeItem('access_token');
+    localStorage.clear(); // Xóa sạch sành sanh cho nhanh
     setAuthToken(null);
     setCurrentUser(null);
     window.location.href = '/login';
   };
 
-  const data = {
-    currentUser,
-    setCurrentUser,
-    logout,
-    loading,
-  };
+  // Sử dụng shorthand property (currentUser: currentUser -> currentUser)
+  const value = { currentUser, setCurrentUser, logout, loading };
 
   return (
-    <AuthContext.Provider value={data}>
+    <AuthContext.Provider value={value}>
       {!loading && children}
     </AuthContext.Provider>
   );
