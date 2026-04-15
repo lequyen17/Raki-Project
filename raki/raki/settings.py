@@ -40,7 +40,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'accounts',
-    'flashcards',
+    'deck',
+    'note',
+    'card',
 ]
 
 MIDDLEWARE = [
