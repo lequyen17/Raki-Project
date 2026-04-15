@@ -17,7 +17,7 @@ from django.core.validators import validate_email
 from accounts.models import Profile
 import jwt
 
-from raki.accounts.views import _get_user_from_token
+from accounts.views import _get_user_from_token
 
 # Create your views here.
 @api_view(['GET', 'POST'])

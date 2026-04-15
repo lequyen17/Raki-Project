@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from notes.models import Note, Template
+from note.models import Note, Template
 
 
 class Card(models.Model):

@@ -14,19 +14,24 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path
-from accounts import views
-from deck import views
+# Sử dụng 'as' để đặt tên riêng cho từng file views
+from accounts import views as accounts_views
+from deck import views as deck_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/login/', views.login_view, name='login'),
-    path('api/register/', views.register_view, name='register'),
-    path('api/user/profile/', views.get_user_profile, name='user_profile'),
-    path('api/user/profile/update/', views.update_user_profile, name='update_user_profile'),
-    path('api/user/decks/', views.get_user_decks, name='user_decks'),
-    path('api/user/decks/move/', views.move_user_deck, name='move_user_deck'),
-    path('api/user/decks/<int:deck_id>/', views.user_deck_detail, name='user_deck_detail'),
     
+    # Các route của accounts
+    path('api/login/', accounts_views.login_view, name='login'),
+    path('api/register/', accounts_views.register_view, name='register'),
+    path('api/user/profile/', accounts_views.get_user_profile, name='user_profile'),
+    path('api/user/profile/update/', accounts_views.update_user_profile, name='update_user_profile'),
+    
+    # Các route của deck
+    path('api/user/decks/', deck_views.get_user_decks, name='user_decks'),
+    path('api/user/decks/move/', deck_views.move_user_deck, name='move_user_deck'),
+    path('api/user/decks/<int:deck_id>/', deck_views.user_deck_detail, name='user_deck_detail'),
 ]
