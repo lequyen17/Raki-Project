@@ -1,27 +1,20 @@
 import json
 
-django_jwt = True
 
-from django.conf import settings
-from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
-from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import MyTokenObtainPairSerializer # Import cái vừa tạo
-import jwt
+from .serializers import MyTokenObtainPairSerializer 
+from card.models import Card
 
 User = get_user_model()
-JWT_ALGORITHM = 'HS256'
-JWT_EXP_DELTA_SECONDS = 60 * 60 * 24  # 1 day
-
-
 
 
 class MyTokenLoginView(TokenObtainPairView):
@@ -33,7 +26,7 @@ def get_user_profile(request):
     user = request.user
     
     # 1. Đếm số thẻ (Card)
-    from card.models import Card
+    
     total_cards = Card.objects.filter(note_id__deck_id__user=user).count()
     
     # 2. Lấy thông tin từ bảng Profile
@@ -123,7 +116,7 @@ def update_user_profile(request):
         user.profile.save()
 
         # Count total cards
-        from card.models import Card
+        
         total_cards = Card.objects.filter(note_id__deck_id__user=user).count()
         total_learned_cards = user.profile.total_learned_cards
 
@@ -149,8 +142,6 @@ def update_user_profile(request):
         }, status=500)
 
 
-
-@csrf_exempt
 @api_view(['POST'])
 def register_view(request):
     """

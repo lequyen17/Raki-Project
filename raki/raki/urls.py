@@ -39,8 +39,8 @@ urlpatterns = [
     path('api/user/profile/update/', accounts_views.update_user_profile, name='update_user_profile'),
     
     # Các route của deck
-    # path('api/user/decks/', deck_views.get_user_decks, name='user_decks'),
-    # path('api/user/decks/move/', deck_views.move_user_deck, name='move_user_deck'),
-    # path('api/user/decks/<int:deck_id>/', deck_views.user_deck_detail, name='user_deck_detail'),
-    # path('api/user/decks/<int:deck_id>/cards/', card_views.list_cards_by_deck, name='list_cards_by_deck'),
+    path('api/user/decks/', deck_views.get_user_decks, name='user_decks'),
+    path('api/user/decks/move/', deck_views.move_user_deck, name='move_user_deck'),
+    path('api/user/decks/<int:deck_id>/', deck_views.user_deck_detail, name='user_deck_detail'),
+    path('api/user/decks/<int:deck_id>/cards/', card_views.list_cards_by_deck, name='list_cards_by_deck'),
 ]
