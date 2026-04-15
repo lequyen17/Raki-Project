@@ -70,7 +70,7 @@ def get_user_decks(request):
     decks = (
         Deck.objects
         .filter(user=user)
-        .annotate(total_cards=Count('cards'))
+        .annotate(total_cards=Count('notes__cards'))
         .order_by('name')
     )
 
@@ -151,7 +151,8 @@ def user_deck_detail(request, deck_id):
     if error:
         return Response({'detail': error}, status=401)
 
-    from deck.models import Deck, Card
+    from deck.models import Deck
+    from card.models import Card
 
     try:
         deck = Deck.objects.get(id=deck_id, user=user)
@@ -163,7 +164,7 @@ def user_deck_detail(request, deck_id):
         return Response({'success': True})
 
     has_subdecks = Deck.objects.filter(parent=deck, user=user).exists()
-    cards_qs = Card.objects.filter(deck=deck)
+    cards_qs = Card.objects.filter(note_id__deck_id=deck)
     now = timezone.now()
 
     new_count = cards_qs.filter(repetition=0).count()

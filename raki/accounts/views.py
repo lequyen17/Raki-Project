@@ -74,7 +74,7 @@ def _get_user_from_token(token):
 @csrf_exempt
 @api_view(['POST'])
 def login_view(request):
-    data = json.loads(request.body)
+    data = request.data
     username = data.get('username')
     password = data.get('password')
     user = authenticate(username=username, password=password)
@@ -84,8 +84,8 @@ def login_view(request):
         first_name, last_name, phone, streak = _get_user_profile_data(user)
         
         # Count total cards owned by the user
-        from deck.models import Card
-        total_cards = Card.objects.filter(deck__user=user).count()
+        from card.models import Card
+        total_cards = Card.objects.filter(note_id__deck_id__user=user).count()
         total_learned_cards = user.profile.total_learned_cards
         
         return JsonResponse({
@@ -122,8 +122,8 @@ def get_user_profile(request):
     first_name, last_name, phone, streak = _get_user_profile_data(user)
     
     # Count total cards owned by the user
-    from deck.models import Card
-    total_cards = Card.objects.filter(deck__user=user).count()
+    from card.models import Card
+    total_cards = Card.objects.filter(note_id__deck_id__user=user).count()
     
     # Get total learned cards from profile
     total_learned_cards = user.profile.total_learned_cards
@@ -209,8 +209,8 @@ def update_user_profile(request):
         user.profile.save()
 
         # Count total cards
-        from deck.models import Card
-        total_cards = Card.objects.filter(deck__user=user).count()
+        from card.models import Card
+        total_cards = Card.objects.filter(note_id__deck_id__user=user).count()
         total_learned_cards = user.profile.total_learned_cards
 
         return Response({
