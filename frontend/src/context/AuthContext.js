@@ -8,8 +8,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Không cần khai báo hàm checkLoggedIn async phức tạp nữa
-    // vì ta đọc từ LocalStorage là đồng bộ (synchronous)
     const token = localStorage.getItem('access_token');
     const savedUser = localStorage.getItem('user_data');
 

@@ -227,7 +227,6 @@ const Decks = () => {
 
   const handleDragStart = (e, deckId) => {
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', String(deckId));
     setDraggingDeckId(deckId);
     setMoveError('');
   };
@@ -309,61 +308,77 @@ const Decks = () => {
     }
   };
 
-  const renderNode = (node, depth = 0) => {
-    const hasChildren = node.children.length > 0;
-    const isExpanded = expandedIds.has(node.id);
+const renderNode = (node, depth) => {
+  const currentDepth = depth ?? 0; // nếu depth undefined thì = 0
 
-    return (
-      <div key={node.id} className="deck-tree-node">
-        <div
-          className={`deck-tree-row ${depth === 0 ? 'deck-tree-row--root' : 'deck-tree-row--child'} ${dropTargetId === node.id ? 'deck-tree-row--drop' : ''}`}
-          style={{ marginLeft: `${depth * 24}px` }}
-          draggable
-          onDragStart={(e) => handleDragStart(e, node.id)}
-          onDragEnd={handleDragEnd}
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            setDropTargetId(node.id);
-          }}
-          onDragLeave={() => setDropTargetId(null)}
-          onDrop={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleDropOnDeck(node.id);
-          }}
+  const hasChildren = node.children.length > 0;
+  const isExpanded = expandedIds.has(node.id);
+
+  return (
+    <div key={node.id} className="deck-tree-node">
+      <div
+        className={`deck-tree-row ${
+          currentDepth === 0 ? 'deck-tree-row--root' : 'deck-tree-row--child'
+        } ${dropTargetId === node.id ? 'deck-tree-row--drop' : ''}`}
+        style={{ marginLeft: `${currentDepth * 24}px` }}
+        draggable
+        onDragStart={(e) => handleDragStart(e, node.id)}
+        onDragEnd={handleDragEnd}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          setDropTargetId(node.id);
+        }}
+        onDragLeave={() => setDropTargetId(null)}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleDropOnDeck(node.id);
+        }}
+      >
+        <button
+          type="button"
+          className="deck-expand-btn"
+          onClick={() => hasChildren && toggleExpanded(node.id)}
         >
+          {hasChildren ? (isExpanded ? 'v' : '>') : '-'}
+        </button>
+
+        <div className="deck-drag-handle">::</div>
+
+        <div className="deck-row-main">
           <button
             type="button"
-            className="deck-expand-btn"
-            onClick={() => hasChildren && toggleExpanded(node.id)}
+            className={`deck-row-name ${
+              selectedDeckId === node.id ? 'deck-row-name--selected' : ''
+            }`}
+            onClick={() => handleSelectDeck(node.id)}
           >
-            {hasChildren ? (isExpanded ? 'v' : '>') : '-'}
+            {node.name}
           </button>
-          <div className="deck-drag-handle">::</div>
-          <div className="deck-row-main">
-            <button
-              type="button"
-              className={`deck-row-name ${selectedDeckId === node.id ? 'deck-row-name--selected' : ''}`}
-              onClick={() => handleSelectDeck(node.id)}
-            >
-              {node.name}
-            </button>
-            <span className="deck-row-count">{node.total_cards || 0} cards</span>
-            <button
-              type="button"
-              className="deck-view-btn"
-                onClick={() => handleSelectDeck(node.id)}
-            >
-              View
-            </button>
-          </div>
-        </div>
 
-        {hasChildren && isExpanded && node.children.map((child) => renderNode(child, depth + 1))}
+          <span className="deck-row-count">
+            {node.total_cards || 0} cards
+          </span>
+
+          <button
+            type="button"
+            className="deck-view-btn"
+            onClick={() => handleSelectDeck(node.id)}
+          >
+            View
+          </button>
+        </div>
       </div>
-    );
-  };
+
+      {hasChildren &&
+        isExpanded &&
+        node.children.map((child) =>
+          renderNode(child, currentDepth + 1)
+        )}
+    </div>
+  );
+};
 
   return (
     <div
@@ -465,7 +480,8 @@ const Decks = () => {
                   try {
                     setDeletingDeck(true);
                     await api.delete(`/api/user/decks/${selectedDeckId}/`);
-                    setDecks((prev) => prev.filter((d) => d.id !== selectedDeckId));
+                    const res = await api.get('/api/user/decks/');
+                    setDecks(res.data?.results || []);
                     setSelectedDeckId(null);
                     setSelectedDeckInfo(null);
                     setStatsError('');

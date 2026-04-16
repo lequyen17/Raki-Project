@@ -19,7 +19,6 @@ def get_user_decks(request):
     if request.method == 'POST':
         name = str(request.data.get('name', '')).strip()
         description = str(request.data.get('description', '')).strip()
-        parent_id = request.data.get('parent_id')
 
         if not name:
             return Response({'error': 'Deck name is required.'}, status=400)
@@ -27,18 +26,11 @@ def get_user_decks(request):
         if len(name) > 100:
             return Response({'error': 'Deck name must be at most 100 characters.'}, status=400)
 
-        parent = None
-        if parent_id not in (None, '', 'null'):
-            try:
-                parent = Deck.objects.get(id=parent_id, user=user)
-            except Deck.DoesNotExist:
-                return Response({'error': 'Parent deck not found.'}, status=404)
-
         deck = Deck.objects.create(
             user=user,
             name=name,
             description=description,
-            parent=parent,
+            parent=None,
         )
 
         return Response({
@@ -57,19 +49,22 @@ def get_user_decks(request):
         .order_by('name')
     )
 
+    results = []
+    for deck in decks:
+        item = {
+            'id': deck.id,
+            'name': deck.name,
+            'description': deck.description or '',
+            'total_cards': deck.total_cards,
+            'parent_id': deck.parent_id,
+            'created_at': deck.created_at,
+        }
+        results.append(item)
+
+    # Trả về kết quả
     return Response({
         'count': decks.count(),
-        'results': [
-            {
-                'id': deck.id,
-                'name': deck.name,
-                'description': deck.description or '',
-                'total_cards': deck.total_cards,
-                'parent_id': deck.parent_id,
-                'created_at': deck.created_at,
-            }
-            for deck in decks
-        ]
+        'results': results
     })
 
 
