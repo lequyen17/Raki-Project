@@ -21,6 +21,7 @@ from django.urls import path
 from accounts import views as accounts_views
 from deck import views as deck_views
 from card import views as card_views
+from note import views as note_views
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
@@ -43,4 +44,8 @@ urlpatterns = [
     path('api/user/decks/move/', deck_views.move_user_deck, name='move_user_deck'),
     path('api/user/decks/<int:deck_id>/', deck_views.user_deck_detail, name='user_deck_detail'),
     path('api/user/decks/<int:deck_id>/cards/', card_views.list_cards_by_deck, name='list_cards_by_deck'),
+    
+    # Các route của note
+    path('api/user/note-types/', note_views.note_types_view, name='note_types'),
+    path('api/user/decks/<int:deck_id>/notes/', note_views.create_note, name='create_note_by_deck'),
 ]
