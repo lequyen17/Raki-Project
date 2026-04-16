@@ -20,10 +20,5 @@ class Profile(models.Model):
 def create_user_profile(sender, instance, created, **kwargs):
     """Auto-create profile when a new User is created"""
     if created:
-        # Tạo Profile mới (chỉ khi chưa có)
-        Profile.objects.get_or_create(user=instance)
+        Profile.objects.create(user=instance)
 
-        # CHỈ tự động vào group 'User' nếu họ KHÔNG phải là Staff/Superuser
-        if not instance.is_staff and not instance.is_superuser:
-            group, _ = Group.objects.get_or_create(name='User')
-            instance.groups.add(group)
