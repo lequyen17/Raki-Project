@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import NoteType, Definition, Template, Note, Value
+from .models import NoteType, FieldDefinition, Template, Note, FieldValue
 from deck.models import Deck
 from card.models import Card
 from django.utils import timezone
@@ -24,10 +24,10 @@ def note_types_view(request):
         with transaction.atomic():
             note_type = NoteType.objects.create(name=name, user=request.user)
             for def_name in definitions_data:
-                Definition.objects.create(note_type_id=note_type, name=def_name)
+                FieldDefinition.objects.create(note_type=note_type, name=def_name)
             for tmpl_data in templates_data:
                 Template.objects.create(
-                    note_type_id=note_type,
+                    note_type=note_type,
                     name=tmpl_data.get('name', 'Template'),
                     front=tmpl_data.get('front', ''),
                     back=tmpl_data.get('back', '')
@@ -58,7 +58,7 @@ def note_types_view(request):
 @permission_classes([IsAuthenticated])
 def create_note(request, deck_id):
     try:
-        deck = Deck.objects.get(id=deck_id, user=request.user)
+        deck = Deck.objects.get(id=deck_id, deck_users__user=request.user)
     except Deck.DoesNotExist:
         return Response({'error': 'Deck not found'}, status=404)
         
@@ -76,26 +76,21 @@ def create_note(request, deck_id):
         return Response({'error': 'NoteType not found'}, status=404)
         
     with transaction.atomic():
-        note = Note.objects.create(note_type_id=note_type, deck_id=deck)
+        note = Note.objects.create(note_type=note_type, deck=deck)
         
         # Create Values
         definitions = note_type.definitions.all()
         for d in definitions:
             val_text = values_data.get(str(d.id), '')
-            Value.objects.create(note_id=note, definition_id=d, value=val_text)
+            FieldValue.objects.create(note=note, definition=d, value=val_text)
             
         # Create Cards based on templates
         templates = note_type.templates.all()
-        now = timezone.now()
         created_cards = []
         for t in templates:
             c = Card.objects.create(
-                note_id=note,
-                template_id=t,
-                next_review=now,
-                easiness=0,
-                interval=0,
-                repetition=0
+                note=note,
+                template=t
             )
             created_cards.append(c.id)
             

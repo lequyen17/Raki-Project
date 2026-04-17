@@ -70,7 +70,9 @@
   margin-bottom: 8px;
 }
 
-.form-input, .form-textarea, .form-select {
+.form-input,
+.form-textarea,
+.form-select {
   width: 100%;
   background: #0f172a;
   border: 1px solid #334155;
@@ -83,7 +85,9 @@
   box-sizing: border-box;
 }
 
-.form-input:focus, .form-textarea:focus, .form-select:focus {
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
   outline: none;
   border-color: #6366f1;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
@@ -131,7 +135,8 @@
   background: #475569;
 }
 
-.btn-list, .btn-small {
+.btn-list,
+.btn-small {
   padding: 8px 12px;
   font-size: 13px;
   margin-left: auto;
@@ -150,9 +155,11 @@
   gap: 12px;
   margin-bottom: 12px;
 }
+
 .field-item:last-child {
   margin-bottom: 0;
 }
+
 .field-name {
   background: #1e293b;
   padding: 6px 12px;
@@ -179,11 +186,23 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }

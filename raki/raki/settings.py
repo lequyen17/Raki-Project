@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'deck',
     'note',
     'card',
+    'progress',
 ]
 
 MIDDLEWARE = [

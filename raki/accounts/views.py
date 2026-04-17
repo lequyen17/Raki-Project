@@ -27,7 +27,7 @@ def get_user_profile(request):
     
     # 1. Đếm số thẻ (Card)
     
-    total_cards = Card.objects.filter(note_id__deck_id__user=user).count()
+    total_cards = Card.objects.filter(note__deck__deck_users__user=user).count()
     
     # 2. Lấy thông tin từ bảng Profile
     # Sử dụng try-except để an toàn tuyệt đối nếu user chưa có Profile
@@ -117,7 +117,7 @@ def update_user_profile(request):
 
         # Count total cards
         
-        total_cards = Card.objects.filter(note_id__deck_id__user=user).count()
+        total_cards = Card.objects.filter(note__deck__deck_users__user=user).count()
         total_learned_cards = user.profile.total_learned_cards
 
         return Response({

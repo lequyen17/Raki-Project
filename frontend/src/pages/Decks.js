@@ -19,6 +19,12 @@ const buildDeckTree = (items) => {
   return roots;
 };
 
+// Tính tổng đệ quy total_cards của node và tất cả deck con
+const sumTotalCards = (node) => {
+  const own = node.total_cards || 0;
+  return node.children.reduce((acc, child) => acc + sumTotalCards(child), own);
+};
+
 const Decks = () => {
   const navigate = useNavigate();
   const [decks, setDecks] = useState([]);
@@ -358,7 +364,7 @@ const renderNode = (node, depth) => {
           </button>
 
           <span className="deck-row-count">
-            {node.total_cards || 0} cards
+            {sumTotalCards(node)} cards
           </span>
 
           <button

@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import Profile from './pages/Profile';
 import Decks from './pages/Decks';
 import Cards from './pages/Cards';
+import AddCard from './pages/AddCard';
 import Header from './components/header';
 import Footer from './components/footer';
 import { AuthProvider } from './context/AuthContext';
@@ -18,6 +19,7 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/decks" element={<Decks />} />
           <Route path="/decks/:deckId/cards" element={<Cards />} />
+          <Route path="/decks/:deckId/add-card" element={<AddCard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
