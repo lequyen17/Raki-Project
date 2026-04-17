@@ -54,6 +54,14 @@ const Cards = () => {
           >
             + Add Card
           </button>
+          <button
+            type="button"
+            className="deck-action-btn"
+            onClick={() => navigate(`/decks/${deckId}/study`)}
+            style={{ background: '#3b82f6', color: 'white' }}
+          >
+            Study Now
+          </button>
         </div>
 
         <h1 className="decks-title">Cards In Deck {deckName ? `- ${deckName}` : ''}</h1>

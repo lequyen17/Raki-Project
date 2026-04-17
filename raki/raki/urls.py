@@ -44,6 +44,8 @@ urlpatterns = [
     path('api/user/decks/move/', deck_views.move_user_deck, name='move_user_deck'),
     path('api/user/decks/<int:deck_id>/', deck_views.user_deck_detail, name='user_deck_detail'),
     path('api/user/decks/<int:deck_id>/cards/', card_views.list_cards_by_deck, name='list_cards_by_deck'),
+    path('api/user/decks/<int:deck_id>/study/', card_views.get_study_cards, name='get_study_cards'),
+    path('api/user/cards/<int:card_id>/review/', card_views.review_card, name='review_card'),
     
     # Các route của note
     path('api/user/note-types/', note_views.note_types_view, name='note_types'),
