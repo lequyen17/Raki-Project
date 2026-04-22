@@ -5,6 +5,7 @@ import DeckLeft from "./components/DeckLeft";
 import DeckRight from "./components/DeckRight";
 import CreateDeck from "./components/CreateDeck";
 import EditDeck from "./components/EditDeck";
+import "./Decks.css";
 
 const buildDeckTree = (items) => {
   const byId = new Map();
@@ -69,7 +70,7 @@ const Decks = () => {
           navigate("/login");
           return;
         }
-        setError("Khong the tai danh sach deck. Vui long thu lai.");
+        setError("Could not load deck list. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -180,7 +181,7 @@ const Decks = () => {
   const handleEditDeck = async (e) => {
     e.preventDefault();
     if (!selectedDeckId) {
-      setEditError("Khong co deck de chinh sua.");
+      setEditError("No deck selected for editing.");
       return;
     }
 
@@ -228,7 +229,7 @@ const Decks = () => {
         navigate("/login");
         return;
       }
-      setEditError(err.response?.data?.error || "Cap nhat deck that bai.");
+      setEditError(err.response?.data?.error || "Failed to update deck.");
     } finally {
       setIsEditing(false);
     }
@@ -247,7 +248,7 @@ const Decks = () => {
 
   const handleDropOnDeck = async (targetDeckId) => {
     if (!draggingDeckId || draggingDeckId === targetDeckId) {
-      setMoveError("Khong the drop vao chinh deck do.");
+      setMoveError("Cannot drop onto the same deck.");
       return;
     }
 
@@ -267,7 +268,7 @@ const Decks = () => {
       );
       setExpandedIds((prev) => new Set(prev).add(targetDeckId));
     } catch (err) {
-      setMoveError(err.response?.data?.error || "Di chuyen deck that bai.");
+      setMoveError(err.response?.data?.error || "Failed to move deck.");
     } finally {
       setDraggingDeckId(null);
       setDropTargetId(null);
@@ -292,7 +293,7 @@ const Decks = () => {
         ),
       );
     } catch (err) {
-      setMoveError(err.response?.data?.error || "Di chuyen deck that bai.");
+      setMoveError(err.response?.data?.error || "Failed to move deck.");
     } finally {
       setDraggingDeckId(null);
       setDropTargetId(null);
@@ -314,7 +315,7 @@ const Decks = () => {
       setSelectedDeckId(null);
       setSelectedDeckInfo(null);
       setStatsError(
-        err.response?.data?.error || "Khong the tai thong ke deck.",
+        err.response?.data?.error || "Could not load deck statistics.",
       );
     } finally {
       setStatsLoading(false);
@@ -322,7 +323,7 @@ const Decks = () => {
   };
 
   const handleDeleteDeck = async () => {
-    if (!window.confirm("Ban chac chan muon xoa deck nay?")) {
+    if (!window.confirm("Are you sure you want to delete this deck?")) {
       return;
     }
     try {
@@ -334,7 +335,7 @@ const Decks = () => {
       setSelectedDeckInfo(null);
       setStatsError("");
     } catch (err) {
-      setStatsError(err.response?.data?.error || "Xoa deck that bai.");
+      setStatsError(err.response?.data?.error || "Failed to delete deck.");
     } finally {
       setDeletingDeck(false);
     }

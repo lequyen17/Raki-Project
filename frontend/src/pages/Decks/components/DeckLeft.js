@@ -1,6 +1,6 @@
 import React from "react";
 
-// Tính tổng đệ quy total_cards của node và tất cả deck con
+// Recursively sum total_cards for node and its children.
 const sumTotalCards = (node) => {
   const own = node.total_cards || 0;
   return node.children.reduce((acc, child) => acc + sumTotalCards(child), own);
@@ -114,14 +114,14 @@ const DeckLeft = ({
         </button>
       </div>
 
-      {loading && <p className="decks-state">Dang tai danh sach deck...</p>}
+      {loading && <p className="decks-state">Loading decks...</p>}
       {error && <p className="decks-error">{error}</p>}
       {moveError && <p className="decks-error">{moveError}</p>}
 
       {!loading && !error && (
         <>
           {treeDecks.length === 0 ? (
-            <p className="decks-state">Khong tim thay deck phu hop.</p>
+            <p className="decks-state">No matching decks found.</p>
           ) : (
             <div className="deck-tree-list">
               {treeDecks.map((node) => renderNode(node))}

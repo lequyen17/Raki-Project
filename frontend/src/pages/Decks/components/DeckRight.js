@@ -12,7 +12,7 @@ const DeckRight = ({
 }) => {
   const navigate = useNavigate();
 
-  // Safely extract stats
+  // Safely extract stats.
   const overall = selectedDeckInfo?.overall_stats || {
     total: 0,
     new: 0,
@@ -33,368 +33,144 @@ const DeckRight = ({
   const reviewPct =
     overall.total > 0 ? (overall.review / overall.total) * 100 : 0;
 
-  // Average ease usually ranges from 1.3 to above 2.5+. We clamp it between 1.3 and 3.0 for a 0-100% scale.
+  // Average ease is clamped to render it on a stable 0-100 scale.
   const easeClamped = Math.min(Math.max(overall.average_ease, 1.3), 3.0);
   const easePct = ((easeClamped - 1.3) / (3.0 - 1.3)) * 100;
 
   return (
-    <div
-      className="deck-detail-panel"
-      style={{ display: "flex", flexDirection: "column", gap: "24px" }}
-    >
+    <div className="deck-detail-panel">
       {!selectedDeckId && (
-        <p className="decks-state">Chon 1 deck de xem thong ke.</p>
+        <p className="decks-state">Select a deck to view statistics.</p>
       )}
       {statsError && <p className="decks-error">{statsError}</p>}
-      {statsLoading && <p className="decks-state">Dang tai thong ke...</p>}
+      {statsLoading && <p className="decks-state">Loading statistics...</p>}
 
       {selectedDeckInfo && !statsLoading && (
         <>
-          {/* 0. Tên, mô tả deck */}
           <div className="deck-info-section">
-            <h3 style={{ fontSize: "1.5rem", marginBottom: "8px" }}>
-              {selectedDeckInfo.name}
-            </h3>
+            <h3 className="deck-info-title">{selectedDeckInfo.name}</h3>
             {selectedDeckInfo.description && (
-              <p
-                style={{
-                  color: "#666",
-                  fontStyle: "italic",
-                  marginBottom: "16px",
-                }}
-              >
+              <p className="deck-info-description">
                 {selectedDeckInfo.description}
               </p>
             )}
           </div>
 
-          {/* 1. Nhóm 1: Mastery Progress */}
           <div className="deck-stat-group">
-            <h4
-              style={{
-                marginBottom: "12px",
-                borderBottom: "1px solid #eee",
-                paddingBottom: "8px",
-              }}
-            >
-              Learning Progress
-            </h4>
+            <h4 className="deck-group-title">Learning Progress</h4>
 
-            <div style={{ marginBottom: "16px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "4px",
-                }}
-              >
-                <span style={{ fontWeight: "500" }}>Completion Rate</span>
+            <div className="deck-progress-section">
+              <div className="deck-progress-header">
+                <span className="deck-progress-label">Completion Rate</span>
                 <span>{completionRate}%</span>
               </div>
-              <div
-                style={{
-                  width: "100%",
-                  height: "8px",
-                  backgroundColor: "#e0e0e0",
-                  borderRadius: "4px",
-                  overflow: "hidden",
-                }}
-              >
+              <div className="deck-progress-track">
                 <div
-                  style={{
-                    width: `${completionRate}%`,
-                    height: "100%",
-                    backgroundColor: "#2196f3",
-                  }}
-                ></div>
+                  className="deck-progress-fill"
+                  style={{ width: `${completionRate}%` }}
+                />
               </div>
             </div>
 
             <div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "4px",
-                  fontWeight: "500",
-                }}
-              >
+              <div className="deck-distribution-header">
                 <span>Card Distribution</span>
-                <span style={{ fontSize: "0.85rem", color: "#666" }}>
+                <span className="deck-distribution-total">
                   Total: {overall.total} cards
                 </span>
               </div>
-              <div
-                style={{
-                  width: "100%",
-                  height: "16px",
-                  display: "flex",
-                  borderRadius: "4px",
-                  overflow: "hidden",
-                  marginBottom: "8px",
-                }}
-              >
+              <div className="deck-distribution-bar">
                 {newPct > 0 && (
                   <div
-                    style={{ width: `${newPct}%`, backgroundColor: "#9e9e9e" }}
+                    className="deck-segment deck-segment--new"
+                    style={{ width: `${newPct}%` }}
                     title={`New: ${overall.new}`}
-                  ></div>
+                  />
                 )}
                 {learningPct > 0 && (
                   <div
-                    style={{
-                      width: `${learningPct}%`,
-                      backgroundColor: "#ff9800",
-                    }}
+                    className="deck-segment deck-segment--learning"
+                    style={{ width: `${learningPct}%` }}
                     title={`Learn: ${overall.learning}`}
-                  ></div>
+                  />
                 )}
                 {reviewPct > 0 && (
                   <div
-                    style={{
-                      width: `${reviewPct}%`,
-                      backgroundColor: "#4caf50",
-                    }}
+                    className="deck-segment deck-segment--review"
+                    style={{ width: `${reviewPct}%` }}
                     title={`Review: ${overall.review}`}
-                  ></div>
+                  />
                 )}
                 {overall.total === 0 && (
-                  <div
-                    style={{ width: "100%", backgroundColor: "#e0e0e0" }}
-                  ></div>
+                  <div className="deck-segment deck-segment--empty" />
                 )}
               </div>
-              <div
-                style={{ display: "flex", gap: "16px", fontSize: "0.85rem" }}
-              >
-                <span
-                  style={{ display: "flex", alignItems: "center", gap: "4px" }}
-                >
-                  <span
-                    style={{
-                      width: "10px",
-                      height: "10px",
-                      backgroundColor: "#9e9e9e",
-                      display: "inline-block",
-                      borderRadius: "2px",
-                    }}
-                  ></span>{" "}
+              <div className="deck-legend">
+                <span className="deck-legend-item">
+                  <span className="deck-legend-dot deck-legend-dot--new" />
                   New ({overall.new})
                 </span>
-                <span
-                  style={{ display: "flex", alignItems: "center", gap: "4px" }}
-                >
-                  <span
-                    style={{
-                      width: "10px",
-                      height: "10px",
-                      backgroundColor: "#ff9800",
-                      display: "inline-block",
-                      borderRadius: "2px",
-                    }}
-                  ></span>{" "}
+                <span className="deck-legend-item">
+                  <span className="deck-legend-dot deck-legend-dot--learning" />
                   Learn ({overall.learning})
                 </span>
-                <span
-                  style={{ display: "flex", alignItems: "center", gap: "4px" }}
-                >
-                  <span
-                    style={{
-                      width: "10px",
-                      height: "10px",
-                      backgroundColor: "#4caf50",
-                      display: "inline-block",
-                      borderRadius: "2px",
-                    }}
-                  ></span>{" "}
+                <span className="deck-legend-item">
+                  <span className="deck-legend-dot deck-legend-dot--review" />
                   Review ({overall.review})
                 </span>
               </div>
             </div>
           </div>
 
-          {/* 2. Nhóm 2: Daily Workload */}
           <div className="deck-stat-group">
-            <h4
-              style={{
-                marginBottom: "12px",
-                borderBottom: "1px solid #eee",
-                paddingBottom: "8px",
-              }}
-            >
-              Today’s Study
-            </h4>
-            <div
-              className="deck-stat-grid"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "12px",
-              }}
-            >
-              <div
-                className="deck-stat-card"
-                style={{
-                  padding: "12px",
-                  backgroundColor: "#f9f9f9",
-                  borderRadius: "8px",
-                  textAlign: "center",
-                }}
-              >
-                <span
-                  className="deck-stat-label"
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    color: "#666",
-                    marginBottom: "4px",
-                  }}
-                >
-                  New
-                </span>
-                <strong style={{ fontSize: "1.2rem", color: "#2196f3" }}>
+            <h4 className="deck-group-title">Today's Study</h4>
+            <div className="deck-stat-grid deck-stat-grid--three">
+              <div className="deck-stat-card">
+                <span className="deck-stat-label">New</span>
+                <strong className="deck-stat-value deck-stat-value--new">
                   {daily.new || 0}
                 </strong>
               </div>
-              <div
-                className="deck-stat-card"
-                style={{
-                  padding: "12px",
-                  backgroundColor: "#f9f9f9",
-                  borderRadius: "8px",
-                  textAlign: "center",
-                }}
-              >
-                <span
-                  className="deck-stat-label"
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    color: "#666",
-                    marginBottom: "4px",
-                  }}
-                >
-                  Learn
-                </span>
-                <strong style={{ fontSize: "1.2rem", color: "#ff9800" }}>
+              <div className="deck-stat-card">
+                <span className="deck-stat-label">Learn</span>
+                <strong className="deck-stat-value deck-stat-value--learning">
                   {daily.learning || 0}
                 </strong>
               </div>
-              <div
-                className="deck-stat-card"
-                style={{
-                  padding: "12px",
-                  backgroundColor: "#f9f9f9",
-                  borderRadius: "8px",
-                  textAlign: "center",
-                }}
-              >
-                <span
-                  className="deck-stat-label"
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    color: "#666",
-                    marginBottom: "4px",
-                  }}
-                >
-                  Review
-                </span>
-                <strong style={{ fontSize: "1.2rem", color: "#4caf50" }}>
+              <div className="deck-stat-card">
+                <span className="deck-stat-label">Review</span>
+                <strong className="deck-stat-value deck-stat-value--review">
                   {daily.review || 0}
                 </strong>
               </div>
             </div>
           </div>
 
-          {/* 3. Nhóm 3: Quality & Health */}
           <div className="deck-stat-group">
-            <h4
-              style={{
-                marginBottom: "12px",
-                borderBottom: "1px solid #eee",
-                paddingBottom: "8px",
-              }}
-            >
-              Learning Quality
-            </h4>
-            <div style={{ marginBottom: "8px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "8px",
-                  fontWeight: "500",
-                }}
-              >
+            <h4 className="deck-group-title">Learning Quality</h4>
+            <div className="deck-quality-section">
+              <div className="deck-quality-header">
                 <span>Average Difficulty</span>
                 <span>{overall.average_ease.toFixed(2)}</span>
               </div>
 
-              <div
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  height: "8px",
-                  borderRadius: "4px",
-                  background:
-                    "linear-gradient(to right, #f44336, #ffeb3b, #4caf50)",
-                }}
-              >
+              <div className="deck-difficulty-track">
                 <div
-                  style={{
-                    position: "absolute",
-                    top: "50%",
-                    left: `${easePct}%`,
-                    transform: "translate(-50%, -50%)",
-                    width: "16px",
-                    height: "16px",
-                    backgroundColor: "#fff",
-                    border: "2px solid #333",
-                    borderRadius: "50%",
-                    transition: "left 0.3s ease",
-                  }}
-                ></div>
+                  className="deck-difficulty-thumb"
+                  style={{ left: `${easePct}%` }}
+                />
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginTop: "6px",
-                  fontSize: "0.8rem",
-                  color: "#666",
-                }}
-              >
+              <div className="deck-difficulty-scale">
                 <span>Hard (1.3)</span>
                 <span>Easy (3.0+)</span>
               </div>
             </div>
           </div>
 
-          {/* 4. Action Buttons */}
-          <div
-            className="deck-detail-actions"
-            style={{
-              display: "flex",
-              gap: "8px",
-              flexWrap: "wrap",
-              marginTop: "auto",
-              paddingTop: "16px",
-            }}
-          >
+          <div className="deck-detail-actions">
             <button
               type="button"
               className="deck-action-btn deck-action-btn--primary"
-              style={{
-                padding: "8px 16px",
-                flex: "1",
-                backgroundColor: "#212121",
-                color: "#fff",
-                fontWeight: "bold",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
               onClick={() => navigate(`/decks/${selectedDeckId}/study`)}
             >
               Study Now
@@ -403,13 +179,6 @@ const DeckRight = ({
             <button
               type="button"
               className="deck-action-btn"
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#e0e0e0",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
               onClick={handleOpenEditModal}
             >
               Edit
@@ -417,14 +186,6 @@ const DeckRight = ({
             <button
               type="button"
               className="deck-action-btn deck-action-btn--danger"
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#f44336",
-                color: "#fff",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
               disabled={deletingDeck}
               onClick={handleDeleteDeck}
             >
@@ -433,14 +194,6 @@ const DeckRight = ({
             <button
               type="button"
               className="deck-action-btn deck-action-btn--primary"
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#2196f3",
-                color: "#fff",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
               onClick={() => navigate(`/decks/${selectedDeckId}/cards`)}
             >
               Cards
