@@ -12,12 +12,6 @@ const Study = () => {
 
   const [deckName, setDeckName] = useState("");
   const [cards, setCards] = useState([]);
-  const [counts, setCounts] = useState({
-    new: 0,
-    learning: 0,
-    review: 0,
-    total: 0,
-  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -32,7 +26,6 @@ const Study = () => {
       setError("");
       const res = await api.get(`/api/user/decks/${deckId}/study/`);
       setDeckName(res.data.deck_name);
-      setCounts(res.data.counts);
       setCards(res.data.results || []);
     } catch (err) {
       if (err.response?.status === 401) {
@@ -86,18 +79,7 @@ const Study = () => {
 
         // Cập nhật lại state cards với mảng đã được chèn/đẩy
         setCards(newCards);
-
-        // Vì thẻ chưa "xong", ta không trừ counts,
-        // nhưng có thể cập nhật status hiển thị nếu muốn
       } else {
-        // interval > 0: Thẻ đã "tốt nghiệp" khỏi phiên học hôm nay
-        // Cập nhật số lượng thẻ còn lại trên giao diện
-        const oldStatus = currentCard.status.toLowerCase();
-        setCounts((prev) => ({
-          ...prev,
-          [oldStatus]: Math.max(0, prev[oldStatus] - 1),
-          total: Math.max(0, prev.total - 1),
-        }));
         console.log("Thẻ đã hoàn thành, hẹn gặp lại sau", interval, "ngày");
       }
 
@@ -173,18 +155,6 @@ const Study = () => {
           &larr; Theo dõi tiến độ
         </button>
         <div className="study-deck-name">{deckName}</div>
-      </div>
-
-      <div className="study-counts">
-        <span className="count-new" title="New">
-          N: {counts.new}
-        </span>
-        <span className="count-learning" title="Learning">
-          L: {counts.learning}
-        </span>
-        <span className="count-review" title="Review">
-          R: {counts.review}
-        </span>
       </div>
 
       <div className="study-card-wrapper">

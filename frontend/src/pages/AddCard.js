@@ -71,11 +71,23 @@ const AddCard = () => {
       alert("Vui lòng chọn Note Type");
       return;
     }
+
+    // ❗ CHECK FIELD TRỐNG
+    const hasEmptyField = selectedNoteType?.definitions.some(
+      (def) => !noteValues[def.id] || !noteValues[def.id].trim(),
+    );
+
+    if (hasEmptyField) {
+      alert("Vui lòng nhập đầy đủ tất cả field trước khi tạo card.");
+      return;
+    }
+
     try {
       await api.post(`/api/user/decks/${deckId}/notes/`, {
         note_type_id: selectedNoteTypeId,
         values: noteValues,
       });
+
       alert("Đã thêm card thành công!");
       setNoteValues({});
     } catch (err) {
@@ -83,7 +95,6 @@ const AddCard = () => {
       alert("Failed to add note: " + errorMsg);
     }
   };
-
   const selectedNoteType = noteTypes.find(
     (nt) => String(nt.id) === String(selectedNoteTypeId),
   );
@@ -454,7 +465,7 @@ const AddCard = () => {
                     style={{ marginTop: "16px" }}
                     onClick={handleAddTemplateDraft}
                   >
-                    + Add Another Template 
+                    + Add Another Template
                   </button>
 
                   <div
