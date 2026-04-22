@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import api from "../api/api";
+import api from "../../api/api";
 import "./Study.css";
 
 const Study = () => {
@@ -159,19 +159,16 @@ const Study = () => {
 
       <div className="study-card-wrapper">
         <div className="study-card">
-          <div
-            className="study-card-section study-front"
-            dangerouslySetInnerHTML={{ __html: frontHTML }}
-          />
-
-          {showAnswer && (
-            <>
-              <hr className="study-divider" />
-              <div
-                className="study-card-section study-back"
-                dangerouslySetInnerHTML={{ __html: backHTML }}
-              />
-            </>
+          {!showAnswer ? (
+            <div
+              className="study-card-section study-front"
+              dangerouslySetInnerHTML={{ __html: frontHTML }}
+            />
+          ) : (
+            <div
+              className="study-card-section study-back"
+              dangerouslySetInnerHTML={{ __html: backHTML }}
+            />
           )}
         </div>
       </div>

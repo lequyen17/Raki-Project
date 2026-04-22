@@ -149,10 +149,6 @@ const Profile = () => {
                                     <div style={styles.statNumber}>{profileData.total_learned_cards}</div>
                                     <div style={styles.statLabel}>Learned Cards</div>
                                 </div>
-                                <div style={styles.statCard}>
-                                    <div style={styles.statNumber}>{profileData.streak}</div>
-                                    <div style={styles.statLabel}>Learning Streak (days)</div>
-                                </div>
                             </div>
                         </div>
 
@@ -332,7 +328,7 @@ const styles = {
     },
     statsGrid: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
+        gridTemplateColumns: 'repeat(2, 1fr)',
         gap: '15px',
     },
     statCard: {

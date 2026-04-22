@@ -34,12 +34,16 @@ def get_user_profile(request):
     try:
         profile = user.profile 
         phone = profile.phone
-        streak = profile.streak
-        total_learned_cards = profile.total_learned_cards
+        
+        from progress.models import Progress
+        total_learned_cards = Progress.objects.filter(user=user).count()
+        
+        if profile.total_learned_cards != total_learned_cards:
+            profile.total_learned_cards = total_learned_cards
+            profile.save(update_fields=['total_learned_cards'])
     except AttributeError:
         # Nếu chưa có profile thì trả về giá trị mặc định
         phone = ""
-        streak = 0
         total_learned_cards = 0
 
     return Response({
@@ -49,7 +53,6 @@ def get_user_profile(request):
         'first_name': user.first_name, # Lấy từ bảng User
         'last_name': user.last_name,   # Lấy từ bảng User
         'phone': phone,               # Lấy từ bảng Profile
-        'streak': streak,             # Lấy từ bảng Profile
         'total_cards': total_cards,
         'total_learned_cards': total_learned_cards,
         'is_staff': user.is_staff,
@@ -116,9 +119,9 @@ def update_user_profile(request):
         user.profile.save()
 
         # Count total cards
-        
+        from progress.models import Progress
         total_cards = Card.objects.filter(note__deck__deck_users__user=user).count()
-        total_learned_cards = user.profile.total_learned_cards
+        total_learned_cards = Progress.objects.filter(user=user).count()
 
         return Response({
             'success': True,
@@ -130,7 +133,6 @@ def update_user_profile(request):
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'phone': user.profile.phone,
-                'streak': user.profile.streak,
                 'total_cards': total_cards,
                 'total_learned_cards': total_learned_cards,
             }

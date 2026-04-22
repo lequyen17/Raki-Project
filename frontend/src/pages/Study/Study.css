@@ -180,3 +180,126 @@
   color: #10b981;
   margin-bottom: 10px;
 }
+
+/* Tổng thể khung chứa */
+.study-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f5f7fa; /* Màu nền nhẹ cho dịu mắt */
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header điều hướng */
+.study-header {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.study-back-btn {
+    background: none;
+    border: none;
+    color: #4a90e2;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* Thẻ Flashcard */
+.study-card-wrapper {
+    perspective: 1000px;
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 30px;
+}
+
+.study-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.study-card-section {
+    font-size: 2rem;
+    color: #333;
+    width: 100%;
+    word-wrap: break-word;
+}
+
+/* Đường kẻ ngăn cách khi hiện đáp án (Back) */
+.study-back hr {
+    width: 80%;
+    border: 0;
+    border-top: 1px solid #eee;
+    margin: 20px 0;
+}
+
+/* Vùng chứa các nút điều khiển */
+.study-controls {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    justify-content: center;
+}
+
+.study-show-answer-btn {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    padding: 12px 40px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.study-show-answer-btn:hover {
+    background-color: #357abd;
+}
+
+/* Các nút đánh giá (Again, Hard, Good, Easy) */
+.study-rating-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    width: 100%;
+}
+
+.study-rating-buttons button {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 5px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: opacity 0.2s;
+}
+
+.study-rating-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-again { background-color: #f44336; }
+.btn-hard { background-color: #ff9800; }
+.btn-good { background-color: #4caf50; }
+.btn-easy { background-color: #2196f3; }
+
+.btn-label { font-weight: bold; font-size: 14px; }
+.btn-hint { font-size: 11px; opacity: 0.8; }

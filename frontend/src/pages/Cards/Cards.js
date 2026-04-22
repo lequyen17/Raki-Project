@@ -1,39 +1,39 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import api from '../api/api';
-import './CardsUI.css';
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import api from "../../api/api";
+import "./CardsUI.css";
 
 const Cards = () => {
   const navigate = useNavigate();
   const { deckId } = useParams();
-  const [deckName, setDeckName] = useState('');
+  const [deckName, setDeckName] = useState("");
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const fetchCards = async () => {
     try {
       setLoading(true);
-      setError('');
+      setError("");
       const res = await api.get(`/api/user/decks/${deckId}/cards/`);
-      setDeckName(res.data?.deck_name || '');
+      setDeckName(res.data?.deck_name || "");
       setCards(res.data?.results || []);
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem('access_token');
-        navigate('/login');
+        localStorage.removeItem("access_token");
+        navigate("/login");
         return;
       }
-      setError(err.response?.data?.error || 'Khong the tai danh sach card.');
+      setError(err.response?.data?.error || "Khong the tai danh sach card.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem("access_token");
     if (!token) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
     fetchCards();
@@ -42,15 +42,22 @@ const Cards = () => {
   return (
     <div className="decks-page">
       <div className="decks-container">
-        <div className="deck-detail-actions" style={{ marginBottom: '16px', display: 'flex', gap: '16px' }}>
-          <button type="button" className="deck-action-btn" onClick={() => navigate('/decks')}>
+        <div
+          className="deck-detail-actions"
+          style={{ marginBottom: "16px", display: "flex", gap: "16px" }}
+        >
+          <button
+            type="button"
+            className="deck-action-btn"
+            onClick={() => navigate("/decks")}
+          >
             Back To Decks
           </button>
           <button
             type="button"
             className="deck-action-btn"
             onClick={() => navigate(`/decks/${deckId}/add-card`)}
-            style={{ background: '#10b981', color: 'white' }}
+            style={{ background: "#10b981", color: "white" }}
           >
             + Add Card
           </button>
@@ -58,13 +65,15 @@ const Cards = () => {
             type="button"
             className="deck-action-btn"
             onClick={() => navigate(`/decks/${deckId}/study`)}
-            style={{ background: '#3b82f6', color: 'white' }}
+            style={{ background: "#3b82f6", color: "white" }}
           >
             Study Now
           </button>
         </div>
 
-        <h1 className="decks-title">Cards In Deck {deckName ? `- ${deckName}` : ''}</h1>
+        <h1 className="decks-title">
+          Cards In Deck {deckName ? `- ${deckName}` : ""}
+        </h1>
 
         {loading && <p className="decks-state">Dang tai danh sach card...</p>}
         {error && <p className="decks-error">{error}</p>}
@@ -81,10 +90,12 @@ const Cards = () => {
                       <div className="deck-row-main">
                         <span className="deck-row-name">Card #{card.id}</span>
                         <span className="deck-row-count">
-                          rep {card.repetition} | int {card.interval} | ease {card.easiness}
-                        </span>
-                        <span className="deck-row-count">
-                          next: {card.next_review ? new Date(card.next_review).toLocaleString() : 'N/A'}
+                          next:{" "}
+                          {card.next_review
+                            ? new Date(card.next_review).toLocaleDateString(
+                                "vi-VN",
+                              )
+                            : "N/A"}
                         </span>
                       </div>
                     </div>

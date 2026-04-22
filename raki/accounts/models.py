@@ -9,7 +9,6 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     phone = models.CharField(max_length=15, blank=True, null=True)
     # Các thông tin bổ sung cho App Anki
-    streak = models.IntegerField(default=0)
     total_learned_cards = models.IntegerField(default=0)
 
     def __str__(self):
