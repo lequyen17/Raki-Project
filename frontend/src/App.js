@@ -1,19 +1,21 @@
-import './App.css';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Profile from './pages/Profile';
-import Decks from './pages/Decks';
-import Cards from './pages/Cards';
-import AddCard from './pages/AddCard';
-import Study from './pages/Study';
-import Header from './components/header';
-import Footer from './components/footer';
-import { AuthProvider } from './context/AuthContext';
+import "./App.css";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Profile from "./pages/Profile";
+import Decks from "./pages/Decks/Decks";
+import Cards from "./pages/Cards";
+import AddCard from "./pages/AddCard";
+import Study from "./pages/Study";
+import Header from "./components/header";
+import Footer from "./components/footer";
+import { AuthProvider } from "./context/AuthContext";
 
 function App() {
   return (
-    <AuthProvider> {/* Bọc ngoài cùng để "phủ sóng" dữ liệu cho toàn App */}
+    <AuthProvider>
+      {" "}
+      {/* Bọc ngoài cùng để "phủ sóng" dữ liệu cho toàn App */}
       <Router>
         <Header />
         <Routes>
