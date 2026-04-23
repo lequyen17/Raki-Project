@@ -33,7 +33,7 @@ const Study = () => {
         navigate("/login");
         return;
       }
-      setError(err.response?.data?.error || "Không thể lấy dữ liệu thẻ học.");
+      setError(err.response?.data?.error || "Could not load study cards.");
     } finally {
       setLoading(false);
     }
@@ -46,49 +46,35 @@ const Study = () => {
     try {
       setSubmitting(true);
 
-      // 1. Gọi API lưu kết quả vào Database
       const res = await api.post(`/api/user/cards/${currentCard.id}/review/`, {
         quality,
       });
 
-      // 2. Lấy interval và status mới từ Backend trả về
       const { interval, status: nextStatus } = res.data;
 
-      // Tạo một bản sao của danh sách thẻ hiện tại
       let newCards = [...cards];
 
-      // 3. LOGIC XỬ LÝ HÀNG ĐỢI (CÁCH B)
       if (interval === 0) {
-        // Thẻ này chưa thuộc (Again/Hard/Good lần 1), cần học lại ngay hôm nay
         const cardToRepeat = {
           ...currentCard,
-          status: nextStatus, // Cập nhật status mới (ví dụ từ Review -> Learning nếu bấm Again)
+          status: nextStatus,
         };
 
         if (quality === "again") {
-          // Hiện lại sau 5 thẻ nữa: chèn vào vị trí currentIndex + 6
-          // (Dùng Math.min để không vượt quá độ dài mảng)
           const insertAt = Math.min(currentIndex + 6, newCards.length);
           newCards.splice(insertAt, 0, cardToRepeat);
-          console.log("Đã chèn thẻ Again vào vị trí:", insertAt);
         } else {
-          // Hard hoặc Good (lần 1): Đẩy xuống cuối danh sách của phiên học này
           newCards.push(cardToRepeat);
-          console.log("Đã đẩy thẻ xuống cuối danh sách");
         }
 
-        // Cập nhật lại state cards với mảng đã được chèn/đẩy
         setCards(newCards);
-      } else {
-        console.log("Thẻ đã hoàn thành, hẹn gặp lại sau", interval, "ngày");
       }
 
-      // 4. Chuyển sang thẻ tiếp theo trong mảng
       setShowAnswer(false);
       setCurrentIndex((prev) => prev + 1);
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.error || "Đánh giá thất bại.");
+      alert(err.response?.data?.error || "Review failed.");
     } finally {
       setSubmitting(false);
     }
@@ -103,7 +89,7 @@ const Study = () => {
   };
 
   if (loading) {
-    return <div className="study-loading">Đang chuẩn bị thẻ học...</div>;
+    return <div className="study-loading">Preparing your study session...</div>;
   }
 
   if (error) {
@@ -111,7 +97,7 @@ const Study = () => {
       <div className="study-error">
         <p>{error}</p>
         <button className="study-back-btn" onClick={() => navigate("/decks")}>
-          Quay lại
+          Back to Decks
         </button>
       </div>
     );
@@ -123,17 +109,12 @@ const Study = () => {
   if (isFinished) {
     return (
       <div className="study-finished-container">
-        <h2>Chúc mừng!</h2>
+        <h2>Great job!</h2>
         <p>
-          Bạn đã hoàn thành phiên học cho deck <strong>{deckName}</strong> hôm
-          nay.
+          You have completed today's session for <strong>{deckName}</strong>.
         </p>
-        <button
-          className="study-show-answer-btn"
-          style={{ marginTop: "20px" }}
-          onClick={() => navigate("/decks")}
-        >
-          Quay lại danh sách
+        <button className="study-show-answer-btn" onClick={() => navigate("/decks")}>
+          Back to Deck List
         </button>
       </div>
     );
@@ -152,9 +133,19 @@ const Study = () => {
     <div className="study-container">
       <div className="study-header">
         <button className="study-back-btn" onClick={() => navigate("/decks")}>
-          &larr; Theo dõi tiến độ
+          &larr; Back to Decks
         </button>
-        <div className="study-deck-name">{deckName}</div>
+        <div className="study-header-meta">
+          <div className="study-deck-name">{deckName}</div>
+          
+        </div>
+      </div>
+
+      <div className="study-progress-bar">
+        <div
+          className="study-progress-fill"
+          style={{ width: `${(currentIndex / cards.length) * 100}%` }}
+        />
       </div>
 
       <div className="study-card-wrapper">
@@ -179,39 +170,49 @@ const Study = () => {
             className="study-show-answer-btn"
             onClick={() => setShowAnswer(true)}
           >
-            Hiển thị đáp án
+            Show Answer
           </button>
         ) : (
-          <div className="study-rating-buttons">
+          <div className="study-answer-actions">
             <button
-              className="btn-again"
+              type="button"
+              className="study-toggle-front-btn"
               disabled={submitting}
-              onClick={() => handleReview("again")}
+              onClick={() => setShowAnswer(false)}
             >
-              <span className="btn-label">Again</span>
-              <span className="btn-hint">&lt;1m</span>
+              View Front Again
             </button>
-            <button
-              className="btn-hard"
-              disabled={submitting}
-              onClick={() => handleReview("hard")}
-            >
-              <span className="btn-label">Hard</span>
-            </button>
-            <button
-              className="btn-good"
-              disabled={submitting}
-              onClick={() => handleReview("good")}
-            >
-              <span className="btn-label">Good</span>
-            </button>
-            <button
-              className="btn-easy"
-              disabled={submitting}
-              onClick={() => handleReview("easy")}
-            >
-              <span className="btn-label">Easy</span>
-            </button>
+            <div className="study-rating-buttons">
+              <button
+                className="btn-again"
+                disabled={submitting}
+                onClick={() => handleReview("again")}
+              >
+                <span className="btn-label">Again</span>
+                <span className="btn-hint">&lt;1m</span>
+              </button>
+              <button
+                className="btn-hard"
+                disabled={submitting}
+                onClick={() => handleReview("hard")}
+              >
+                <span className="btn-label">Hard</span>
+              </button>
+              <button
+                className="btn-good"
+                disabled={submitting}
+                onClick={() => handleReview("good")}
+              >
+                <span className="btn-label">Good</span>
+              </button>
+              <button
+                className="btn-easy"
+                disabled={submitting}
+                onClick={() => handleReview("easy")}
+              >
+                <span className="btn-label">Easy</span>
+              </button>
+            </div>
           </div>
         )}
       </div>

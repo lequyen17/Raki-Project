@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
-import "./CardsUI.css";
+import "./Cards.css";
 
 const Cards = () => {
   const navigate = useNavigate();
@@ -10,6 +10,8 @@ const Cards = () => {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchText, setSearchText] = useState("");
+  const [filter, setFilter] = useState("all");
 
   const fetchCards = async () => {
     try {
@@ -24,7 +26,7 @@ const Cards = () => {
         navigate("/login");
         return;
       }
-      setError(err.response?.data?.error || "Khong the tai danh sach card.");
+      setError(err.response?.data?.error || "Could not load card list.");
     } finally {
       setLoading(false);
     }
@@ -39,68 +41,173 @@ const Cards = () => {
     fetchCards();
   }, [deckId, navigate]);
 
+  const getCardStatus = (card) => {
+    const nextReview = card?.next_review ? new Date(card.next_review) : null;
+    if (!nextReview || Number.isNaN(nextReview.getTime())) {
+      return "new";
+    }
+    if (nextReview <= new Date()) {
+      return "due";
+    }
+    return "scheduled";
+  };
+
+  const filteredCards = useMemo(() => {
+    const keyword = searchText.trim().toLowerCase();
+
+    return cards.filter((card) => {
+      const status = getCardStatus(card);
+      const cardIdText = String(card.id || "");
+      const matchesSearch = !keyword || cardIdText.includes(keyword);
+      const matchesFilter = filter === "all" || status === filter;
+      return matchesSearch && matchesFilter;
+    });
+  }, [cards, searchText, filter]);
+
+  const summary = useMemo(() => {
+    return cards.reduce(
+      (acc, card) => {
+        const status = getCardStatus(card);
+        acc.total += 1;
+        if (status === "due") acc.due += 1;
+        if (status === "new") acc.newCount += 1;
+        if (status === "scheduled") acc.scheduled += 1;
+        return acc;
+      },
+      { total: 0, due: 0, newCount: 0, scheduled: 0 },
+    );
+  }, [cards]);
+
+  const formatDate = (value) => {
+    if (!value) return "Not scheduled";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Not scheduled";
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
   return (
-    <div className="decks-page">
-      <div className="decks-container">
-        <div
-          className="deck-detail-actions"
-          style={{ marginBottom: "16px", display: "flex", gap: "16px" }}
-        >
+    <div className="cards-page">
+      <div className="cards-container">
+        <div className="cards-actions">
           <button
             type="button"
-            className="deck-action-btn"
+            className="cards-btn cards-btn--secondary"
             onClick={() => navigate("/decks")}
           >
-            Back To Decks
+            Back to Decks
           </button>
           <button
             type="button"
-            className="deck-action-btn"
+            className="cards-btn cards-btn--success"
             onClick={() => navigate(`/decks/${deckId}/add-card`)}
-            style={{ background: "#10b981", color: "white" }}
           >
             + Add Card
           </button>
           <button
             type="button"
-            className="deck-action-btn"
+            className="cards-btn cards-btn--primary"
             onClick={() => navigate(`/decks/${deckId}/study`)}
-            style={{ background: "#3b82f6", color: "white" }}
           >
             Study Now
           </button>
         </div>
 
-        <h1 className="decks-title">
-          Cards In Deck {deckName ? `- ${deckName}` : ""}
-        </h1>
+        <div className="cards-header">
+          <h1 className="cards-title">
+            Cards {deckName ? `- ${deckName}` : ""}
+          </h1>
+          <div className="cards-stats">
+            <span className="cards-chip">Total: {summary.total}</span>
+            <span className="cards-chip cards-chip--due">
+              Due: {summary.due}
+            </span>
+            <span className="cards-chip cards-chip--new">
+              New: {summary.newCount}
+            </span>
+            <span className="cards-chip cards-chip--scheduled">
+              Scheduled: {summary.scheduled}
+            </span>
+          </div>
+        </div>
 
-        {loading && <p className="decks-state">Dang tai danh sach card...</p>}
-        {error && <p className="decks-error">{error}</p>}
+        <div className="cards-toolbar">
+          <input
+            type="text"
+            className="cards-search"
+            placeholder="Search by card ID..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+          <div className="cards-filters">
+            <button
+              type="button"
+              className={`cards-filter-btn ${filter === "all" ? "is-active" : ""}`}
+              onClick={() => setFilter("all")}
+            >
+              All
+            </button>
+            <button
+              type="button"
+              className={`cards-filter-btn ${filter === "due" ? "is-active" : ""}`}
+              onClick={() => setFilter("due")}
+            >
+              Due
+            </button>
+            <button
+              type="button"
+              className={`cards-filter-btn ${filter === "new" ? "is-active" : ""}`}
+              onClick={() => setFilter("new")}
+            >
+              New
+            </button>
+            <button
+              type="button"
+              className={`cards-filter-btn ${filter === "scheduled" ? "is-active" : ""}`}
+              onClick={() => setFilter("scheduled")}
+            >
+              Scheduled
+            </button>
+          </div>
+        </div>
+
+        {loading && <p className="cards-state">Loading cards...</p>}
+        {error && <p className="cards-error">{error}</p>}
 
         {!loading && !error && (
           <>
-            {cards.length === 0 ? (
-              <p className="decks-state">Deck nay chua co card nao.</p>
+            {filteredCards.length === 0 ? (
+              <div className="cards-empty">
+                <p className="cards-state">No cards found for this view.</p>
+              </div>
             ) : (
-              <div className="deck-tree-list">
-                {cards.map((card) => (
-                  <div key={card.id} className="deck-tree-node">
-                    <div className="deck-tree-row deck-tree-row--root">
-                      <div className="deck-row-main">
-                        <span className="deck-row-name">Card #{card.id}</span>
-                        <span className="deck-row-count">
-                          next:{" "}
-                          {card.next_review
-                            ? new Date(card.next_review).toLocaleDateString(
-                                "vi-VN",
-                              )
-                            : "N/A"}
+              <div className="cards-list">
+                {filteredCards.map((card) => {
+                  const status = getCardStatus(card);
+                  return (
+                    <div key={card.id} className="card-item">
+                      <div className="card-item-main">
+                        <h3 className="card-item-title">Card #{card.id}</h3>
+                        <span className={`card-status card-status--${status}`}>
+                          {status === "due"
+                            ? "Due"
+                            : status === "new"
+                              ? "New"
+                              : "Scheduled"}
+                        </span>
+                      </div>
+                      <div className="card-item-meta">
+                        <span className="card-meta-label">Next review</span>
+                        <span className="card-meta-value">
+                          {formatDate(card.next_review)}
                         </span>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>

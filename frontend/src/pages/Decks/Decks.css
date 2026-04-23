@@ -22,7 +22,7 @@
 }
 
 .decks-container {
-  flex: 1;
+  flex: 1 1 50%;
   padding: 1.5rem;
 }
 
@@ -174,7 +174,8 @@
 }
 
 .deck-detail-panel {
-  width: 420px;
+  flex: 1 1 50%;
+  width: auto;
   padding: 1.5rem;
   position: sticky;
   top: 84px;

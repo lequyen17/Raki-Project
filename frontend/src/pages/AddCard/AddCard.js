@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
-import "./AddCardUI.css";
+import "./AddCard.css";
 
 const AddCard = () => {
   const navigate = useNavigate();
@@ -68,17 +68,17 @@ const AddCard = () => {
 
   const submitAddNote = async () => {
     if (!selectedNoteTypeId) {
-      alert("Vui lòng chọn Note Type");
+      alert("Please select a note type.");
       return;
     }
 
-    // ❗ CHECK FIELD TRỐNG
+    // Validate required fields before creating a card.
     const hasEmptyField = selectedNoteType?.definitions.some(
       (def) => !noteValues[def.id] || !noteValues[def.id].trim(),
     );
 
     if (hasEmptyField) {
-      alert("Vui lòng nhập đầy đủ tất cả field trước khi tạo card.");
+      alert("Please fill in all fields before creating a card.");
       return;
     }
 
@@ -88,7 +88,7 @@ const AddCard = () => {
         values: noteValues,
       });
 
-      alert("Đã thêm card thành công!");
+      alert("Card added successfully.");
       setNoteValues({});
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
@@ -130,15 +130,15 @@ const AddCard = () => {
   const handleNextNtStep1 = () => {
     setNtError("");
     if (!newNoteTypeName.trim()) {
-      setNtError("NoteType Name không được để trống.");
+      setNtError("Note type name is required.");
       return;
     }
     if (newDefinitions.length === 0 || validDefs.length === 0) {
-      setNtError("Phải có ít nhất một field.");
+      setNtError("At least one field is required.");
       return;
     }
     if (newDefinitions.some((def) => def.value.trim() === "")) {
-      setNtError("Không được để field name trống.");
+      setNtError("Field names cannot be empty.");
       return;
     }
 
@@ -159,7 +159,7 @@ const AddCard = () => {
 
   const handleRemoveTemplate = (id) => {
     if (newTemplates.length <= 1) {
-      alert("Phải có ít nhất một template.");
+      alert("At least one template is required.");
       return;
     }
     setNewTemplates(newTemplates.filter((t) => t.id !== id));
@@ -177,9 +177,7 @@ const AddCard = () => {
       (t) => !t.name.trim() || !t.front.trim() || !t.back.trim(),
     );
     if (isInvalid) {
-      alert(
-        "Tất cả các template phải được điền đầy đủ thông tin (Tên, Front, Back).",
-      );
+      alert("All templates must include Name, Front, and Back content.");
       return;
     }
 
@@ -376,7 +374,7 @@ const AddCard = () => {
                             e.dataTransfer.setData("text/plain", `{{${def}}}`)
                           }
                         >
-                          {def}
+                          {`{{${def}}}`}
                         </span>
                       ))}
                     </div>
@@ -412,6 +410,14 @@ const AddCard = () => {
                                   e.target.value,
                                 )
                               }
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = "none";
+                              }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
                               placeholder="e.g. Recognition Card"
                             />
                           </div>
@@ -462,24 +468,23 @@ const AddCard = () => {
 
                   <button
                     className="btn-secondary btn-full"
-                    style={{ marginTop: "16px" }}
+                    type="button"
                     onClick={handleAddTemplateDraft}
                   >
                     + Add Another Template
                   </button>
 
-                  <div
-                    className="section-footer split"
-                    style={{ marginTop: "40px" }}
-                  >
+                  <div className="section-footer split section-footer--spaced">
                     <button
                       className="btn-secondary"
+                      type="button"
                       onClick={() => setNtStep(1)}
                     >
                       &larr; Back to Fields
                     </button>
                     <button
                       className="btn-primary"
+                      type="button"
                       onClick={submitCreateNoteType}
                     >
                       Create NoteType & Continue
