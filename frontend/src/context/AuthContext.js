@@ -1,5 +1,5 @@
-import React, { createContext, useState, useEffect } from 'react';
-import api, { setAuthToken } from '../api/api';
+import React, { createContext, useState, useEffect } from "react";
+import api, { setAuthToken } from "../api/api";
 
 export const AuthContext = createContext();
 
@@ -8,8 +8,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    const savedUser = localStorage.getItem('user_data');
+    const token = localStorage.getItem("access_token");
+    const savedUser = localStorage.getItem("user_data");
 
     if (token && savedUser) {
       setAuthToken(token);
@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
         setCurrentUser(JSON.parse(savedUser));
       } catch (e) {
         // Phòng trường hợp user_data trong máy bị lỗi format JSON
-        localStorage.removeItem('user_data');
+        localStorage.removeItem("user_data");
       }
     }
     setLoading(false);
@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.clear(); // Xóa sạch sành sanh cho nhanh
     setAuthToken(null);
     setCurrentUser(null);
-    window.location.href = '/login';
+    window.location.href = "/login";
   };
 
   // Sử dụng shorthand property (currentUser: currentUser -> currentUser)

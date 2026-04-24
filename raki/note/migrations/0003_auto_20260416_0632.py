@@ -4,32 +4,27 @@ from django.db import migrations
 
 
 def create_basic_notetype(apps, schema_editor):
-    NoteType = apps.get_model('note', 'NoteType')
-    Definition = apps.get_model('note', 'Definition')
-    Template = apps.get_model('note', 'Template')
+    NoteType = apps.get_model("note", "NoteType")
+    Definition = apps.get_model("note", "Definition")
+    Template = apps.get_model("note", "Template")
 
     # user=None is correct for get_or_create when the field is nullable
-    basic_nt, created = NoteType.objects.get_or_create(user=None, name='Basic')
+    basic_nt, created = NoteType.objects.get_or_create(user=None, name="Basic")
     if created:
-        def_front = Definition.objects.create(note_type_id=basic_nt, name='Front')
-        def_back = Definition.objects.create(note_type_id=basic_nt, name='Back')
+        def_front = Definition.objects.create(note_type_id=basic_nt, name="Front")
+        def_back = Definition.objects.create(note_type_id=basic_nt, name="Back")
         Template.objects.create(
-            note_type_id=basic_nt,
-            name='Card 1',
-            front='{{Front}}',
-            back='{{Front}}\n<hr>\n{{Back}}'
+            note_type_id=basic_nt, name="Card 1", front="{{Front}}", back="{{Back}}"
         )
         Template.objects.create(
-            note_type_id=basic_nt,
-            name='Card 2',
-            front='{{Back}}',
-            back='{{Back}}\n<hr>\n{{Front}}'
+            note_type_id=basic_nt, name="Card 2", front="{{Back}}", back="{{Front}}"
         )
+
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('note', '0002_alter_notetype_user'),
+        ("note", "0002_alter_notetype_user"),
     ]
 
     operations = [

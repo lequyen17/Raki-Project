@@ -196,7 +196,7 @@ const DeckRight = ({
               className="deck-action-btn deck-action-btn--primary"
               onClick={() => navigate(`/decks/${selectedDeckId}/cards`)}
             >
-              Cards
+              View
             </button>
           </div>
         </>

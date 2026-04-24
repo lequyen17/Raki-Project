@@ -113,7 +113,10 @@ const Study = () => {
         <p>
           You have completed today's session for <strong>{deckName}</strong>.
         </p>
-        <button className="study-show-answer-btn" onClick={() => navigate("/decks")}>
+        <button
+          className="study-show-answer-btn"
+          onClick={() => navigate("/decks")}
+        >
           Back to Deck List
         </button>
       </div>
@@ -137,7 +140,6 @@ const Study = () => {
         </button>
         <div className="study-header-meta">
           <div className="study-deck-name">{deckName}</div>
-          
         </div>
       </div>
 
@@ -197,6 +199,7 @@ const Study = () => {
                 onClick={() => handleReview("hard")}
               >
                 <span className="btn-label">Hard</span>
+                <span className="btn-hint">&lt;10m</span>
               </button>
               <button
                 className="btn-good"
