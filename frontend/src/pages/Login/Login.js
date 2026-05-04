@@ -1,7 +1,6 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
-import { setAuthToken } from "../../api/api";
 import { AuthContext } from "../../context/AuthContext";
 import "./Login.css"; // CSS đã được import ở đây
 
@@ -23,11 +22,12 @@ const Login = () => {
 
     try {
       const res = await api.post("/api/login/", formData);
-      const { access, user } = res.data;
+      const { access, refresh, user } = res.data;
 
       localStorage.setItem("access_token", access);
+      localStorage.setItem("refresh_token", refresh);
       localStorage.setItem("user_data", JSON.stringify(user));
-      setAuthToken(access);
+
       setCurrentUser(user);
 
       navigate("/decks");
