@@ -26,6 +26,35 @@ const AddCard = () => {
   const [ntStep, setNtStep] = useState(1);
   const [ntError, setNtError] = useState("");
 
+  const extractClozeIndexes = (text) => {
+  const regex = /\{\{c(\d+)::.*?\}\}/g;
+  const indexes = [];
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    indexes.push(parseInt(match[1]));
+  }
+
+  return indexes;
+};
+
+const isValidClozeSequence = (indexes) => {
+  if (indexes.length === 0) return false;
+
+  const unique = [...new Set(indexes)].sort((a, b) => a - b);
+
+  // phải bắt đầu từ 1
+  if (unique[0] !== 1) return false;
+
+  // không được skip số
+  for (let i = 0; i < unique.length; i++) {
+    if (unique[i] !== i + 1) return false;
+  }
+
+  return true;
+};
+
+
   const fetchDeckInfo = async () => {
     try {
       const res = await api.get(`/api/user/decks/${deckId}/cards/`);
@@ -68,6 +97,7 @@ const AddCard = () => {
   };
 
   const submitAddNote = async () => {
+    const hasCloze = (str) => /\{\{c\d+::[^}]+\}\}/.test(str);
     if (!selectedNoteTypeId) {
       alert("Please select a note type.");
       return;
@@ -82,6 +112,25 @@ const AddCard = () => {
       alert("Please fill in all fields before creating a card.");
       return;
     }
+    if (isClozeNoteType) {
+  const values = Object.values(noteValues);
+
+  const hasAnyCloze = values.some((val) => hasCloze(val));
+
+  if (!hasAnyCloze) {
+    alert("Cloze card must contain at least one {{c1::...}}");
+    return;
+  }
+
+  const allText = Object.values(noteValues).join(" ");
+  const indexes = extractClozeIndexes(allText);
+
+  if (!isValidClozeSequence(indexes)) {
+    alert("Cloze must start from c1 and not skip numbers (c1, c2, c3...)");
+    return;
+  }
+
+}
 
     try {
       await api.post(`/api/user/decks/${deckId}/notes/`, {
@@ -101,10 +150,7 @@ const AddCard = () => {
   );
 
   const isClozeNoteType =
-    selectedNoteType?.name?.toLowerCase().includes("cloze") ||
-    selectedNoteType?.templates?.some(
-      (t) => t.front?.includes("{{cloze:") || t.back?.includes("{{cloze:"),
-    ) || false;
+    selectedNoteType?.name?.toLowerCase().includes("cloze") || false;
 
   // NoteType Creation Handlers
   const resetTemplates = () => {

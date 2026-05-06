@@ -19,7 +19,7 @@ export const tokenizeTemplate = (templateStr, fieldValues, clozeIndex = 0, isBac
     return `<input type="text" id="type-answer-${trimmed}" data-field="${trimmed}" class="type-answer-input" placeholder="Type answer here..." />`;
   });
 
-  // 2. Process normal {{FieldName}} and {{cloze:FieldName}}
+  // 2. Process normal {{FieldName}} và cloze
   processedStr = processedStr.replace(/\{\{(?:cloze:)?([^:}]+)\}\}/g, (match, fieldName) => {
     const trimmed = fieldName.trim();
     if (trimmed.startsWith('type:')) return match; // safety check
@@ -31,9 +31,9 @@ export const tokenizeTemplate = (templateStr, fieldValues, clozeIndex = 0, isBac
     const n = parseInt(nStr, 10);
     if (n === activeCloze) {
       if (isBack) {
-        return `<span class="cloze-answer" style="color: #007bff; font-weight: bold;">${content}</span>`;
+        return `<span class="cloze-answer" style="color: #3b82f6; font-weight: bold;">${content}</span>`;
       } else {
-        return `<span class="cloze-hole" style="color: #007bff; font-weight: bold;">[...]</span>`;
+        return `<span class="cloze-hole" style="color: #3b82f6; font-weight: bold;">[...]</span>`;
       }
     }
     // For non-active clozes, just show the text

@@ -92,6 +92,11 @@ const Study = () => {
     });
     setTypedAnswers(newAnswers);
     setShowAnswer(true);
+
+    console.log(inputs);
+console.log(newAnswers);
+console.log(currentCard.template.back);
+console.log(backHTML);
   };
 
   if (loading) {

@@ -64,7 +64,7 @@ def create_type_answer_notetype(apps, schema_editor):
             note_type=type_nt,
             name="Card 1",
             front="{{Front}}<br><br>{{type:Back}}",
-            back="{{Front}}<hr id='answer'>{{Back}}",
+            back="{{Front}}<hr id='answer'>{{type:Back}}",
         )
 
 
