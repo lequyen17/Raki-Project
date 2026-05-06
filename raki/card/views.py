@@ -44,6 +44,7 @@ def list_cards_by_deck(request, deck_id):
                 "interval": p.interval if p else 1,
                 "easiness": p.easiness if p else 2.5,
                 "next_review": p.next_review if p else None,
+                "cloze_index": card.cloze_index,
             }
         )
 
@@ -128,6 +129,7 @@ def get_study_cards(request, deck_id):
             {
                 "id": card.id,
                 "status": status,
+                "cloze_index": card.cloze_index,
                 "template": {
                     "front": card.template.front,
                     "back": card.template.back,

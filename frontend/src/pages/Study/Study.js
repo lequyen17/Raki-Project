@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
+import { tokenizeTemplate } from "../../utils/cardParser";
 import "./Study.css";
 
 const Study = () => {
@@ -15,6 +16,7 @@ const Study = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [typedAnswers, setTypedAnswers] = useState({});
 
   useEffect(() => {
     fetchStudyCards();
@@ -71,6 +73,7 @@ const Study = () => {
       }
 
       setShowAnswer(false);
+      setTypedAnswers({});
       setCurrentIndex((prev) => prev + 1);
     } catch (err) {
       console.error(err);
@@ -80,12 +83,15 @@ const Study = () => {
     }
   };
 
-  const replaceTags = (templateStr, fieldValues) => {
-    if (!templateStr) return "";
-    return templateStr.replace(/\{\{([^{}]+)\}\}/g, (match, fieldName) => {
-      const trimmed = fieldName.trim();
-      return fieldValues[trimmed] !== undefined ? fieldValues[trimmed] : match;
+  const handleShowAnswer = () => {
+    // Capture typed answers from DOM
+    const inputs = document.querySelectorAll('.type-answer-input');
+    const newAnswers = {};
+    inputs.forEach((input) => {
+      newAnswers[input.dataset.field] = input.value;
     });
+    setTypedAnswers(newAnswers);
+    setShowAnswer(true);
   };
 
   if (loading) {
@@ -123,14 +129,33 @@ const Study = () => {
     );
   }
 
-  const frontHTML = replaceTags(
+  const frontHTML = tokenizeTemplate(
     currentCard.template.front,
     currentCard.field_values,
+    currentCard.cloze_index || 0,
+    false,
+    {}
   );
-  const backHTML = replaceTags(
-    currentCard.template.back,
+  
+  let rawBackTemplate = currentCard.template.back;
+  if (rawBackTemplate.includes("{{FrontSide}}")) {
+    rawBackTemplate = rawBackTemplate.replace(/\{\{FrontSide\}\}/g, currentCard.template.front);
+  }
+
+  let backHTML = tokenizeTemplate(
+    rawBackTemplate,
     currentCard.field_values,
+    currentCard.cloze_index || 0,
+    true,
+    typedAnswers
   );
+  
+  // Split on <hr id='answer'> if present, and replace with back content, or Anki-like styling
+  if (backHTML.includes("<hr id='answer'>")) {
+    // We already have the front generated natively by Anki on the back, but here we just render the raw backHTML
+    // because typically Anki's {{FrontSide}} is used, but Raki doesn't support {{FrontSide}} yet.
+    // If we want we can just show backHTML.
+  }
 
   return (
     <div className="study-container">
@@ -170,7 +195,7 @@ const Study = () => {
         {!showAnswer ? (
           <button
             className="study-show-answer-btn"
-            onClick={() => setShowAnswer(true)}
+            onClick={handleShowAnswer}
           >
             Show Answer
           </button>

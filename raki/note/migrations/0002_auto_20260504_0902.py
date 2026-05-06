@@ -11,9 +11,7 @@ def create_default_notetypes(apps, schema_editor):
     # --- 1. LOẠI BASIC ---
     basic_nt, created = NoteType.objects.get_or_create(user=None, name="Basic")
     if created:
-        FieldDefinition.objects.create(
-            note_type=basic_nt, name="Front"
-        )  # Sửa note_type_id thành note_type
+        FieldDefinition.objects.create(note_type=basic_nt, name="Front")
         FieldDefinition.objects.create(note_type=basic_nt, name="Back")
         Template.objects.create(
             note_type=basic_nt, name="Card 1", front="{{Front}}", back="{{Back}}"
@@ -43,7 +41,10 @@ def create_cloze_notetype(apps, schema_editor):
     if created:
         FieldDefinition.objects.create(note_type=cloze_nt, name="Text")
         Template.objects.create(
-            note_type=cloze_nt, name="Cloze Card", front="{{Text}}", back="{{Text}}"
+            note_type=cloze_nt,
+            name="Cloze Card",
+            front="{{cloze:Text}}",
+            back="{{Text}}",
         )
 
 

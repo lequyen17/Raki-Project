@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
+import ClozeEditor from "../../components/ClozeEditor/ClozeEditor";
 import "./AddCard.css";
 
 const AddCard = () => {
@@ -98,6 +99,12 @@ const AddCard = () => {
   const selectedNoteType = noteTypes.find(
     (nt) => String(nt.id) === String(selectedNoteTypeId),
   );
+
+  const isClozeNoteType =
+    selectedNoteType?.name?.toLowerCase().includes("cloze") ||
+    selectedNoteType?.templates?.some(
+      (t) => t.front?.includes("{{cloze:") || t.back?.includes("{{cloze:"),
+    ) || false;
 
   // NoteType Creation Handlers
   const resetTemplates = () => {
@@ -273,13 +280,11 @@ const AddCard = () => {
                 {selectedNoteType?.definitions.map((def) => (
                   <div key={def.id} className="form-group">
                     <label className="form-label">{def.name}</label>
-                    <textarea
-                      className="form-textarea"
+                    <ClozeEditor
                       value={noteValues[def.id] || ""}
-                      onChange={(e) =>
-                        handleNoteValueChange(def.id, e.target.value)
-                      }
+                      onChange={(val) => handleNoteValueChange(def.id, val)}
                       placeholder={`Enter text for ${def.name}...`}
+                      isCloze={isClozeNoteType}
                     />
                   </div>
                 ))}
