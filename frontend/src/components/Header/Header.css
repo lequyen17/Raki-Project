@@ -1,0 +1,146 @@
+/* ===== HEADER ===== */
+.raki-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  width: 100%;
+}
+
+/* INNER - Dàn nội dung ra sát biên */
+.raki-header__inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 64px;
+  max-width: 96%; /* Giúp logo và nút dạt ra xa nhau hơn */
+  margin: 0 auto;
+  padding: 0 10px;
+}
+
+/* ===== LOGO ===== */
+.raki-logo {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+.raki-logo__text {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  line-height: 1; /* Căn giữa logo theo chiều dọc */
+}
+
+.raki-logo__accent {
+  color: #60a5fa;
+  margin-right: 2px;
+}
+
+/* ===== ACTIONS (LOGIN/REGISTER/USER) ===== */
+.raki-actions {
+  display: flex;
+  align-items: center;
+}
+
+/* KHÔI PHỤC NÚT AUTH */
+.raki-auth {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.raki-button {
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+/* Nút Register (Secondary) */
+.raki-button--secondary {
+  border: 1px solid #334155;
+  color: #cbd5e1;
+}
+
+.raki-button--secondary:hover {
+  background: #334155;
+  color: #ffffff;
+}
+
+/* Nút Login (Primary) */
+.raki-button--primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.raki-button--primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* ===== PROFILE (KHI ĐÃ LOGGED IN) ===== */
+.raki-profile {
+  position: relative;
+}
+
+.raki-profile__toggle {
+  border: 1px solid #334155;
+  background: #273449;
+  color: #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.raki-profile__toggle:hover {
+  background: #334155;
+  border-color: #60a5fa;
+}
+
+/* DROPDOWN MENU */
+.raki-profile__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: 180px;
+  background: #1f2937;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: dropdownFade 0.15s ease;
+}
+
+.raki-profile__item {
+  width: 100%;
+  padding: 10px 15px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}
+
+.raki-profile__item:hover {
+  background: #334155;
+  color: #60a5fa;
+}
+
+.raki-profile__item--danger {
+  color: #f87171;
+  border-top: 1px solid #334155;
+}
+
+@keyframes dropdownFade {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
