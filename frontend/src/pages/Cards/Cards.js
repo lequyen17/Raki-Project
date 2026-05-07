@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
 import "./Cards.css";
+import Pagination from "@mui/material/Pagination";
 
 const Cards = () => {
   const navigate = useNavigate();
@@ -13,13 +14,19 @@ const Cards = () => {
   const [searchText, setSearchText] = useState("");
   const [filter, setFilter] = useState("all");
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const fetchCards = async () => {
     try {
       setLoading(true);
       setError("");
-      const res = await api.get(`/api/user/decks/${deckId}/cards/`);
+      const res = await api.get(
+        `/api/user/decks/${deckId}/cards/?page=${page}`,
+      );
       setDeckName(res.data?.deck_name || "");
       setCards(res.data?.results || []);
+      setTotalPages(Math.ceil((res.data?.count || 0) / 10));
     } catch (err) {
       if (err.response?.status === 401) {
         localStorage.removeItem("access_token");
@@ -39,7 +46,7 @@ const Cards = () => {
       return;
     }
     fetchCards();
-  }, [deckId, navigate]);
+  }, [deckId, page, navigate]);
 
   const getCardStatus = (card) => {
     const nextReview = card?.next_review ? new Date(card.next_review) : null;
@@ -184,31 +191,51 @@ const Cards = () => {
                 <p className="cards-state">No cards found for this view.</p>
               </div>
             ) : (
-              <div className="cards-list">
-                {filteredCards.map((card) => {
-                  const status = getCardStatus(card);
-                  return (
-                    <div key={card.id} className="card-item">
-                      <div className="card-item-main">
-                        <h3 className="card-item-title">Card #{card.id}</h3>
-                        <span className={`card-status card-status--${status}`}>
-                          {status === "due"
-                            ? "Due"
-                            : status === "new"
-                              ? "New"
-                              : "Scheduled"}
-                        </span>
+              <>
+                <div className="cards-list">
+                  {filteredCards.map((card) => {
+                    const status = getCardStatus(card);
+
+                    return (
+                      <div key={card.id} className="card-item">
+                        <div className="card-item-main">
+                          <h3 className="card-item-title">Card #{card.id}</h3>
+
+                          <span
+                            className={`card-status card-status--${status}`}
+                          >
+                            {status === "due"
+                              ? "Due"
+                              : status === "new"
+                                ? "New"
+                                : "Scheduled"}
+                          </span>
+                        </div>
+
+                        <div className="card-item-meta">
+                          <span className="card-meta-label">Next review</span>
+
+                          <span className="card-meta-value">
+                            {formatDate(card.next_review)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="card-item-meta">
-                        <span className="card-meta-label">Next review</span>
-                        <span className="card-meta-value">
-                          {formatDate(card.next_review)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+
+                <div className="cards-pagination">
+                  <Pagination
+                    count={totalPages}
+                    page={page}
+                    color="primary"
+                    shape="rounded"
+                    onChange={(event, value) => {
+                      setPage(value);
+                    }}
+                  />
+                </div>
+              </>
             )}
           </>
         )}
@@ -216,5 +243,3 @@ const Cards = () => {
     </div>
   );
 };
-
-export default Cards;
