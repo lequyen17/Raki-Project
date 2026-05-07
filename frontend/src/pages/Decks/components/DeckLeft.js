@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import Pagination from "@mui/material/Pagination";
 
 // Recursively sum total_cards for node and its children.
 const sumTotalCards = (node) => {
   const own = node.total_cards || 0;
   return node.children.reduce((acc, child) => acc + sumTotalCards(child), own);
 };
+
+const itemsPerPage = 9;
 
 const DeckLeft = ({
   searchText,
@@ -25,6 +28,21 @@ const DeckLeft = ({
   selectedDeckId,
   handleSelectDeck,
 }) => {
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchText]);
+
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(treeDecks.length / itemsPerPage));
+  }, [treeDecks]);
+
+  const paginatedDecks = useMemo(() => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return treeDecks.slice(startIndex, startIndex + itemsPerPage);
+  }, [treeDecks, page]);
+
   const renderNode = (node, depth) => {
     const currentDepth = depth ?? 0;
 
@@ -34,9 +52,8 @@ const DeckLeft = ({
     return (
       <div key={node.id} className="deck-tree-node">
         <div
-          className={`deck-tree-row ${
-            currentDepth === 0 ? "deck-tree-row--root" : "deck-tree-row--child"
-          } ${dropTargetId === node.id ? "deck-tree-row--drop" : ""}`}
+          className={`deck-tree-row ${currentDepth === 0 ? "deck-tree-row--root" : "deck-tree-row--child"
+            } ${dropTargetId === node.id ? "deck-tree-row--drop" : ""}`}
           style={{ marginLeft: `${currentDepth * 24}px` }}
           draggable
           onDragStart={(e) => handleDragStart(e, node.id)}
@@ -66,9 +83,8 @@ const DeckLeft = ({
           <div className="deck-row-main">
             <button
               type="button"
-              className={`deck-row-name ${
-                selectedDeckId === node.id ? "deck-row-name--selected" : ""
-              }`}
+              className={`deck-row-name ${selectedDeckId === node.id ? "deck-row-name--selected" : ""
+                }`}
               onClick={() => handleSelectDeck(node.id)}
             >
               {node.name}
@@ -123,9 +139,25 @@ const DeckLeft = ({
           {treeDecks.length === 0 ? (
             <p className="decks-state">No matching decks found.</p>
           ) : (
-            <div className="deck-tree-list">
-              {treeDecks.map((node) => renderNode(node))}
-            </div>
+            <>
+              <div className="deck-tree-list">
+                {paginatedDecks.map((node) => renderNode(node))}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="decks-pagination" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
+                  <Pagination
+                    count={totalPages}
+                    page={page}
+                    color="primary"
+                    shape="rounded"
+                    onChange={(event, value) => {
+                      setPage(value);
+                    }}
+                  />
+                </div>
+              )}
+            </>
           )}
         </>
       )}

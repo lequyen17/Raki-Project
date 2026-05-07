@@ -4,6 +4,8 @@ import api from "../../api/api";
 import "./Cards.css";
 import Pagination from "@mui/material/Pagination";
 
+const itemsPerPage = 10;
+
 const Cards = () => {
   const navigate = useNavigate();
   const { deckId } = useParams();
@@ -15,18 +17,14 @@ const Cards = () => {
   const [filter, setFilter] = useState("all");
 
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
   const fetchCards = async () => {
     try {
       setLoading(true);
       setError("");
-      const res = await api.get(
-        `/api/user/decks/${deckId}/cards/?page=${page}`,
-      );
+      const res = await api.get(`/api/user/decks/${deckId}/cards/`);
       setDeckName(res.data?.deck_name || "");
       setCards(res.data?.results || []);
-      setTotalPages(Math.ceil((res.data?.count || 0) / 10));
     } catch (err) {
       if (err.response?.status === 401) {
         localStorage.removeItem("access_token");
@@ -46,7 +44,7 @@ const Cards = () => {
       return;
     }
     fetchCards();
-  }, [deckId, page, navigate]);
+  }, [deckId, navigate]);
 
   const getCardStatus = (card) => {
     const nextReview = card?.next_review ? new Date(card.next_review) : null;
@@ -70,6 +68,19 @@ const Cards = () => {
       return matchesSearch && matchesFilter;
     });
   }, [cards, searchText, filter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchText, filter]);
+
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(filteredCards.length / itemsPerPage));
+  }, [filteredCards]);
+
+  const paginatedCards = useMemo(() => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return filteredCards.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredCards, page]);
 
   const summary = useMemo(() => {
     return cards.reduce(
@@ -193,7 +204,7 @@ const Cards = () => {
             ) : (
               <>
                 <div className="cards-list">
-                  {filteredCards.map((card) => {
+                  {paginatedCards.map((card) => {
                     const status = getCardStatus(card);
 
                     return (
@@ -224,17 +235,19 @@ const Cards = () => {
                   })}
                 </div>
 
-                <div className="cards-pagination">
-                  <Pagination
-                    count={totalPages}
-                    page={page}
-                    color="primary"
-                    shape="rounded"
-                    onChange={(event, value) => {
-                      setPage(value);
-                    }}
-                  />
-                </div>
+                {totalPages > 1 && (
+                  <div className="cards-pagination">
+                    <Pagination
+                      count={totalPages}
+                      page={page}
+                      color="primary"
+                      shape="rounded"
+                      onChange={(event, value) => {
+                        setPage(value);
+                      }}
+                    />
+                  </div>
+                )}
               </>
             )}
           </>
@@ -243,3 +256,5 @@ const Cards = () => {
     </div>
   );
 };
+// Cuối file Cards.js
+export default Cards;
