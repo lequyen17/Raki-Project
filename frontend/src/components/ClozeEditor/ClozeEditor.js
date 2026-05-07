@@ -1,4 +1,5 @@
 import React, { useRef } from "react";
+import toast from "react-hot-toast";
 import "./ClozeEditor.css";
 
 const ClozeEditor = ({ value, onChange, placeholder, className, isCloze, onDragOver, onDrop }) => {
@@ -13,7 +14,7 @@ const ClozeEditor = ({ value, onChange, placeholder, className, isCloze, onDragO
     const selectedText = value.substring(start, end);
 
     if (!selectedText) {
-      alert("Please select some text to cloze.");
+      toast.error("Please select some text to cloze.");
       return;
     }
 

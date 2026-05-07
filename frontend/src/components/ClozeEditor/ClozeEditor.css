@@ -34,9 +34,30 @@
   font-family: inherit;
   font-size: 1rem;
   resize: vertical;
+  box-sizing: border-box;
 }
 
 .cloze-textarea:focus {
   outline: none;
   border-color: var(--primary-color, #007bff);
+}
+.cloze-editor-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  /* Đảm bảo không tạo overflow ngầm */
+  overflow: visible; 
+}
+
+.cloze-textarea {
+  width: 100%;
+  min-height: 120px; /* Tăng lên một chút cho dễ nhìn */
+  padding: 0.75rem;
+  border: 1px solid var(--ac-border); /* Dùng chung biến màu với card-card */
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+  display: block; /* Tránh các khoảng hở inline */
 }

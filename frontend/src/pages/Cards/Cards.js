@@ -236,7 +236,14 @@ const Cards = () => {
                 </div>
 
                 {totalPages > 1 && (
-                  <div className="cards-pagination">
+                  <div
+                    className="cards-pagination"
+                    style={{
+                      marginTop: "1rem",
+                      display: "flex",
+                      justifyContent: "center",
+                    }}
+                  >
                     <Pagination
                       count={totalPages}
                       page={page}

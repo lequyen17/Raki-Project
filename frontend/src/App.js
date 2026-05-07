@@ -10,6 +10,7 @@ import Study from "./pages/Study/Study";
 import Header from "./components/Header/Header";
 import Footer from "./components/Footer/Footer";
 import { AuthProvider } from "./context/AuthContext";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
       {" "}
       {/* Bọc ngoài cùng để "phủ sóng" dữ liệu cho toàn App */}
       <Router>
+        <Toaster position="top-center" reverseOrder={false} />
         <Header />
         <Routes>
           <Route path="/" element={<Login />} />

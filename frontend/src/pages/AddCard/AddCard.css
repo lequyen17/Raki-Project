@@ -402,3 +402,95 @@ input:checked + .slider:before {
 .slider.round:before {
   border-radius: 50%;
 }
+
+/* Layout for nt-step-2 */
+.nt-step-2-layout {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.nt-sidebar {
+  flex: 0 0 28%;
+  min-width: 220px;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.sticky-sidebar {
+  /* No longer needed, logic moved to nt-sidebar */
+}
+
+.nt-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.chips-container.column-layout {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.field-chip {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.chips-container.column-layout .field-chip {
+  width: max-content;
+}
+
+.drag-handle {
+  opacity: 0.5;
+  margin-right: 0.4rem;
+  font-weight: bold;
+  user-select: none;
+}
+
+.field-chip:active,
+.field-chip:active .drag-handle {
+  cursor: grabbing;
+}
+
+@media (max-width: 768px) {
+  .nt-step-2-layout {
+    flex-direction: column;
+  }
+  
+  .nt-sidebar {
+    flex: auto;
+    width: 100%;
+  }
+
+  .sticky-sidebar {
+    position: static;
+  }
+  
+  .chips-container.column-layout {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .chips-container.column-layout .field-chip {
+    width: auto;
+  }
+}
+
+.chips-container.column-layout {
+  display: flex;
+  flex-direction: row; /* Đổi từ column sang row */
+  flex-wrap: wrap;     /* Cho phép xuống dòng */
+  align-items: flex-start;
+  gap: 0.5rem;         /* Khoảng cách giữa các chip */
+}
+
+/* Sidebar giữ nguyên vị trí khi cuộn */
+.nt-sidebar {
+  flex: 0 0 280px;      /* Cố định chiều rộng sidebar một chút */
+  position: sticky;
+  top: 1rem;           /* Khoảng cách từ đỉnh màn hình khi cuộn */
+  height: fit-content; /* Quan trọng: để sticky hoạt động */
+  align-self: flex-start;
+}

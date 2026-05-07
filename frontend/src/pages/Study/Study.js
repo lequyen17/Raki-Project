@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
 import { tokenizeTemplate } from "../../utils/cardParser";
+import toast from "react-hot-toast";
 import "./Study.css";
 
 const Study = () => {
@@ -77,7 +78,7 @@ const Study = () => {
       setCurrentIndex((prev) => prev + 1);
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.error || "Review failed.");
+      toast.error(err.response?.data?.error || "Review failed.");
     } finally {
       setSubmitting(false);
     }

@@ -52,8 +52,9 @@ const DeckLeft = ({
     return (
       <div key={node.id} className="deck-tree-node">
         <div
-          className={`deck-tree-row ${currentDepth === 0 ? "deck-tree-row--root" : "deck-tree-row--child"
-            } ${dropTargetId === node.id ? "deck-tree-row--drop" : ""}`}
+          className={`deck-tree-row ${
+            currentDepth === 0 ? "deck-tree-row--root" : "deck-tree-row--child"
+          } ${dropTargetId === node.id ? "deck-tree-row--drop" : ""}`}
           style={{ marginLeft: `${currentDepth * 24}px` }}
           draggable
           onDragStart={(e) => handleDragStart(e, node.id)}
@@ -83,8 +84,9 @@ const DeckLeft = ({
           <div className="deck-row-main">
             <button
               type="button"
-              className={`deck-row-name ${selectedDeckId === node.id ? "deck-row-name--selected" : ""
-                }`}
+              className={`deck-row-name ${
+                selectedDeckId === node.id ? "deck-row-name--selected" : ""
+              }`}
               onClick={() => handleSelectDeck(node.id)}
             >
               {node.name}
@@ -145,7 +147,14 @@ const DeckLeft = ({
               </div>
 
               {totalPages > 1 && (
-                <div className="decks-pagination" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
+                <div
+                  className="decks-pagination"
+                  style={{
+                    marginTop: "1rem",
+                    display: "flex",
+                    justifyContent: "center",
+                  }}
+                >
                   <Pagination
                     count={totalPages}
                     page={page}
