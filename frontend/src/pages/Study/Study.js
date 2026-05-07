@@ -139,7 +139,8 @@ console.log(backHTML);
     currentCard.field_values,
     currentCard.cloze_index || 0,
     false,
-    {}
+    {},
+    currentCard.template.back
   );
   
   let rawBackTemplate = currentCard.template.back;

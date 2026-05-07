@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import "./ClozeEditor.css";
 
-const ClozeEditor = ({ value, onChange, placeholder, className, isCloze }) => {
+const ClozeEditor = ({ value, onChange, placeholder, className, isCloze, onDragOver, onDrop }) => {
   const textareaRef = useRef(null);
 
   const handleClozeClick = () => {
@@ -67,6 +67,8 @@ const ClozeEditor = ({ value, onChange, placeholder, className, isCloze }) => {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
       />
     </div>
   );

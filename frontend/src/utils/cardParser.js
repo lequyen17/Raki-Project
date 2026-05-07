@@ -4,6 +4,7 @@ export const tokenizeTemplate = (
   clozeIndex = 0,
   isBack = false,
   typedAnswers = {},
+  backTemplateStr = "",
 ) => {
   if (!templateStr) return "";
 
@@ -12,7 +13,7 @@ export const tokenizeTemplate = (
 
   let processedStr = templateStr;
 
-  // 1. Process {{type:FieldName}}
+  // 1. Process {{type:FieldName}} on the current string (typically Back side)
   processedStr = processedStr.replace(
     /\{\{type:([^}]+)\}\}/g,
     (match, fieldName) => {
@@ -27,6 +28,26 @@ export const tokenizeTemplate = (
       return `<input type="text" id="type-answer-${trimmed}" data-field="${trimmed}" class="type-answer-input" placeholder="Type answer here..." />`;
     },
   );
+
+  // 1.5. If rendering the Front side, look at the Back side to see if there are any type-in-answer fields
+  // If so, append input boxes for them automatically, BUT only if they aren't already in the front template.
+  if (!isBack && backTemplateStr) {
+    const typeMatches = [...backTemplateStr.matchAll(/\{\{type:([^}]+)\}\}/g)];
+    const inputs = typeMatches
+      .map((match) => match[1].trim())
+      .filter((fieldName) => {
+        // Only append if the front template doesn't already have {{type:FieldName}}
+        const regex = new RegExp(`\\{\\{type:\\s*${fieldName}\\s*\\}\\}`);
+        return !regex.test(templateStr);
+      })
+      .map((fieldName) => {
+        return `<br><input type="text" id="type-answer-${fieldName}" data-field="${fieldName}" class="type-answer-input" placeholder="Type answer for ${fieldName}..." />`;
+      });
+      
+    if (inputs.length > 0) {
+      processedStr += inputs.join("");
+    }
+  }
 
   // 2. Process normal {{FieldName}} and cloze
   processedStr = processedStr.replace(

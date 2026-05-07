@@ -28,10 +28,14 @@ def note_types_view(request):
             for def_name in definitions_data:
                 FieldDefinition.objects.create(note_type=note_type, name=def_name)
             for tmpl_data in templates_data:
+                front_content = tmpl_data.get("front", "")
+                if tmpl_data.get("is_cloze"):
+                    front_content = f"<!--CLOZE_TEMPLATE-->\n{front_content}"
+                
                 Template.objects.create(
                     note_type=note_type,
                     name=tmpl_data.get("name", "Template"),
-                    front=tmpl_data.get("front", ""),
+                    front=front_content,
                     back=tmpl_data.get("back", ""),
                 )
 
@@ -53,7 +57,13 @@ def note_types_view(request):
                 "user_id": nt.user_id,
                 "definitions": [{"id": d.id, "name": d.name} for d in defs],
                 "templates": [
-                    {"id": t.id, "name": t.name, "front": t.front, "back": t.back}
+                    {
+                        "id": t.id,
+                        "name": t.name,
+                        "is_cloze": "<!--CLOZE_TEMPLATE-->" in t.front or "{{cloze:" in t.front,
+                        "front": t.front.replace("<!--CLOZE_TEMPLATE-->\n", "").replace("<!--CLOZE_TEMPLATE-->", ""),
+                        "back": t.back
+                    }
                     for t in tmpls
                 ],
             }
@@ -100,17 +110,31 @@ def create_note(request, deck_id):
         templates = note_type.templates.all()
         created_cards = []
         for t in templates:
-            max_cloze = 0
-            for val_text in values_data.values():
-                matches = re.findall(r"\{\{c(\d+)::", val_text)
-                for m in matches:
+            is_cloze_template = "<!--CLOZE_TEMPLATE-->" in t.front or "{{cloze:" in t.front
+            
+            if is_cloze_template:
+                max_cloze = 0
+                # Check field values for clozes
+                for val_text in values_data.values():
+                    matches = re.findall(r"\{\{c(\d+)::", val_text)
+                    for m in matches:
+                        idx = int(m)
+                        if idx > max_cloze:
+                            max_cloze = idx
+                
+                # Check the template itself for clozes (for custom cloze templates)
+                template_matches = re.findall(r"\{\{c(\d+)::", t.front)
+                for m in template_matches:
                     idx = int(m)
                     if idx > max_cloze:
                         max_cloze = idx
 
-            if max_cloze > 0:
-                for i in range(1, max_cloze + 1):
-                    c = Card.objects.create(note=note, template=t, cloze_index=i)
+                if max_cloze > 0:
+                    for i in range(1, max_cloze + 1):
+                        c = Card.objects.create(note=note, template=t, cloze_index=i)
+                        created_cards.append(c.id)
+                else:
+                    c = Card.objects.create(note=note, template=t, cloze_index=0)
                     created_cards.append(c.id)
             else:
                 c = Card.objects.create(note=note, template=t, cloze_index=0)
