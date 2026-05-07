@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from deck.models import Deck
 from card.models import Card
-from progress.models import Progress
+from card.models import Progress
 
 
 @api_view(["GET"])
