@@ -86,7 +86,7 @@ const Study = () => {
 
   const handleShowAnswer = () => {
     // Capture typed answers from DOM
-    const inputs = document.querySelectorAll('.type-answer-input');
+    const inputs = document.querySelectorAll(".type-answer-input");
     const newAnswers = {};
     inputs.forEach((input) => {
       newAnswers[input.dataset.field] = input.value;
@@ -95,9 +95,9 @@ const Study = () => {
     setShowAnswer(true);
 
     console.log(inputs);
-console.log(newAnswers);
-console.log(currentCard.template.back);
-console.log(backHTML);
+    console.log(newAnswers);
+    console.log(currentCard.template.back);
+    console.log(backHTML);
   };
 
   if (loading) {
@@ -141,12 +141,15 @@ console.log(backHTML);
     currentCard.cloze_index || 0,
     false,
     {},
-    currentCard.template.back
+    currentCard.template.back,
   );
-  
+
   let rawBackTemplate = currentCard.template.back;
   if (rawBackTemplate.includes("{{FrontSide}}")) {
-    rawBackTemplate = rawBackTemplate.replace(/\{\{FrontSide\}\}/g, currentCard.template.front);
+    rawBackTemplate = rawBackTemplate.replace(
+      /\{\{FrontSide\}\}/g,
+      currentCard.template.front,
+    );
   }
 
   let backHTML = tokenizeTemplate(
@@ -154,9 +157,9 @@ console.log(backHTML);
     currentCard.field_values,
     currentCard.cloze_index || 0,
     true,
-    typedAnswers
+    typedAnswers,
   );
-  
+
   // Split on <hr id='answer'> if present, and replace with back content, or Anki-like styling
   if (backHTML.includes("<hr id='answer'>")) {
     // We already have the front generated natively by Anki on the back, but here we just render the raw backHTML
@@ -200,10 +203,7 @@ console.log(backHTML);
 
       <div className="study-controls">
         {!showAnswer ? (
-          <button
-            className="study-show-answer-btn"
-            onClick={handleShowAnswer}
-          >
+          <button className="study-show-answer-btn" onClick={handleShowAnswer}>
             Show Answer
           </button>
         ) : (

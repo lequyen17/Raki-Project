@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useMemo } from "react";
-import Pagination from "@mui/material/Pagination";
+import Button from "../../../components/Common/Button/Button.js";
+import Input from "../../../components/Common/Input/Input.js";
+import Pagination, {
+  usePagination,
+} from "../../../components/Common/Pagination/Pagination";
 
 // Recursively sum total_cards for node and its children.
 const sumTotalCards = (node) => {
   const own = node.total_cards || 0;
   return node.children.reduce((acc, child) => acc + sumTotalCards(child), own);
 };
-
-const itemsPerPage = 9;
 
 const DeckLeft = ({
   searchText,
@@ -28,21 +30,6 @@ const DeckLeft = ({
   selectedDeckId,
   handleSelectDeck,
 }) => {
-  const [page, setPage] = useState(1);
-
-  useEffect(() => {
-    setPage(1);
-  }, [searchText]);
-
-  const totalPages = useMemo(() => {
-    return Math.max(1, Math.ceil(treeDecks.length / itemsPerPage));
-  }, [treeDecks]);
-
-  const paginatedDecks = useMemo(() => {
-    const startIndex = (page - 1) * itemsPerPage;
-    return treeDecks.slice(startIndex, startIndex + itemsPerPage);
-  }, [treeDecks, page]);
-
   const renderNode = (node, depth) => {
     const currentDepth = depth ?? 0;
 
@@ -94,13 +81,14 @@ const DeckLeft = ({
 
             <span className="deck-row-count">{sumTotalCards(node)} cards</span>
 
-            <button
-              type="button"
-              className="deck-view-btn"
+            <Button
+              variant="outline"
+              color="blue"
+              size="sm"
               onClick={() => handleSelectDeck(node.id)}
             >
               View
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -110,6 +98,13 @@ const DeckLeft = ({
       </div>
     );
   };
+
+  const {
+    page,
+    setPage,
+    totalPages,
+    paginatedItems: paginatedDecks,
+  } = usePagination(treeDecks, 9);
 
   return (
     <div className="decks-container">
@@ -123,13 +118,14 @@ const DeckLeft = ({
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
-        <button
+        <Button
           type="button"
-          className="decks-add-btn"
+          color="blue"
+          size="md"
           onClick={handleOpenCreateModal}
         >
           Add New Deck
-        </button>
+        </Button>
       </div>
 
       {loading && <p className="decks-state">Loading decks...</p>}
@@ -146,26 +142,11 @@ const DeckLeft = ({
                 {paginatedDecks.map((node) => renderNode(node))}
               </div>
 
-              {totalPages > 1 && (
-                <div
-                  className="decks-pagination"
-                  style={{
-                    marginTop: "1rem",
-                    display: "flex",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Pagination
-                    count={totalPages}
-                    page={page}
-                    color="primary"
-                    shape="rounded"
-                    onChange={(event, value) => {
-                      setPage(value);
-                    }}
-                  />
-                </div>
-              )}
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
             </>
           )}
         </>

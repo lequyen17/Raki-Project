@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../../api/api";
+import Button from "../../components/Common/Button/Button.js";
+import Input from "../../components/Common/Input/Input.js";
 import "./Register.css";
 
 const Register = () => {
@@ -116,9 +118,7 @@ const Register = () => {
       });
       setErrors({});
 
-      setTimeout(() => {
-        navigate("/login");
-      }, 1000);
+      navigate("/login");
     } catch (err) {
       if (err.response && err.response.data && err.response.data.error) {
         setGeneralError(err.response.data.error);
@@ -142,110 +142,91 @@ const Register = () => {
         )}
         {generalError && <div className="error">{generalError}</div>}
 
-        <div className="input-group">
-          <label>First Name *</label>
-          <input
-            name="first_name"
-            type="text"
-            className={`input ${errors.first_name ? "input-error" : ""}`}
-            value={formData.first_name}
-            onChange={handleChange}
-            placeholder="Enter first name"
-          />
-          {errors.first_name && (
-            <span className="error-text">{errors.first_name}</span>
-          )}
-        </div>
+        <Input
+          label="First Name"
+          name="first_name"
+          value={formData.first_name}
+          onChange={handleChange}
+          placeholder="Enter first name"
+          required
+          error={errors.first_name}
+        />
 
-        <div className="input-group">
-          <label>Last Name *</label>
-          <input
-            name="last_name"
-            type="text"
-            className={`input ${errors.last_name ? "input-error" : ""}`}
-            value={formData.last_name}
-            onChange={handleChange}
-            placeholder="Enter last name"
-          />
-          {errors.last_name && (
-            <span className="error-text">{errors.last_name}</span>
-          )}
-        </div>
+        <Input
+          label="Last Name"
+          name="last_name"
+          value={formData.last_name}
+          onChange={handleChange}
+          placeholder="Enter last name"
+          required
+          error={errors.last_name}
+        />
 
-        <div className="input-group">
-          <label>Username *</label>
-          <input
-            name="username"
-            type="text"
-            className={`input ${errors.username ? "input-error" : ""}`}
-            value={formData.username}
-            onChange={handleChange}
-            placeholder="Enter username"
-          />
-          {errors.username && (
-            <span className="error-text">{errors.username}</span>
-          )}
-        </div>
+        <Input
+          label="Username"
+          name="username"
+          value={formData.username}
+          onChange={handleChange}
+          placeholder="Enter username"
+          required
+          error={errors.username}
+        />
 
-        <div className="input-group">
-          <label>Email *</label>
-          <input
-            name="email"
-            type="email"
-            className={`input ${errors.email ? "input-error" : ""}`}
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Enter email"
-          />
-          {errors.email && <span className="error-text">{errors.email}</span>}
-        </div>
+        <Input
+          label="Email"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          placeholder="Enter email"
+          required
+          error={errors.email}
+        />
 
-        <div className="input-group">
-          <label>Phone Number</label>
-          <input
-            name="phone"
-            type="tel"
-            className={`input ${errors.phone ? "input-error" : ""}`}
-            value={formData.phone}
-            onChange={handleChange}
-            placeholder="Enter phone (optional)"
-          />
-          {errors.phone && <span className="error-text">{errors.phone}</span>}
-        </div>
+        <Input
+          label="Phone Number"
+          name="phone"
+          type="tel"
+          value={formData.phone}
+          onChange={handleChange}
+          placeholder="Enter phone (optional)"
+          error={errors.phone}
+        />
 
-        <div className="input-group">
-          <label>Password *</label>
-          <input
-            name="password"
-            type="password"
-            className={`input ${errors.password ? "input-error" : ""}`}
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Enter password"
-          />
-          {errors.password && (
-            <span className="error-text">{errors.password}</span>
-          )}
-        </div>
+        <Input
+          label="Password"
+          name="password"
+          type="password"
+          value={formData.password}
+          onChange={handleChange}
+          placeholder="Enter password"
+          required
+          error={errors.password}
+        />
 
-        <div className="input-group">
-          <label>Confirm Password *</label>
-          <input
-            name="confirm_password"
-            type="password"
-            className={`input ${errors.confirm_password ? "input-error" : ""}`}
-            value={formData.confirm_password}
-            onChange={handleChange}
-            placeholder="Confirm password"
-          />
-          {errors.confirm_password && (
-            <span className="error-text">{errors.confirm_password}</span>
-          )}
-        </div>
+        <Input
+          label="Confirm Password"
+          name="confirm_password"
+          type="password"
+          value={formData.confirm_password}
+          onChange={handleChange}
+          placeholder="Confirm password"
+          required
+          error={errors.confirm_password}
+        />
 
-        <button type="submit" className="register-button" disabled={loading}>
-          {loading ? "Please wait..." : "Register"}
-        </button>
+        <div
+          style={{ display: "flex", justifyContent: "center", width: "100%" }}
+        >
+          <Button
+            type="submit"
+            color="blue"
+            size="lg"
+            isLoading={loading} // Truyền state loading vào đây
+          >
+            Register
+          </Button>
+        </div>
 
         <div className="login-link">
           Already have an account?{" "}

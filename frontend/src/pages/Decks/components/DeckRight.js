@@ -1,5 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import Button from "../../../components/Common/Button/Button.js";
+import Input from "../../../components/Common/Input/Input.js";
 
 const DeckRight = ({
   selectedDeckId,
@@ -168,36 +170,40 @@ const DeckRight = ({
           </div>
 
           <div className="deck-detail-actions">
-            <button
+            <Button
               type="button"
-              className="deck-action-btn deck-action-btn--primary"
+              color="blue"
               onClick={() => navigate(`/decks/${selectedDeckId}/study`)}
             >
               Study Now
-            </button>
+            </Button>
 
-            <button
+            <Button
               type="button"
-              className="deck-action-btn"
+              variant="outline"
+              color="blue"
               onClick={handleOpenEditModal}
             >
               Edit
-            </button>
-            <button
+            </Button>
+
+            <Button
               type="button"
-              className="deck-action-btn deck-action-btn--danger"
+              color="red"
               disabled={deletingDeck}
+              isLoading={deletingDeck}
               onClick={handleDeleteDeck}
             >
-              {deletingDeck ? "..." : "Delete"}
-            </button>
-            <button
+              Delete
+            </Button>
+
+            <Button
               type="button"
-              className="deck-action-btn deck-action-btn--primary"
+              color="green"
               onClick={() => navigate(`/decks/${selectedDeckId}/cards`)}
             >
               View
-            </button>
+            </Button>
           </div>
         </>
       )}

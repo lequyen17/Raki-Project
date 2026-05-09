@@ -1,0 +1,130 @@
+/* Base */
+.btn-custom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 7px;
+  cursor: pointer;
+
+  font-weight: 600;
+
+  transition: all 0.2s ease;
+}
+
+/* Disabled */
+.btn-custom:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Content */
+.btn-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Sizes */
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-md {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+.btn-lg {
+  padding: 14px 28px;
+  font-size: 16px;
+}
+
+/* Full width */
+.btn-full {
+  width: 100%;
+}
+
+/* ===== SOLID ===== */
+
+.btn-solid.btn-blue {
+  background: #3b82f6;
+  color: white;
+  border: none;
+}
+
+.btn-solid.btn-blue:hover:not(:disabled) {
+  background: #095ce2;
+}
+
+.btn-solid.btn-red {
+  background: #dc3545;
+  color: white;
+  border: none;
+}
+
+.btn-solid.btn-red:hover:not(:disabled) {
+  background: #a71d2a;
+}
+
+.btn-solid.btn-green {
+  background: #28a745;
+  color: white;
+  border: none;
+}
+
+.btn-solid.btn-green:hover:not(:disabled) {
+  background: #1e7e34;
+}
+
+/* ===== OUTLINE ===== */
+
+.btn-outline.btn-blue {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.btn-outline.btn-blue:hover:not(:disabled) {
+  background: #dbeafe;
+}
+
+.btn-outline.btn-green {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.btn-outline.btn-green:hover:not(:disabled) {
+  background: #dcfce7;
+}
+
+.btn-outline.btn-red {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.btn-outline.btn-red:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+/* Spinner */
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+
+  border-radius: 50%;
+
+  animation: btn-spin 0.8s linear infinite;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

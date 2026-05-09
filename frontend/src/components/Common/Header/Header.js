@@ -1,7 +1,8 @@
 import React, { useState, useContext, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AuthContext } from "../../context/AuthContext";
+import { AuthContext } from "../../../context/AuthContext.js";
 import "./Header.css";
+import Button from "../../../components/Common/Button/Button.js";
 
 const Header = () => {
   const { currentUser, logout } = useContext(AuthContext);

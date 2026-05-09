@@ -23,29 +23,7 @@
   margin-bottom: 1rem;
 }
 
-.cards-btn {
-  border: none;
-  border-radius: 8px;
-  padding: 0.58rem 0.9rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-}
 
-.cards-btn--secondary {
-  background: #e2e8f0;
-  color: #1f2937;
-}
-
-.cards-btn--primary {
-  background: #3b82f6;
-  color: #ffffff;
-}
-
-.cards-btn--success {
-  background: #10b981;
-  color: #ffffff;
-}
 
 .cards-header {
   margin-bottom: 0.9rem;

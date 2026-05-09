@@ -2,6 +2,8 @@ import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
 import { AuthContext } from "../../context/AuthContext";
+import Button from "../../components/Common/Button/Button.js";
+import Input from "../../components/Common/Input/Input.js";
 import "./Login.css"; // CSS đã được import ở đây
 
 const Login = () => {
@@ -52,35 +54,38 @@ const Login = () => {
 
         {error && <div className="login-error">{error}</div>}
 
-        <div className="input-group">
-          <label>Username</label>
-          <input
-            name="username"
-            type="text"
-            className="login-input"
-            value={formData.username}
-            onChange={handleChange}
-            required
-            placeholder="Enter your username"
-          />
-        </div>
+        <Input
+          label="Username"
+          name="username"
+          type="text"
+          value={formData.username}
+          onChange={handleChange}
+          required
+          placeholder="Enter your username"
+        />
 
-        <div className="input-group">
-          <label>Password</label>
-          <input
-            name="password"
-            type="password"
-            className="login-input"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            placeholder="Enter your password"
-          />
-        </div>
+        <Input
+          label="Password"
+          name="password"
+          type="password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+          placeholder="Enter your password"
+        />
 
-        <button type="submit" className="login-button" disabled={loading}>
-          {loading ? "Please wait..." : "Sign In"}
-        </button>
+        <div
+          style={{ display: "flex", justifyContent: "center", width: "100%" }}
+        >
+          <Button
+            type="submit"
+            color="blue"
+            size="lg" // Kích thước trung bình
+            isLoading={loading} // Truyền state loading vào đây
+          >
+            Sign In
+          </Button>
+        </div>
       </form>
     </div>
   );

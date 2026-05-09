@@ -4,6 +4,13 @@ import api from "../../api/api";
 import ClozeEditor from "../../components/ClozeEditor/ClozeEditor";
 import toast from "react-hot-toast";
 import "./AddCard.css";
+import Button from "../../components/Common/Button/Button.js";
+import Input from "../../components/Common/Input/Input.js";
+import {
+  extractClozeIndexes,
+  isValidClozeSequence,
+  hasClozeDeletion,
+} from "../../utils/cloze";
 
 const AddCard = () => {
   const navigate = useNavigate();
@@ -26,34 +33,6 @@ const AddCard = () => {
   const [newTemplates, setNewTemplates] = useState([]);
   const [ntStep, setNtStep] = useState(1);
   const [ntError, setNtError] = useState("");
-
-  const extractClozeIndexes = (text) => {
-    const regex = /\{\{c(\d+)::.*?\}\}/g;
-    const indexes = [];
-    let match;
-
-    while ((match = regex.exec(text)) !== null) {
-      indexes.push(parseInt(match[1]));
-    }
-
-    return indexes;
-  };
-
-  const isValidClozeSequence = (indexes) => {
-    if (indexes.length === 0) return false;
-
-    const unique = [...new Set(indexes)].sort((a, b) => a - b);
-
-    // phải bắt đầu từ 1
-    if (unique[0] !== 1) return false;
-
-    // không được skip số
-    for (let i = 0; i < unique.length; i++) {
-      if (unique[i] !== i + 1) return false;
-    }
-
-    return true;
-  };
 
   const fetchDeckInfo = async () => {
     try {
@@ -129,7 +108,7 @@ const AddCard = () => {
 
     if (isSystemCloze) {
       const values = Object.values(noteValues);
-      const hasAnyCloze = values.some((val) => /\{\{c\d+::[^}]+\}\}/.test(val));
+      const hasAnyCloze = values.some((val) => hasClozeDeletion(val));
 
       if (!hasAnyCloze) {
         toast.error("Cloze card must contain at least one {{c1::...}}");
@@ -150,7 +129,9 @@ const AddCard = () => {
     if (textToValidate) {
       const indexes = extractClozeIndexes(textToValidate);
       if (indexes.length > 0 && !isValidClozeSequence(indexes)) {
-        toast.error("Cloze must start from c1 and not skip numbers (c1, c2, c3...)");
+        toast.error(
+          "Cloze must start from c1 and not skip numbers (c1, c2, c3...)",
+        );
         return;
       }
     }
@@ -265,6 +246,18 @@ const AddCard = () => {
       }
     }
 
+    const hasInvalidClozeTemplate = newTemplates.some((t) => {
+      if (!t.is_cloze) return false;
+      return !hasClozeDeletion(t.front);
+    });
+
+    if (hasInvalidClozeTemplate) {
+      toast.error(
+        "Cloze templates must contain at least one {{c1::...}} in Front design.",
+      );
+      return;
+    }
+
     try {
       const res = await api.post("/api/user/note-types/", {
         name: newNoteTypeName,
@@ -351,12 +344,13 @@ const AddCard = () => {
                     ))}
                   </select>
                 </div>
-                <button
-                  className="btn-secondary btn-action"
+                <Button
                   onClick={() => setShowCreateNoteType(true)}
+                  color="blue"
+                  size="lg"
                 >
                   + Create New NoteType
-                </button>
+                </Button>
               </div>
 
               <hr className="divider" />

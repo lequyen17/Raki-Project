@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
 import "./Cards.css";
-import Pagination from "@mui/material/Pagination";
-
-const itemsPerPage = 10;
+import Pagination, {
+  usePagination,
+} from "../../components/Common/Pagination/Pagination";
+import Button from "../../components/Common/Button/Button.js";
+import Input from "../../components/Common/Input/Input.js";
 
 const Cards = () => {
   const navigate = useNavigate();
@@ -15,8 +17,6 @@ const Cards = () => {
   const [error, setError] = useState("");
   const [searchText, setSearchText] = useState("");
   const [filter, setFilter] = useState("all");
-
-  const [page, setPage] = useState(1);
 
   const fetchCards = async () => {
     try {
@@ -69,18 +69,12 @@ const Cards = () => {
     });
   }, [cards, searchText, filter]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [searchText, filter]);
-
-  const totalPages = useMemo(() => {
-    return Math.max(1, Math.ceil(filteredCards.length / itemsPerPage));
-  }, [filteredCards]);
-
-  const paginatedCards = useMemo(() => {
-    const startIndex = (page - 1) * itemsPerPage;
-    return filteredCards.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredCards, page]);
+  const {
+    page,
+    setPage,
+    totalPages,
+    paginatedItems: paginatedCards,
+  } = usePagination(filteredCards);
 
   const summary = useMemo(() => {
     return cards.reduce(
@@ -111,27 +105,27 @@ const Cards = () => {
     <div className="cards-page">
       <div className="cards-container">
         <div className="cards-actions">
-          <button
-            type="button"
-            className="cards-btn cards-btn--secondary"
-            onClick={() => navigate("/decks")}
-          >
+          <Button type="button" size="md" onClick={() => navigate("/decks")}>
             Back to Decks
-          </button>
-          <button
+          </Button>
+
+          <Button
             type="button"
-            className="cards-btn cards-btn--success"
+            color="green"
+            size="md"
             onClick={() => navigate(`/decks/${deckId}/add-card`)}
           >
             + Add Card
-          </button>
-          <button
+          </Button>
+
+          <Button
             type="button"
-            className="cards-btn cards-btn--primary"
+            color="blue"
+            size="md"
             onClick={() => navigate(`/decks/${deckId}/study`)}
           >
             Study Now
-          </button>
+          </Button>
         </div>
 
         <div className="cards-header">
@@ -235,26 +229,11 @@ const Cards = () => {
                   })}
                 </div>
 
-                {totalPages > 1 && (
-                  <div
-                    className="cards-pagination"
-                    style={{
-                      marginTop: "1rem",
-                      display: "flex",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Pagination
-                      count={totalPages}
-                      page={page}
-                      color="primary"
-                      shape="rounded"
-                      onChange={(event, value) => {
-                        setPage(value);
-                      }}
-                    />
-                  </div>
-                )}
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                />
               </>
             )}
           </>

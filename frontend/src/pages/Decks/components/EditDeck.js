@@ -1,4 +1,6 @@
 import React from "react";
+import Button from "../../../components/Common/Button/Button.js";
+import Input from "../../../components/Common/Input/Input.js";
 
 const EditDeck = ({
   handleCloseEditModal,
@@ -28,10 +30,7 @@ const EditDeck = ({
             required
           />
 
-          <label
-            className="deck-modal-label"
-            htmlFor="edit-deck-description"
-          >
+          <label className="deck-modal-label" htmlFor="edit-deck-description">
             Description
           </label>
           <textarea
@@ -50,21 +49,24 @@ const EditDeck = ({
           {editError && <p className="deck-modal-error">{editError}</p>}
 
           <div className="deck-modal-actions">
-            <button
+            <Button
               type="button"
-              className="deck-modal-btn deck-modal-btn--cancel"
+              variant="outline"
+              color="red"
               onClick={handleCloseEditModal}
               disabled={isEditing}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+
+            <Button
               type="submit"
-              className="deck-modal-btn deck-modal-btn--submit"
+              color="blue"
+              isLoading={isEditing}
               disabled={isEditing}
             >
-              {isEditing ? "Saving..." : "Save Changes"}
-            </button>
+              Save Changes
+            </Button>
           </div>
         </form>
       </div>

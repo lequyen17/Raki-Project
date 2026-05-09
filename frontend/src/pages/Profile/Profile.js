@@ -2,6 +2,8 @@ import React, { useContext, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../api/api";
+import Button from "../../components/Common/Button/Button.js";
+import Input from "../../components/Common/Input/Input.js";
 import "./Profile.css";
 
 const Profile = () => {
@@ -167,15 +169,16 @@ const Profile = () => {
             </div>
 
             <div className="button-group">
-              <button onClick={() => navigate("/")} className="btn btn-blue">
+              <Button onClick={() => navigate("/decks")} color="blue" size="lg">
                 Back to Home
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setIsEditing(true)}
-                className="btn btn-green"
+                color="green"
+                size="lg"
               >
                 Edit Profile
-              </button>
+              </Button>
             </div>
           </>
         ) : (
@@ -183,67 +186,55 @@ const Profile = () => {
             <div className="section">
               <h2 className="section-title">Edit Information</h2>
 
-              <div className="form-group">
-                <label className="form-label">Email:</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={editData.email}
-                  onChange={handleEditChange}
-                  className="form-input"
-                />
-              </div>
+              <Input
+                label="Email"
+                name="email"
+                type="email"
+                value={editData.email}
+                onChange={handleEditChange}
+              />
 
-              <div className="form-group">
-                <label className="form-label">First Name:</label>
-                <input
-                  type="text"
-                  name="first_name"
-                  value={editData.first_name}
-                  onChange={handleEditChange}
-                  className="form-input"
-                />
-              </div>
+              <Input
+                label="First Name"
+                name="first_name"
+                value={editData.first_name}
+                onChange={handleEditChange}
+              />
 
-              <div className="form-group">
-                <label className="form-label">Last Name:</label>
-                <input
-                  type="text"
-                  name="last_name"
-                  value={editData.last_name}
-                  onChange={handleEditChange}
-                  className="form-input"
-                />
-              </div>
+              <Input
+                label="Last Name"
+                name="last_name"
+                value={editData.last_name}
+                onChange={handleEditChange}
+              />
 
-              <div className="form-group">
-                <label className="form-label">Phone Number:</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={editData.phone}
-                  onChange={handleEditChange}
-                  className="form-input"
-                />
-              </div>
+              <Input
+                label="Phone Number"
+                name="phone"
+                type="tel"
+                value={editData.phone}
+                onChange={handleEditChange}
+              />
             </div>
 
             <div className="button-group">
-              <button
+              <Button
                 onClick={handleSaveProfile}
                 disabled={isSaving}
-                className={`btn btn-green ${isSaving ? "disabled" : ""}`}
+                color="blue"
+                size="lg"
               >
-                {isSaving ? "Saving..." : "Save Changes"}
-              </button>
+                Save Changes
+              </Button>
 
-              <button
+              <Button
                 onClick={handleCancel}
                 disabled={isSaving}
-                className={`btn btn-gray ${isSaving ? "disabled" : ""}`}
+                size="lg"
+                color="green"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </>
         )}

@@ -1,4 +1,6 @@
 import React from "react";
+import Button from "../../../components/Common/Button/Button.js";
+import Input from "../../../components/Common/Input/Input.js";
 
 const CreateDeck = ({
   handleCloseCreateModal,
@@ -47,21 +49,24 @@ const CreateDeck = ({
           {createError && <p className="deck-modal-error">{createError}</p>}
 
           <div className="deck-modal-actions">
-            <button
+            <Button
               type="button"
-              className="deck-modal-btn deck-modal-btn--cancel"
+              variant="outline"
+              color="red"
               onClick={handleCloseCreateModal}
               disabled={isCreating}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+
+            <Button
               type="submit"
-              className="deck-modal-btn deck-modal-btn--submit"
+              color="blue"
+              isLoading={isCreating}
               disabled={isCreating}
             >
-              {isCreating ? "Creating..." : "Create Deck"}
-            </button>
+              Create Deck
+            </Button>
           </div>
         </form>
       </div>
