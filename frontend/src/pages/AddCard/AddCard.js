@@ -11,6 +11,7 @@ import {
   isValidClozeSequence,
   hasClozeDeletion,
 } from "../../utils/cloze";
+import CreateNoteType from "./components/CreateNoteType";
 
 const AddCard = () => {
   const navigate = useNavigate();
@@ -379,314 +380,26 @@ const AddCard = () => {
               </div>
             </div>
           ) : (
-            <div className="notetype-form-section card-card">
-              <div className="section-header">
-                <h2 className="section-title">Design Your Custom NoteType</h2>
-                <button
-                  className="btn-text"
-                  onClick={() => setShowCreateNoteType(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-
-              {ntStep === 1 ? (
-                <div className="nt-step-1">
-                  <div className="form-group">
-                    <label className="form-label">NoteType Name</label>
-                    <input
-                      className="form-input"
-                      value={newNoteTypeName}
-                      onChange={(e) => setNewNoteTypeName(e.target.value)}
-                      placeholder="e.g. English-Vietnamese"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Field Definitions</label>
-                    <div className="definitions-inputs">
-                      {newDefinitions.map((def) => (
-                        <div key={def.id} className="input-row">
-                          <input
-                            className="form-input"
-                            value={def.value}
-                            onChange={(e) =>
-                              handleDefChange(def.id, e.target.value)
-                            }
-                            placeholder="Field Name"
-                          />
-                          {newDefinitions.length > 1 && (
-                            <button
-                              className="btn-icon btn-danger"
-                              onClick={() => handleRemoveDefinition(def.id)}
-                            >
-                              &times;
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      className="btn-secondary btn-small"
-                      onClick={handleAddDefinition}
-                    >
-                      + Add Another Field
-                    </button>
-                  </div>
-
-                  {ntError && <p className="error-text">{ntError}</p>}
-
-                  <div className="section-footer">
-                    <button className="btn-primary" onClick={handleNextNtStep1}>
-                      Next: Design Layout &rarr;
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="nt-step-2-layout">
-                  <div className="nt-sidebar">
-                    <div className="fields-hint sticky-sidebar">
-                      <label
-                        className="form-label"
-                        style={{ marginBottom: "1rem", display: "block" }}
-                      >
-                        Available Fields (Drag into textareas):
-                      </label>
-                      <div className="chips-container column-layout">
-                        {validDefs.map((def, idx) => (
-                          <React.Fragment key={idx}>
-                            <div
-                              className="field-chip"
-                              draggable
-                              onDragStart={(e) =>
-                                e.dataTransfer.setData(
-                                  "text/plain",
-                                  `{{${def}}}`,
-                                )
-                              }
-                            >
-                              <span className="drag-handle">⋮⋮</span>{" "}
-                              {`{{${def}}}`}
-                            </div>
-                            <div
-                              className="field-chip type-chip"
-                              style={{
-                                backgroundColor: "#e8f0fe",
-                                color: "#1a73e8",
-                                border: "1px solid #1a73e8",
-                              }}
-                              draggable
-                              onDragStart={(e) =>
-                                e.dataTransfer.setData(
-                                  "text/plain",
-                                  `{{type:${def}}}`,
-                                )
-                              }
-                            >
-                              <span className="drag-handle">⋮⋮</span>{" "}
-                              {`{{type:${def}}}`}
-                            </div>
-                          </React.Fragment>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="nt-main">
-                    {ntError && (
-                      <p
-                        className="error-text"
-                        style={{ marginBottom: "1rem", fontWeight: "bold" }}
-                      >
-                        {ntError}
-                      </p>
-                    )}
-                    <div className="templates-container">
-                      {newTemplates.map((tmpl, index) => (
-                        <div key={tmpl.id} className="template-box-item">
-                          <header className="template-box-header">
-                            <h3 className="template-box-title">
-                              Card Template #{index + 1}
-                            </h3>
-                            {newTemplates.length > 1 && (
-                              <button
-                                className="btn-delete-link"
-                                onClick={() => handleRemoveTemplate(tmpl.id)}
-                              >
-                                Remove{" "}
-                              </button>
-                            )}
-                          </header>
-
-                          <div className="template-designer-fields">
-                            <div
-                              className="form-group-row"
-                              style={{
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                              }}
-                            >
-                              <div className="form-group flex-1">
-                                <label className="form-label">
-                                  Template Name
-                                </label>
-                                <input
-                                  className="form-input"
-                                  value={tmpl.name}
-                                  onChange={(e) =>
-                                    handleTemplateChange(
-                                      tmpl.id,
-                                      "name",
-                                      e.target.value,
-                                    )
-                                  }
-                                  onDragOver={(e) => {
-                                    e.preventDefault();
-                                    e.dataTransfer.dropEffect = "none";
-                                  }}
-                                  onDrop={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                  }}
-                                  placeholder="e.g. Recognition Card"
-                                />
-                              </div>
-                              <div
-                                className="form-group toggle-group"
-                                style={{ marginLeft: "20px" }}
-                              >
-                                <label
-                                  className="form-label"
-                                  style={{
-                                    display: "inline-block",
-                                    marginRight: "10px",
-                                    marginBottom: 0,
-                                  }}
-                                >
-                                  Cloze
-                                </label>
-                                <label className="switch">
-                                  <input
-                                    type="checkbox"
-                                    checked={tmpl.is_cloze || false}
-                                    onChange={(e) =>
-                                      handleTemplateChange(
-                                        tmpl.id,
-                                        "is_cloze",
-                                        e.target.checked,
-                                      )
-                                    }
-                                  />
-                                  <span className="slider round"></span>
-                                </label>
-                              </div>
-                            </div>
-                            <div className="design-grid">
-                              <div
-                                className="form-group"
-                                style={
-                                  tmpl.is_cloze ? { gridColumn: "1 / -1" } : {}
-                                }
-                              >
-                                <label className="form-label">
-                                  {tmpl.is_cloze
-                                    ? "Text Design"
-                                    : "Front Design"}
-                                </label>
-                                {tmpl.is_cloze ? (
-                                  <ClozeEditor
-                                    className="design-area"
-                                    value={tmpl.front}
-                                    onChange={(val) =>
-                                      handleTemplateChange(
-                                        tmpl.id,
-                                        "front",
-                                        val,
-                                      )
-                                    }
-                                    onDragOver={(e) => e.preventDefault()}
-                                    onDrop={(e) =>
-                                      handleDropToTemplate(e, tmpl.id, "front")
-                                    }
-                                    placeholder={`VD: {{c1::{{${validDefs[0] || "Text"}}}}}`}
-                                    isCloze={true}
-                                  />
-                                ) : (
-                                  <textarea
-                                    className="form-textarea design-area"
-                                    value={tmpl.front}
-                                    onChange={(e) =>
-                                      handleTemplateChange(
-                                        tmpl.id,
-                                        "front",
-                                        e.target.value,
-                                      )
-                                    }
-                                    onDragOver={(e) => e.preventDefault()}
-                                    onDrop={(e) =>
-                                      handleDropToTemplate(e, tmpl.id, "front")
-                                    }
-                                    placeholder={`e.g. {{${validDefs[0] || "Front"}}}`}
-                                  />
-                                )}
-                              </div>
-                              {!tmpl.is_cloze && (
-                                <div className="form-group">
-                                  <label className="form-label">
-                                    Back Design
-                                  </label>
-                                  <textarea
-                                    className="form-textarea design-area"
-                                    value={tmpl.back}
-                                    onChange={(e) =>
-                                      handleTemplateChange(
-                                        tmpl.id,
-                                        "back",
-                                        e.target.value,
-                                      )
-                                    }
-                                    onDragOver={(e) => e.preventDefault()}
-                                    onDrop={(e) =>
-                                      handleDropToTemplate(e, tmpl.id, "back")
-                                    }
-                                    placeholder="Use {{Field}} syntax"
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <button
-                      className="btn-secondary btn-full"
-                      type="button"
-                      onClick={handleAddTemplateDraft}
-                    >
-                      + Add Another Template
-                    </button>
-
-                    <div className="section-footer split section-footer--spaced">
-                      <button
-                        className="btn-secondary"
-                        type="button"
-                        onClick={() => setNtStep(1)}
-                      >
-                        &larr; Back to Fields
-                      </button>
-                      <button
-                        className="btn-primary"
-                        type="button"
-                        onClick={submitCreateNoteType}
-                      >
-                        Create NoteType & Continue
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <CreateNoteType
+              setShowCreateNoteType={setShowCreateNoteType}
+              ntStep={ntStep}
+              setNtStep={setNtStep}
+              newNoteTypeName={newNoteTypeName}
+              setNewNoteTypeName={setNewNoteTypeName}
+              newDefinitions={newDefinitions}
+              handleDefChange={handleDefChange}
+              handleRemoveDefinition={handleRemoveDefinition}
+              handleAddDefinition={handleAddDefinition}
+              ntError={ntError}
+              handleNextNtStep1={handleNextNtStep1}
+              validDefs={validDefs}
+              newTemplates={newTemplates}
+              handleRemoveTemplate={handleRemoveTemplate}
+              handleTemplateChange={handleTemplateChange}
+              handleDropToTemplate={handleDropToTemplate}
+              handleAddTemplateDraft={handleAddTemplateDraft}
+              submitCreateNoteType={submitCreateNoteType}
+            />
           )}
         </main>
       </div>
