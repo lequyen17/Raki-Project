@@ -144,7 +144,7 @@ const AddCard = () => {
       });
 
       toast.success("Card added successfully.");
-      setNoteValues({});
+      navigate(`/decks/${deckId}/cards`);
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
       toast.error("Failed to add note: " + errorMsg);

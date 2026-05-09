@@ -123,6 +123,27 @@
   animation: btn-spin 0.8s linear infinite;
 }
 
+.btn-solid.btn-gray {
+  background: #96989c;
+  color: white;
+  border: none;
+}
+
+.btn-solid.btn-gray:hover:not(:disabled) {
+  background: #8a9098;
+}
+
+/* optional outline gray */
+.btn-outline.btn-gray {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-outline.btn-gray:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
 @keyframes btn-spin {
   to {
     transform: rotate(360deg);

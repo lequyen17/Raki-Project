@@ -105,7 +105,12 @@ const Cards = () => {
     <div className="cards-page">
       <div className="cards-container">
         <div className="cards-actions">
-          <Button type="button" size="md" onClick={() => navigate("/decks")}>
+          <Button
+            color="gray"
+            type="button"
+            size="md"
+            onClick={() => navigate("/decks")}
+          >
             Back to Decks
           </Button>
 
