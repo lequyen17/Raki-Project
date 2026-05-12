@@ -52,7 +52,10 @@ const NoteTypeStep2 = ({
                   <li>
                     <strong>Cloze Deletion:</strong> To create fill-in-the-blank
                     questions (cloze deletion), use the format
-                    {" {{c1:{{value}}}} "}in your front design.
+                    {" {{c1:{{value}}}} "}in your front design, replacing
+                    "value" with your desired content. Multiple clozes can be
+                    created using {"{{c1:{{value1}}}}"}, {"{{c2:{{value2}}}}"},
+                    etc.
                   </li>
                 </ul>
               </div>
