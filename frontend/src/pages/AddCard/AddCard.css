@@ -410,13 +410,6 @@ input:checked + .slider:before {
   align-items: flex-start;
 }
 
-.nt-sidebar {
-  flex: 0 0 28%;
-  min-width: 220px;
-  position: sticky;
-  top: 1.5rem;
-}
-
 .sticky-sidebar {
   /* No longer needed, logic moved to nt-sidebar */
 }
@@ -488,9 +481,10 @@ input:checked + .slider:before {
 
 /* Sidebar giữ nguyên vị trí khi cuộn */
 .nt-sidebar {
+  
   flex: 0 0 280px;      /* Cố định chiều rộng sidebar một chút */
   position: sticky;
-  top: 1rem;           /* Khoảng cách từ đỉnh màn hình khi cuộn */
+  top: 100px;         /* Khoảng cách từ đỉnh màn hình khi cuộn */
   height: fit-content; /* Quan trọng: để sticky hoạt động */
   align-self: flex-start;
 }

@@ -236,6 +236,7 @@ const Decks = () => {
   };
 
   const handleDragStart = (e, deckId) => {
+    e.dataTransfer.setData("text/plain", "");
     e.dataTransfer.effectAllowed = "move";
     setDraggingDeckId(deckId);
     setMoveError("");

@@ -18,7 +18,6 @@ const AddCard = () => {
   const { deckId } = useParams();
   const [deckName, setDeckName] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   // NoteTypes state
   const [noteTypes, setNoteTypes] = useState([]);
@@ -230,8 +229,19 @@ const AddCard = () => {
         !t.name.trim() || !t.front.trim() || (!t.is_cloze && !t.back.trim()),
     );
     if (isInvalid) {
+      toast.error("All normal fields must include content.");
+      return;
+    }
+
+    const fieldTagRegex = /{{.*}}/;
+    const hasEmptyTags = newTemplates.some((t) => {
+      if (t.is_cloze) return false; // Thẻ cloze đã có logic kiểm tra riêng ở dưới
+      return !fieldTagRegex.test(t.front) && !fieldTagRegex.test(t.back);
+    });
+
+    if (hasEmptyTags) {
       toast.error(
-        "All normal templates must include Name, Front, and Back content. Cloze templates must include Name and Front.",
+        "Normal templates must contain at least one field tag (e.g., {{FieldName}}) in Front or Back design.",
       );
       return;
     }
@@ -253,9 +263,7 @@ const AddCard = () => {
     });
 
     if (hasInvalidClozeTemplate) {
-      toast.error(
-        "Cloze templates must contain at least one {{c1::...}} in Front design.",
-      );
+      toast.error("Cloze templates must contain at least one {{c1::...}}.");
       return;
     }
 

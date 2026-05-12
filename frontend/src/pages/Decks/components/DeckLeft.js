@@ -43,7 +43,7 @@ const DeckLeft = ({
             currentDepth === 0 ? "deck-tree-row--root" : "deck-tree-row--child"
           } ${dropTargetId === node.id ? "deck-tree-row--drop" : ""}`}
           style={{ marginLeft: `${currentDepth * 24}px` }}
-          draggable
+          draggable={true}
           onDragStart={(e) => handleDragStart(e, node.id)}
           onDragEnd={handleDragEnd}
           onDragOver={(e) => {
@@ -68,17 +68,9 @@ const DeckLeft = ({
 
           <div className="deck-drag-handle">::</div>
 
-          <div className="deck-row-main">
-            <button
-              type="button"
-              className={`deck-row-name ${
-                selectedDeckId === node.id ? "deck-row-name--selected" : ""
-              }`}
-              onClick={() => handleSelectDeck(node.id)}
-            >
-              {node.name}
-            </button>
+          <span className="deck-row-name ">{node.name}</span>
 
+          <div className="deck-row-main">
             <span className="deck-row-count">{sumTotalCards(node)} cards</span>
 
             <Button
