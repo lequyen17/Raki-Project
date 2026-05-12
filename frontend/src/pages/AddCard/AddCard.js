@@ -407,6 +407,7 @@ const AddCard = () => {
               handleDropToTemplate={handleDropToTemplate}
               handleAddTemplateDraft={handleAddTemplateDraft}
               submitCreateNoteType={submitCreateNoteType}
+              setShowGuide={setShowGuide}
             />
           )}
         </main>

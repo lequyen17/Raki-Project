@@ -16,12 +16,49 @@ const NoteTypeStep2 = ({
     <div className="nt-step-2-layout">
       <div className="nt-sidebar">
         <div className="fields-hint sticky-sidebar">
-          <label
-            className="form-label"
-            style={{ marginBottom: "1rem", display: "block" }}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "1rem",
+              position: "relative",
+            }}
           >
-            Available Fields (Drag into textareas):
-          </label>
+            <label className="form-label" style={{ marginBottom: 0 }}>
+              Available Fields (Drag into textareas):
+            </label>
+
+            <div className="help-tooltip-wrapper">
+              <span className="help-icon">?</span>
+
+              <div className="help-tooltip">
+                <h3>Available Fields Guidance:</h3>
+
+                <ul>
+                  <li>
+                    <strong>General Information:</strong> Use {"{{"} and {"}}"}{" "}
+                    to create value placeholders. The value enclosed will be
+                    replaced with user input during card creation.
+                  </li>
+
+                  <li>
+                    <strong>Input Fields:</strong> Drag the specialized
+                    {" {{input:...}} "}tag to the "Back Design" to automatically
+                    add an input text area on the front for writing practice and
+                    automatic grading. Note: Do not drag this to the front.
+                  </li>
+
+                  <li>
+                    <strong>Cloze Deletion:</strong> To create fill-in-the-blank
+                    questions (cloze deletion), use the format
+                    {" {{c1:{{value}}}} "}in your front design.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
           <div className="chips-container column-layout">
             {validDefs.map((def, idx) => (
               <React.Fragment key={idx}>
