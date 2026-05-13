@@ -9,6 +9,9 @@ from card.models import Card
 from card.models import Progress
 
 
+from card.services.review_service import ReviewService
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_cards_by_deck(request, deck_id):
@@ -210,75 +213,14 @@ def review_card(request, card_id):
         },
     )
 
-    today = timezone.localdate()
+    service = ReviewService()
 
-    # =========================
-    # 1. LEARNING PHASE
-    # =========================
-    if p.status == "learning":
-        p.interval = 0
+    updated_progress = service.review_card(p, quality)
 
-        if quality == "again":
-            p.repetition = 0
-            p.status = "learning"
-
-        elif quality == "hard":
-            p.repetition = 0  # cho vào cuối learning queue
-
-        elif quality == "good":
-            p.repetition += 1
-            if p.repetition >= 2:
-                p.status = "review"
-                p.repetition = 0
-                p.interval = 1
-
-        elif quality == "easy":
-            p.status = "review"
-            p.repetition = 0
-            p.interval = 1
-
-    # =========================
-    # 2. REVIEW PHASE (SM-2)
-    # =========================
-    else:
-        E = p.easiness
-
-        if quality == "again":
-            q = 0
-            p.repetition = 0
-            p.interval = 0
-            p.status = "learning"
-
-        elif quality == "hard":
-            q = 3
-            p.repetition = 0
-            p.interval = max(1, int(p.interval * 1.2))
-
-        elif quality == "good":
-            q = 4
-            if p.repetition == 0:
-                p.interval = 1
-            elif p.repetition == 1:
-                p.interval = 6
-            else:
-                p.interval = max(1, int(p.interval * E))
-            p.repetition += 1
-
-        elif quality == "easy":
-            q = 5
-            if p.repetition == 0:
-                p.interval = 4
-            else:
-                p.interval = max(1, int(p.interval * E * 1.3))
-            p.repetition += 1
-
-        # =========================
-        # update easiness SM-2 formula
-        # =========================
-        p.easiness = max(1.3, E + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)))
-
-    p.next_review = today + timedelta(days=p.interval)
-
-    p.save()
-
-    return Response({"success": True, "interval": p.interval, "status": p.status})
+    return Response(
+        {
+            "success": True,
+            "interval": updated_progress.interval,
+            "status": updated_progress.status,
+        }
+    )

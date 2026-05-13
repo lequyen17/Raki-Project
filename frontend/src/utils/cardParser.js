@@ -13,40 +13,46 @@ export const tokenizeTemplate = (
 
   let processedStr = templateStr;
 
-  // 1. Process {{type:FieldName}} on the current string (typically Back side)
-  processedStr = processedStr.replace(
-    /\{\{type:([^}]+)\}\}/g,
-    (match, fieldName) => {
-      const trimmed = fieldName.trim();
-      if (isBack) {
-        const expected = fieldValues[trimmed] || "";
-        const typed = typedAnswers[trimmed] || "";
-        // If we're on the back, we want to show the diff.
-        const { diffHtml } = compareTypeAnswer(typed, expected);
-        return diffHtml;
-      }
-      return `<input type="text" id="type-answer-${trimmed}" data-field="${trimmed}" class="type-answer-input" placeholder="Type answer here..." />`;
-    },
-  );
-
   // 1.5. If rendering the Front side, look at the Back side to see if there are any type-in-answer fields
   // If so, append input boxes for them automatically, BUT only if they aren't already in the front template.
   if (!isBack && backTemplateStr) {
     const typeMatches = [...backTemplateStr.matchAll(/\{\{type:([^}]+)\}\}/g)];
-    const inputs = typeMatches
-      .map((match) => match[1].trim())
-      .filter((fieldName) => {
-        // Only append if the front template doesn't already have {{type:FieldName}}
-        const regex = new RegExp(`\\{\\{type:\\s*${fieldName}\\s*\\}\\}`);
-        return !regex.test(templateStr);
-      })
-      .map((fieldName) => {
-        return `<br><input type="text" id="type-answer-${fieldName}" data-field="${fieldName}" class="type-answer-input" placeholder="Type answer for ${fieldName}..." />`;
-      });
-      
-    if (inputs.length > 0) {
-      processedStr += inputs.join("");
-    }
+
+    const inputs = typeMatches.map((match) => {
+      const fieldName = match[1].trim();
+
+      return `
+      <br>
+      <input
+        type="text"
+        id="type-answer-${fieldName}"
+        data-field="${fieldName}"
+        class="type-answer-input"
+        placeholder="Type answer for ${fieldName}..."
+      />
+    `;
+    });
+
+    processedStr += inputs.join("");
+  }
+
+  // BACK SIDE:
+  // Replace {{type:Field}} with compare result
+  if (isBack) {
+    processedStr = processedStr.replace(
+      /\{\{type:([^}]+)\}\}/g,
+      (match, fieldName) => {
+        const trimmed = fieldName.trim();
+
+        const expected = fieldValues[trimmed] || "";
+
+        const typed = typedAnswers[trimmed] || "";
+
+        const { diffHtml } = compareTypeAnswer(typed, expected);
+
+        return diffHtml;
+      },
+    );
   }
 
   // 2. Process normal {{FieldName}} and cloze
