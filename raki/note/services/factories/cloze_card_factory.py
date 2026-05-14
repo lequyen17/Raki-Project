@@ -5,23 +5,10 @@ from card.models import Card
 
 class ClozeCardFactory:
 
-    def get_max_cloze(self, template, values_data):
+    def get_max_cloze(self, template):
 
         max_cloze = 0
 
-        # check field values
-        for val_text in values_data.values():
-
-            matches = re.findall(r"\{\{c(\d+)::", val_text)
-
-            for m in matches:
-
-                idx = int(m)
-
-                if idx > max_cloze:
-                    max_cloze = idx
-
-        # check template itself
         template_matches = re.findall(
             r"\{\{c(\d+)::",
             template.front,
@@ -38,10 +25,7 @@ class ClozeCardFactory:
 
     def create_cards(self, note, template, values_data):
 
-        max_cloze = self.get_max_cloze(
-            template,
-            values_data,
-        )
+        max_cloze = self.get_max_cloze(template)
 
         cards = []
 

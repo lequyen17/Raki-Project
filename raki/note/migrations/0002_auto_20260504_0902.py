@@ -43,7 +43,7 @@ def create_cloze_notetype(apps, schema_editor):
         Template.objects.create(
             note_type=cloze_nt,
             name="Cloze Card",
-            front="{{cloze:Text}}",
+            front="{{c1::Text}}",
             back="{{Text}}",
         )
 

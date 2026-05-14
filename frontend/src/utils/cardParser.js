@@ -55,9 +55,9 @@ export const tokenizeTemplate = (
     );
   }
 
-  // 2. Process normal {{FieldName}} and cloze
+  // 2. Process normal {{FieldName}}
   processedStr = processedStr.replace(
-    /\{\{(?:cloze:)?([^:}]+)\}\}/g,
+    /\{\{([^:}]+)\}\}/g,
     (match, fieldName) => {
       const trimmed = fieldName.trim();
       if (trimmed.startsWith("type:")) return match; // safety check

@@ -44,18 +44,34 @@ const NoteTypeStep2 = ({
 
                   <li>
                     <strong>Input Fields:</strong> Drag the specialized
-                    {" {{input:...}} "}tag to the "Back Design" to automatically
+                    {" {{type:...}} "}tag to the "Back Design" to automatically
                     add an input text area on the front for writing practice and
                     automatic grading. Note: Do not drag this to the front.
                   </li>
 
                   <li>
                     <strong>Cloze Deletion:</strong> To create fill-in-the-blank
-                    questions (cloze deletion), use the format
-                    {" {{c1:{{value}}}} "}in your front design, replacing
-                    "value" with your desired content. Multiple clozes can be
-                    created using {"{{c1:{{value1}}}}"}, {"{{c2:{{value2}}}}"},
-                    etc.
+                    questions, you can use two different methods:
+                    <ul>
+                      <li>
+                        <strong>Static Text:</strong> Use{" "}
+                        <code>{"{{c1::your text}}"}</code> to hide specific text
+                        directly. For example, <code>{"{{c1::Hanoi}}"}</code>{" "}
+                        will hide the word "Hanoi".
+                      </li>
+                      <li>
+                        <strong>Field Reference:</strong> Use{" "}
+                        <code>{"{{c1::{{FieldName}}}}"}</code> to hide the
+                        content of a specific field. For example,{" "}
+                        <code>{"{{c1::{{Definition}}}}"}</code> will pull the
+                        text from your "Definition" field and hide it.
+                      </li>
+                      <li>
+                        You can create multiple blanks by incrementing the
+                        index: <code>{"{{c1::...}}"}</code>,{" "}
+                        <code>{"{{c2::...}}"}</code>, etc.
+                      </li>
+                    </ul>
                   </li>
                 </ul>
               </div>

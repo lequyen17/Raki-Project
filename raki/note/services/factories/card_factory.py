@@ -16,9 +16,7 @@ class CardFactory:
         values_data,
     ):
 
-        is_cloze_template = (
-            "<!--CLOZE_TEMPLATE-->" in template.front or "{{cloze:" in template.front
-        )
+        is_cloze_template = "<!--CLOZE_TEMPLATE-->" in template.front
 
         if is_cloze_template:
 

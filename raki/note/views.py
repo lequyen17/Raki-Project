@@ -7,6 +7,8 @@ from card.models import Card
 from django.utils import timezone
 from django.db.models import Q
 from django.db import transaction
+
+from note.services.note_service import NoteService
 import re
 
 
@@ -31,7 +33,7 @@ def note_types_view(request):
                 front_content = tmpl_data.get("front", "")
                 if tmpl_data.get("is_cloze"):
                     front_content = f"<!--CLOZE_TEMPLATE-->\n{front_content}"
-                
+
                 Template.objects.create(
                     note_type=note_type,
                     name=tmpl_data.get("name", "Template"),
@@ -60,9 +62,12 @@ def note_types_view(request):
                     {
                         "id": t.id,
                         "name": t.name,
-                        "is_cloze": "<!--CLOZE_TEMPLATE-->" in t.front or "{{cloze:" in t.front,
-                        "front": t.front.replace("<!--CLOZE_TEMPLATE-->\n", "").replace("<!--CLOZE_TEMPLATE-->", ""),
-                        "back": t.back
+                        "is_cloze": "<!--CLOZE_TEMPLATE-->" in t.front
+                        or "{{cloze:" in t.front,
+                        "front": t.front.replace("<!--CLOZE_TEMPLATE-->\n", "").replace(
+                            "<!--CLOZE_TEMPLATE-->", ""
+                        ),
+                        "back": t.back,
                     }
                     for t in tmpls
                 ],
@@ -97,50 +102,19 @@ def create_note(request, deck_id):
     except NoteType.DoesNotExist:
         return Response({"error": "NoteType not found"}, status=404)
 
-    with transaction.atomic():
-        note = Note.objects.create(note_type=note_type, deck=deck)
+    service = NoteService()
 
-        # Create Values
-        definitions = note_type.definitions.all()
-        for d in definitions:
-            val_text = values_data.get(str(d.id), "")
-            FieldValue.objects.create(note=note, definition=d, value=val_text)
-
-        # Create Cards based on templates
-        templates = note_type.templates.all()
-        created_cards = []
-        for t in templates:
-            is_cloze_template = "<!--CLOZE_TEMPLATE-->" in t.front or "{{cloze:" in t.front
-            
-            if is_cloze_template:
-                max_cloze = 0
-                # Check field values for clozes
-                for val_text in values_data.values():
-                    matches = re.findall(r"\{\{c(\d+)::", val_text)
-                    for m in matches:
-                        idx = int(m)
-                        if idx > max_cloze:
-                            max_cloze = idx
-                
-                # Check the template itself for clozes (for custom cloze templates)
-                template_matches = re.findall(r"\{\{c(\d+)::", t.front)
-                for m in template_matches:
-                    idx = int(m)
-                    if idx > max_cloze:
-                        max_cloze = idx
-
-                if max_cloze > 0:
-                    for i in range(1, max_cloze + 1):
-                        c = Card.objects.create(note=note, template=t, cloze_index=i)
-                        created_cards.append(c.id)
-                else:
-                    c = Card.objects.create(note=note, template=t, cloze_index=0)
-                    created_cards.append(c.id)
-            else:
-                c = Card.objects.create(note=note, template=t, cloze_index=0)
-                created_cards.append(c.id)
+    result = service.create_note(
+        deck=deck,
+        note_type=note_type,
+        values_data=values_data,
+    )
 
     return Response(
-        {"success": True, "note_id": note.id, "cards_created": len(created_cards)},
+        {
+            "success": True,
+            "note_id": result["note"].id,
+            "cards_created": result["cards_created"],
+        },
         status=201,
     )

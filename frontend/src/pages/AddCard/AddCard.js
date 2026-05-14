@@ -79,14 +79,6 @@ const AddCard = () => {
     (nt) => String(nt.id) === String(selectedNoteTypeId),
   );
 
-  const isSystemCloze =
-    selectedNoteType?.name?.toLowerCase() === "cloze" &&
-    !selectedNoteType?.user_id;
-  const isClozeNoteType =
-    isSystemCloze ||
-    selectedNoteType?.templates?.some((t) => t.is_cloze) ||
-    false;
-
   const submitAddNote = async () => {
     if (!selectedNoteTypeId) {
       toast.error("Please select a note type.");
@@ -101,39 +93,6 @@ const AddCard = () => {
     if (hasEmptyField) {
       toast.error("Please fill in all fields before creating a card.");
       return;
-    }
-
-    const isCustomCloze = !isSystemCloze && isClozeNoteType;
-    let textToValidate = "";
-
-    if (isSystemCloze) {
-      const values = Object.values(noteValues);
-      const hasAnyCloze = values.some((val) => hasClozeDeletion(val));
-
-      if (!hasAnyCloze) {
-        toast.error("Cloze card must contain at least one {{c1::...}}");
-        return;
-      }
-      textToValidate = values.join(" ");
-    } else if (isCustomCloze) {
-      // For custom cloze templates, the cloze markers are defined in the template fronts
-      textToValidate =
-        selectedNoteType?.templates
-          ?.filter((t) => t.is_cloze)
-          .map((t) => t.front)
-          .join(" ") || "";
-
-      // We don't force a cloze marker if the user didn't write one, but IF they wrote one, it must be valid.
-    }
-
-    if (textToValidate) {
-      const indexes = extractClozeIndexes(textToValidate);
-      if (indexes.length > 0 && !isValidClozeSequence(indexes)) {
-        toast.error(
-          "Cloze must start from c1 and not skip numbers (c1, c2, c3...)",
-        );
-        return;
-      }
     }
 
     try {
@@ -368,11 +327,13 @@ const AddCard = () => {
                 {selectedNoteType?.definitions.map((def) => (
                   <div key={def.id} className="form-group">
                     <label className="form-label">{def.name}</label>
-                    <ClozeEditor
+                    <textarea
+                      className="form-textarea design-area"
                       value={noteValues[def.id] || ""}
-                      onChange={(val) => handleNoteValueChange(def.id, val)}
+                      onChange={(e) =>
+                        handleNoteValueChange(def.id, e.target.value)
+                      }
                       placeholder={`Enter text for ${def.name}...`}
-                      isCloze={isSystemCloze}
                     />
                   </div>
                 ))}
