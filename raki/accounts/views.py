@@ -1,32 +1,55 @@
+import json
+
+from django.contrib.auth import get_user_model
+from django.http import JsonResponse
+
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
-from accounts.repositories.user_repository import UserRepository
+from rest_framework.decorators import api_view
+from rest_framework.decorators import permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+from .serializers import MyTokenObtainPairSerializer
+
+from .repositories import UserRepository
+
+User = get_user_model()
 
 
-class UserService:
+class MyTokenLoginView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
 
-    @staticmethod
-    def get_profile(user):
 
-        total_cards = UserRepository.count_total_cards(user)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_user_profile(request):
 
-        try:
-            profile = user.profile
+    user = request.user
 
-            total_learned_cards = UserRepository.count_total_learned_cards(user)
+    total_cards = UserRepository.count_total_cards(user)
 
-            if profile.total_learned_cards != total_learned_cards:
-                profile.total_learned_cards = total_learned_cards
-                UserRepository.save_profile(profile)
+    try:
+        profile = user.profile
 
-            phone = profile.phone
+        total_learned_cards = UserRepository.count_total_learned_cards(user)
 
-        except AttributeError:
-            phone = ""
-            total_learned_cards = 0
+        if profile.total_learned_cards != total_learned_cards:
+            profile.total_learned_cards = total_learned_cards
+            profile.save(update_fields=["total_learned_cards"])
 
-        return {
+        phone = profile.phone
+
+    except AttributeError:
+
+        phone = ""
+        total_learned_cards = 0
+
+    return Response(
+        {
             "id": user.id,
             "username": user.username,
             "email": user.email,
@@ -38,140 +61,193 @@ class UserService:
             "is_staff": user.is_staff,
             "groups": list(user.groups.values_list("name", flat=True)),
         }
+    )
 
-    @staticmethod
-    def update_profile(user, data):
 
-        email = data.get("email", user.email).strip()
-        first_name = data.get("first_name", user.first_name).strip()
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def update_user_profile(request):
 
-        last_name = data.get("last_name", user.last_name).strip()
+    user = request.user
 
-        phone = data.get("phone", user.profile.phone or "").strip()
+    try:
+        data = json.loads(request.body)
 
-        # Validate email
-        if email != user.email:
+    except json.JSONDecodeError:
 
-            try:
-                validate_email(email)
-            except ValidationError:
-                raise Exception("Email không hợp lệ")
+        return Response({"error": "Invalid JSON"}, status=400)
 
-            if UserRepository.get_user_by_email(email).exclude(id=user.id).exists():
+    email = data.get("email", user.email).strip()
 
-                raise Exception("Email này đã được đăng ký")
+    first_name = data.get("first_name", user.first_name).strip()
 
-        # Validate first name
-        if first_name and (len(first_name) < 2 or len(first_name) > 150):
-            raise Exception("Tên đầu phải từ 2 đến 150 ký tự")
+    last_name = data.get("last_name", user.last_name).strip()
 
-        # Validate last name
-        if last_name and (len(last_name) < 2 or len(last_name) > 150):
-            raise Exception("Họ phải từ 2 đến 150 ký tự")
+    phone = data.get("phone", user.profile.phone or "").strip()
 
-        # Validate phone
-        if phone and len(phone) > 15:
-            raise Exception("Số điện thoại không hợp lệ")
+    # Validate email
+    if email != user.email:
+
+        try:
+            validate_email(email)
+
+        except ValidationError:
+
+            return Response({"error": "Email không hợp lệ"}, status=400)
+
+        if UserRepository.get_user_by_email(email).exclude(id=user.id).exists():
+
+            return Response({"error": "Email này đã được đăng ký"}, status=400)
+
+    # Validate first_name
+    if first_name and (len(first_name) < 2 or len(first_name) > 150):
+
+        return Response({"error": "Tên đầu phải từ 2 đến 150 ký tự"}, status=400)
+
+    # Validate last_name
+    if last_name and (len(last_name) < 2 or len(last_name) > 150):
+
+        return Response({"error": "Họ phải từ 2 đến 150 ký tự"}, status=400)
+
+    # Validate phone
+    if phone and len(phone) > 15:
+
+        return Response({"error": "Số điện thoại không hợp lệ"}, status=400)
+
+    try:
 
         # Update user
         user.email = email
         user.first_name = first_name
         user.last_name = last_name
 
-        UserRepository.save_user(user)
+        user.save()
 
         # Update profile
-        profile = user.profile
-        profile.phone = phone
-
-        UserRepository.save_profile(profile)
+        user.profile.phone = phone
+        user.profile.save()
 
         total_cards = UserRepository.count_total_cards(user)
 
         total_learned_cards = UserRepository.count_total_learned_cards(user)
 
-        return {
-            "success": True,
-            "message": "Cập nhật hồ sơ thành công!",
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "phone": profile.phone,
-                "total_cards": total_cards,
-                "total_learned_cards": total_learned_cards,
+        return Response(
+            {
+                "success": True,
+                "message": "Cập nhật hồ sơ thành công!",
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "phone": user.profile.phone,
+                    "total_cards": total_cards,
+                    "total_learned_cards": total_learned_cards,
+                },
             },
-        }
+            status=200,
+        )
 
-    @staticmethod
-    def register(data):
+    except Exception as e:
 
-        username = data.get("username", "").strip()
-        password = data.get("password", "").strip()
+        return Response({"error": f"Lỗi cập nhật hồ sơ: {str(e)}"}, status=500)
 
-        confirm_password = data.get("confirm_password", "").strip()
 
-        email = data.get("email", "").strip()
+@api_view(["POST"])
+def register_view(request):
 
-        first_name = data.get("first_name", "").strip()
+    try:
+        data = json.loads(request.body)
 
-        last_name = data.get("last_name", "").strip()
+    except json.JSONDecodeError:
 
-        phone = data.get("phone", "").strip()
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-        # Validate required
-        if not all(
-            [
-                username,
-                password,
-                confirm_password,
-                email,
-                first_name,
-                last_name,
-            ]
-        ):
-            raise Exception("Vui lòng điền đầy đủ tất cả các trường bắt buộc")
+    username = data.get("username", "").strip()
 
-        # Username
-        if len(username) < 3:
-            raise Exception("Tên đăng nhập phải có ít nhất 3 ký tự")
+    password = data.get("password", "").strip()
 
-        if len(username) > 150:
-            raise Exception("Tên đăng nhập không được vượt quá 150 ký tự")
+    confirm_password = data.get("confirm_password", "").strip()
 
-        if UserRepository.get_user_by_username(username).exists():
-            raise Exception("Tên đăng nhập đã tồn tại")
+    email = data.get("email", "").strip()
 
-        # Email
-        try:
-            validate_email(email)
-        except ValidationError:
-            raise Exception("Email không hợp lệ")
+    first_name = data.get("first_name", "").strip()
 
-        if UserRepository.get_user_by_email(email).exists():
-            raise Exception("Email này đã được đăng ký")
+    last_name = data.get("last_name", "").strip()
 
-        # Password
-        if len(password) < 6:
-            raise Exception("Mật khẩu phải có ít nhất 6 ký tự")
+    phone = data.get("phone", "").strip()
 
-        if password != confirm_password:
-            raise Exception("Mật khẩu xác nhận không khớp")
+    # Validate required fields
+    if not all(
+        [
+            username,
+            password,
+            confirm_password,
+            email,
+            first_name,
+            last_name,
+        ]
+    ):
 
-        # Name validate
-        if len(first_name) < 2 or len(first_name) > 150:
-            raise Exception("Tên đầu phải từ 2 đến 150 ký tự")
+        return JsonResponse(
+            {"error": "Vui lòng điền đầy đủ tất cả các trường bắt buộc"}, status=400
+        )
 
-        if len(last_name) < 2 or len(last_name) > 150:
-            raise Exception("Họ phải từ 2 đến 150 ký tự")
+    # Validate username
+    if len(username) < 3:
 
-        # Phone
-        if phone and len(phone) > 15:
-            raise Exception("Số điện thoại không hợp lệ")
+        return JsonResponse(
+            {"error": "Tên đăng nhập phải có ít nhất 3 ký tự"}, status=400
+        )
 
-        # Create user
+    if len(username) > 150:
+
+        return JsonResponse(
+            {"error": "Tên đăng nhập không được vượt quá 150 ký tự"}, status=400
+        )
+
+    if UserRepository.get_user_by_username(username).exists():
+
+        return JsonResponse({"error": "Tên đăng nhập đã tồn tại"}, status=400)
+
+    # Validate email
+    try:
+        validate_email(email)
+
+    except ValidationError:
+
+        return JsonResponse({"error": "Email không hợp lệ"}, status=400)
+
+    if UserRepository.get_user_by_email(email).exists():
+
+        return JsonResponse({"error": "Email này đã được đăng ký"}, status=400)
+
+    # Validate password
+    if len(password) < 6:
+
+        return JsonResponse({"error": "Mật khẩu phải có ít nhất 6 ký tự"}, status=400)
+
+    if password != confirm_password:
+
+        return JsonResponse({"error": "Mật khẩu xác nhận không khớp"}, status=400)
+
+    # Validate names
+    if len(first_name) < 2 or len(first_name) > 150:
+
+        return JsonResponse({"error": "Tên đầu phải từ 2 đến 150 ký tự"}, status=400)
+
+    if len(last_name) < 2 or len(last_name) > 150:
+
+        return JsonResponse({"error": "Họ phải từ 2 đến 150 ký tự"}, status=400)
+
+    # Validate phone
+    if phone and len(phone) > 15:
+
+        return JsonResponse({"error": "Số điện thoại không hợp lệ"}, status=400)
+
+    try:
+
         user = UserRepository.create_user(
             username=username,
             email=email,
@@ -182,18 +258,24 @@ class UserService:
 
         profile = user.profile
         profile.phone = phone
+        profile.save()
 
-        UserRepository.save_profile(profile)
-
-        return {
-            "success": True,
-            "message": "Đăng ký thành công!",
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "phone": profile.phone,
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Đăng ký thành công!",
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "phone": profile.phone,
+                },
             },
-        }
+            status=201,
+        )
+
+    except Exception as e:
+
+        return JsonResponse({"error": f"Lỗi đăng ký: {str(e)}"}, status=500)

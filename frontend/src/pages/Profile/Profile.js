@@ -70,6 +70,7 @@ const Profile = () => {
 
       if (res.data.success) {
         setProfileData(res.data.user);
+        localStorage.setItem("user_data", JSON.stringify(res.data.user));
         setCurrentUser(res.data.user);
         setIsEditing(false);
       }
