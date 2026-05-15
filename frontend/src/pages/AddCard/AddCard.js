@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
-import ClozeEditor from "../../components/ClozeEditor/ClozeEditor";
 import toast from "react-hot-toast";
 import "./AddCard.css";
 import Button from "../../components/Common/Button/Button.js";
-import Input from "../../components/Common/Input/Input.js";
 import {
   extractClozeIndexes,
   isValidClozeSequence,
   hasClozeDeletion,
-} from "../../utils/cloze";
+} from "../../utils/cloze.js";
 import CreateNoteType from "./components/CreateNoteType";
 
 const AddCard = () => {

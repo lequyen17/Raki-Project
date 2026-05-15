@@ -1,45 +1,60 @@
 from django.utils import timezone
-from datetime import timedelta
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from deck.models import Deck
-from card.models import Card
-from card.models import Progress
-
-
+from deck.repositories import DeckRepository
+from .repositories import CardRepository
 from card.services.review_service import ReviewService
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_cards_by_deck(request, deck_id):
+
     user = request.user
 
-    try:
-        deck = Deck.objects.get(id=deck_id, deck_users__user=user)
-    except Deck.DoesNotExist:
-        return Response({"error": "Deck not found."}, status=404)
+    deck = DeckRepository.get_deck_for_user(
+        deck_id,
+        user,
+    )
+
+    if not deck:
+        return Response(
+            {"error": "Deck not found."},
+            status=404,
+        )
 
     def get_descendants(d):
+
         descendants = [d.id]
-        children = Deck.objects.filter(parent=d, deck_users__user=user)
+
+        children = DeckRepository.get_child_decks(
+            d,
+            user,
+        )
+
         for child in children:
             descendants.extend(get_descendants(child))
+
         return descendants
 
     all_deck_ids = get_descendants(deck)
 
-    cards = Card.objects.filter(note__deck_id__in=all_deck_ids).order_by("-id")
+    cards = CardRepository.get_cards_by_deck_ids_ordered(all_deck_ids)
 
-    progress_dict = {
-        p.card_id: p for p in Progress.objects.filter(card__in=cards, user=user)
-    }
+    progress_dict = CardRepository.get_progress_dict(
+        cards,
+        user,
+    )
 
     results = []
+
     for card in cards:
+
         p = progress_dict.get(card.id)
+
         results.append(
             {
                 "id": card.id,
@@ -64,70 +79,94 @@ def list_cards_by_deck(request, deck_id):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_study_cards(request, deck_id):
+
     user = request.user
+
     today = timezone.localdate()
 
-    try:
-        deck = Deck.objects.get(id=deck_id, deck_users__user=user)
-    except Deck.DoesNotExist:
-        return Response({"error": "Deck not found."}, status=404)
+    deck = DeckRepository.get_deck_for_user(
+        deck_id,
+        user,
+    )
+
+    if not deck:
+        return Response(
+            {"error": "Deck not found."},
+            status=404,
+        )
 
     def get_descendants(d):
+
         descendants = [d.id]
-        children = Deck.objects.filter(parent=d, deck_users__user=user)
+
+        children = DeckRepository.get_child_decks(
+            d,
+            user,
+        )
+
         for child in children:
             descendants.extend(get_descendants(child))
+
         return descendants
 
     all_deck_ids = get_descendants(deck)
 
-    # 1. Đếm số thẻ MỚI đã bắt đầu học trong hôm nay (dựa trên created_at)
-    new_already_started_today = Progress.objects.filter(
-        card__note__deck_id__in=all_deck_ids, user=user, created_at__date=today
-    ).count()
-
-    # Giới hạn còn lại cho thẻ mới (Quota)
-    NEW_LIMIT_PER_DAY = 20
-    remaining_new_quota = max(0, NEW_LIMIT_PER_DAY - new_already_started_today)
-
-    # 2. Lấy toàn bộ cards và progress hiện có
-    cards = (
-        Card.objects.filter(note__deck_id__in=all_deck_ids)
-        .select_related("note", "template")
-        .prefetch_related("note__values__definition")
+    # 1. Đếm số thẻ mới đã học hôm nay
+    new_already_started_today = CardRepository.count_started_new_today(
+        all_deck_ids,
+        user,
+        today,
     )
 
-    progress_dict = {
-        p.card_id: p for p in Progress.objects.filter(card__in=cards, user=user)
-    }
+    NEW_LIMIT_PER_DAY = 20
 
-    # 3. Duyệt danh sách để lọc thẻ cho Session này
+    remaining_new_quota = max(
+        0,
+        NEW_LIMIT_PER_DAY - new_already_started_today,
+    )
+
+    # 2. Lấy cards + progress
+    cards = CardRepository.get_cards_by_deck_ids(all_deck_ids)
+
+    progress_dict = CardRepository.get_progress_dict(
+        cards,
+        user,
+    )
+
+    # 3. Build study session
     results = []
+
     session_new_count = 0
     session_learning_count = 0
     session_review_count = 0
 
     for card in cards:
+
         p = progress_dict.get(card.id)
 
         if not p:
-            # Chỉ lấy thẻ NEW nếu chưa vượt quá giới hạn ngày hôm nay
+
             if session_new_count < remaining_new_quota:
                 status = "new"
                 session_new_count += 1
             else:
                 continue
+
         elif p.next_review <= today:
-            # Thẻ cũ đến hạn (không bị giới hạn bởi NEW_LIMIT)
+
             status = p.status
+
             if status == "learning":
                 session_learning_count += 1
+
             elif status == "review":
                 session_review_count += 1
+
         else:
             continue
 
         field_values = {fv.definition.name: fv.value for fv in card.note.values.all()}
+
         results.append(
             {
                 "id": card.id,
@@ -141,39 +180,47 @@ def get_study_cards(request, deck_id):
             }
         )
 
-    # 4. Tính toán overall stats cho view
+    # 4. Overall stats
     overall_new = 0
     overall_learning = 0
     overall_review = 0
+
     easiness_sum = 0
     easiness_count = 0
 
     for card in cards:
+
         p = progress_dict.get(card.id)
+
         if not p:
+
             overall_new += 1
+
         else:
+
             if p.status == "learning":
                 overall_learning += 1
+
             elif p.status == "review":
+
                 overall_review += 1
+
                 easiness_sum += p.easiness
                 easiness_count += 1
 
-    avg_ease = (easiness_sum / easiness_count) if easiness_count > 0 else 2.5
+    avg_ease = easiness_sum / easiness_count if easiness_count > 0 else 2.5
 
-    # 5. Trả về kết quả kèm các con số thống kê
     return Response(
         {
             "deck_id": deck.id,
             "name": deck.name,
             "description": deck.description,
             "counts": {
-                "new": session_new_count,  # Số thẻ mới nạp thêm hôm nay
-                "learning": session_learning_count,  # Số thẻ đang học dở
-                "review": session_review_count,  # Số thẻ ôn tập đến hạn
+                "new": session_new_count,
+                "learning": session_learning_count,
+                "review": session_review_count,
                 "total": len(results),
-                "today_completed_new": new_already_started_today,  # Số thẻ mới đã nạp thành công trong ngày
+                "today_completed_new": (new_already_started_today),
             },
             "overall_stats": {
                 "total": len(cards),
@@ -190,32 +237,44 @@ def get_study_cards(request, deck_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def review_card(request, card_id):
+
     user = request.user
-    try:
-        # Kiểm tra Card tồn tại và thuộc sở hữu của user
-        card = Card.objects.get(id=card_id, note__deck__deck_users__user=user)
-    except Card.DoesNotExist:
-        return Response({"error": "Card not found."}, status=404)
+
+    card = CardRepository.get_card_for_review(
+        card_id,
+        user,
+    )
+
+    if not card:
+        return Response(
+            {"error": "Card not found."},
+            status=404,
+        )
 
     quality = request.data.get("quality")
-    if quality not in ["again", "hard", "good", "easy"]:
-        return Response({"error": "Invalid quality."}, status=400)
 
-    p, created = Progress.objects.get_or_create(
-        user=user,
-        card=card,
-        defaults={
-            "status": "learning",
-            "repetition": 0,
-            "interval": 1,
-            "easiness": 2.5,
-            "next_review": timezone.localdate(),
-        },
+    if quality not in [
+        "again",
+        "hard",
+        "good",
+        "easy",
+    ]:
+        return Response(
+            {"error": "Invalid quality."},
+            status=400,
+        )
+
+    p, created = CardRepository.get_or_create_progress(
+        user,
+        card,
     )
 
     service = ReviewService()
 
-    updated_progress = service.review_card(p, quality)
+    updated_progress = service.review_card(
+        p,
+        quality,
+    )
 
     return Response(
         {

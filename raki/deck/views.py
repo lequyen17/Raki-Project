@@ -1,12 +1,11 @@
-from django.db.models import Count
 from django.utils import timezone
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from deck.models import Deck, UserDeck
-from card.models import Card
-from card.models import Progress
+from .repositories import DeckRepository
+from card.repositories import CardRepository
 
 
 # =========================
@@ -15,26 +14,33 @@ from card.models import Progress
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def get_user_decks(request):
+
     user = request.user
 
+    # CREATE
     if request.method == "POST":
+
         name = str(request.data.get("name", "")).strip()
+
         description = str(request.data.get("description", "")).strip()
 
         if not name:
-            return Response({"error": "Deck name is required."}, status=400)
+            return Response(
+                {"error": "Deck name is required."},
+                status=400,
+            )
 
         if len(name) > 100:
             return Response(
-                {"error": "Deck name must be at most 100 characters."}, status=400
+                {"error": "Deck name must be at most 100 characters."},
+                status=400,
             )
 
-        deck = Deck.objects.create(
+        deck = DeckRepository.create_user_deck(
+            user=user,
             name=name,
             description=description,
-            parent=None,
         )
-        UserDeck.objects.create(user=user, deck=deck, role="owner")
 
         return Response(
             {
@@ -48,26 +54,29 @@ def get_user_decks(request):
             status=201,
         )
 
-    decks = (
-        Deck.objects.filter(deck_users__user=user)
-        .annotate(total_cards=Count("notes__cards"))
-        .order_by("name")
-    )
+    # GET
+    decks = DeckRepository.get_user_decks(user)
 
     results = []
-    for deck in decks:
-        item = {
-            "id": deck.id,
-            "name": deck.name,
-            "description": deck.description or "",
-            "total_cards": deck.total_cards,
-            "parent_id": deck.parent_id,
-            "created_at": deck.created_at,
-        }
-        results.append(item)
 
-    # Trả về kết quả
-    return Response({"count": decks.count(), "results": results})
+    for deck in decks:
+        results.append(
+            {
+                "id": deck.id,
+                "name": deck.name,
+                "description": deck.description or "",
+                "total_cards": deck.total_cards,
+                "parent_id": deck.parent_id,
+                "created_at": deck.created_at,
+            }
+        )
+
+    return Response(
+        {
+            "count": decks.count(),
+            "results": results,
+        }
+    )
 
 
 # =========================
@@ -76,42 +85,67 @@ def get_user_decks(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def move_user_deck(request):
+
     user = request.user
 
     deck_id = request.data.get("deck_id")
     parent_id = request.data.get("parent_id")
 
     if not deck_id:
-        return Response({"error": "deck_id is required."}, status=400)
+        return Response(
+            {"error": "deck_id is required."},
+            status=400,
+        )
 
-    try:
-        deck = Deck.objects.get(id=deck_id, deck_users__user=user)
-    except Deck.DoesNotExist:
-        return Response({"error": "Deck not found."}, status=404)
+    deck = DeckRepository.get_deck_for_user(
+        deck_id,
+        user,
+    )
+
+    if not deck:
+        return Response(
+            {"error": "Deck not found."},
+            status=404,
+        )
 
     parent = None
+
     if parent_id not in (None, "", "null"):
-        try:
-            parent = Deck.objects.get(id=parent_id, deck_users__user=user)
-        except Deck.DoesNotExist:
-            return Response({"error": "Target parent deck not found."}, status=404)
+
+        parent = DeckRepository.get_parent_deck_for_user(
+            parent_id,
+            user,
+        )
+
+        if not parent:
+            return Response(
+                {"error": "Target parent deck not found."},
+                status=404,
+            )
 
         if parent.id == deck.id:
             return Response(
-                {"error": "A deck cannot be moved into itself."}, status=400
+                {"error": "A deck cannot be moved into itself."},
+                status=400,
             )
 
         # tránh loop
         cursor = parent
+
         while cursor:
+
             if cursor.id == deck.id:
                 return Response(
-                    {"error": "Cannot move into its own subdeck."}, status=400
+                    {"error": "Cannot move into its own subdeck."},
+                    status=400,
                 )
+
             cursor = cursor.parent
 
-    deck.parent = parent
-    deck.save(update_fields=["parent"])
+    DeckRepository.move_deck(
+        deck,
+        parent,
+    )
 
     return Response(
         {
@@ -128,31 +162,49 @@ def move_user_deck(request):
 @api_view(["GET", "PUT", "DELETE"])
 @permission_classes([IsAuthenticated])
 def user_deck_detail(request, deck_id):
+
     user = request.user
 
-    try:
-        deck = Deck.objects.get(id=deck_id, deck_users__user=user)
-    except Deck.DoesNotExist:
-        return Response({"error": "Deck not found."}, status=404)
+    deck = DeckRepository.get_deck_for_user(
+        deck_id,
+        user,
+    )
+
+    if not deck:
+        return Response(
+            {"error": "Deck not found."},
+            status=404,
+        )
 
     # UPDATE
     if request.method == "PUT":
+
         name = str(request.data.get("name", deck.name)).strip()
+
         description = str(
-            request.data.get("description", deck.description or "")
+            request.data.get(
+                "description",
+                deck.description or "",
+            )
         ).strip()
 
         if not name:
-            return Response({"error": "Deck name is required."}, status=400)
+            return Response(
+                {"error": "Deck name is required."},
+                status=400,
+            )
 
         if len(name) > 100:
             return Response(
-                {"error": "Deck name must be at most 100 characters."}, status=400
+                {"error": "Deck name must be at most 100 characters."},
+                status=400,
             )
 
-        deck.name = name
-        deck.description = description
-        deck.save(update_fields=["name", "description"])
+        deck = DeckRepository.update_deck(
+            deck=deck,
+            name=name,
+            description=description,
+        )
 
         return Response(
             {
@@ -165,33 +217,60 @@ def user_deck_detail(request, deck_id):
 
     # DELETE
     if request.method == "DELETE":
-        deck.delete()
+
+        DeckRepository.delete_deck(deck)
+
         return Response({"success": True})
 
     # GET DETAIL
-    has_subdecks = Deck.objects.filter(parent=deck, deck_users__user=user).exists()
+    has_subdecks = DeckRepository.has_subdecks(
+        deck,
+        user,
+    )
 
-    # Lấy cả deck hiện tại và tất cả các deck con cháu của nó
+    # Lấy cả deck hiện tại và tất cả deck con cháu
     def get_descendants(d):
+
         descendants = [d.id]
-        children = Deck.objects.filter(parent=d, deck_users__user=user)
+
+        children = DeckRepository.get_child_decks(
+            d,
+            user,
+        )
+
         for child in children:
             descendants.extend(get_descendants(child))
+
         return descendants
 
     all_deck_ids = get_descendants(deck)
-    cards_qs = Card.objects.filter(note__deck_id__in=all_deck_ids)
-    now = timezone.now()
+
+    cards_qs = DeckRepository.get_cards_by_deck_ids(all_deck_ids)
+
+    progress_qs = CardRepository.get_progress_by_cards_and_user(
+        cards_qs,
+        user,
+    )
 
     total_cards = cards_qs.count()
-    progress_qs = Progress.objects.filter(card__in=cards_qs, user=user)
+
     progress_count = progress_qs.count()
+
+    now = timezone.now()
 
     new_count = (total_cards - progress_count) + progress_qs.filter(
         repetition=0
     ).count()
-    learn_count = progress_qs.filter(repetition__gt=0, interval__lt=7).count()
-    review_count = progress_qs.filter(interval__gte=7, next_review__lte=now).count()
+
+    learn_count = progress_qs.filter(
+        repetition__gt=0,
+        interval__lt=7,
+    ).count()
+
+    review_count = progress_qs.filter(
+        interval__gte=7,
+        next_review__lte=now,
+    ).count()
 
     return Response(
         {
@@ -203,7 +282,7 @@ def user_deck_detail(request, deck_id):
                 "new": new_count,
                 "learn": learn_count,
                 "review": review_count,
-                "total": cards_qs.count(),
+                "total": total_cards,
             },
         }
     )
