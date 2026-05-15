@@ -23,12 +23,11 @@ const Login = () => {
     setError(""); // Reset lỗi mỗi lần bấm submit
 
     try {
-      const res = await api.post("/api/login/", formData);
+      const res = await api.post("/api/token/", formData);
       const { access, refresh, user } = res.data;
 
       localStorage.setItem("access_token", access);
       localStorage.setItem("refresh_token", refresh);
-      localStorage.setItem("user_data", JSON.stringify(user));
 
       setCurrentUser(user);
 
