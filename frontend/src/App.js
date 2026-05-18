@@ -14,10 +14,10 @@ import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
-    <AuthProvider>
-      {" "}
-      {/* Bọc ngoài cùng để "phủ sóng" dữ liệu cho toàn App */}
-      <Router>
+    <Router>
+      <AuthProvider>
+        {" "}
+        {/* Bọc ngoài cùng để "phủ sóng" dữ liệu cho toàn App */}
         <Toaster position="top-center" reverseOrder={false} />
         <Header />
         <Routes>
@@ -31,8 +31,8 @@ function App() {
           <Route path="/profile" element={<Profile />} />
         </Routes>
         <Footer />
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

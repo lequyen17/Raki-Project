@@ -33,6 +33,7 @@ urlpatterns = [
     # Các route của accounts
     # Đường dẫn đăng nhập để lấy Token (thay cho login_view cũ)
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("auth/me", accounts_views.getAuth, name="current-user"),
     # Đường dẫn để lấy Access Token mới khi cái cũ hết hạn (Refresh Token)
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/register/", accounts_views.register_view, name="register"),

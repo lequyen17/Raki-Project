@@ -18,6 +18,18 @@ User = get_user_model()
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+def getAuth(request):
+    return Response(
+        {
+            "username": request.user.username,
+            "first_name": request.user.first_name,
+            "last_name": request.user.last_name,
+        }
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def get_user_profile(request):
 
     user = request.user
@@ -43,7 +55,7 @@ def get_user_profile(request):
     return Response(
         {
             "id": user.id,
-            "username": user.username,
+            ":username": user.username,
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
