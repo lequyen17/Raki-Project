@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from .repositories import DeckRepository
 from card.repositories import CardRepository
+from .serializers import DeckSerializer, DeckMoveSerializer
 
 
 # =========================
@@ -20,21 +21,13 @@ def user_decks(request):
     # CREATE
     if request.method == "POST":
 
-        name = str(request.data.get("name", "")).strip()
-
-        description = str(request.data.get("description", "")).strip()
-
-        if not name:
-            return Response(
-                {"error": "Deck name is required."},
-                status=400,
-            )
-
-        if len(name) > 100:
-            return Response(
-                {"error": "Deck name must be at most 100 characters."},
-                status=400,
-            )
+        serializer = DeckSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"error": serializer.errors['non_field_errors'][0]}, status=400)
+            
+        validated_data = serializer.validated_data
+        name = validated_data["name"]
+        description = validated_data["description"]
 
         deck = DeckRepository.create_user_deck(
             user=user,
@@ -88,59 +81,14 @@ def move_user_deck(request):
 
     user = request.user
 
-    deck_id = request.data.get("deck_id")
-    parent_id = request.data.get("parent_id")
+    serializer = DeckMoveSerializer(data=request.data, user=user)
+    if not serializer.is_valid():
+        error = serializer.errors['non_field_errors'][0]
+        status_code = 404 if "not found" in str(error).lower() else 400
+        return Response({"error": error}, status=status_code)
 
-    if not deck_id:
-        return Response(
-            {"error": "deck_id is required."},
-            status=400,
-        )
-
-    deck = DeckRepository.get_deck_for_user(
-        deck_id,
-        user,
-    )
-
-    if not deck:
-        return Response(
-            {"error": "Deck not found."},
-            status=404,
-        )
-
-    parent = None
-
-    if parent_id not in (None, "", "null"):
-
-        parent = DeckRepository.get_parent_deck_for_user(
-            parent_id,
-            user,
-        )
-
-        if not parent:
-            return Response(
-                {"error": "Target parent deck not found."},
-                status=404,
-            )
-
-        if parent.id == deck.id:
-            return Response(
-                {"error": "A deck cannot be moved into itself."},
-                status=400,
-            )
-
-        # tránh loop
-        cursor = parent
-
-        while cursor:
-
-            if cursor.id == deck.id:
-                return Response(
-                    {"error": "Cannot move into its own subdeck."},
-                    status=400,
-                )
-
-            cursor = cursor.parent
+    deck = serializer.validated_data["deck"]
+    parent = serializer.validated_data["parent"]
 
     DeckRepository.move_deck(
         deck,
@@ -179,26 +127,13 @@ def user_deck_detail(request, deck_id):
     # UPDATE
     if request.method == "PUT":
 
-        name = str(request.data.get("name", deck.name)).strip()
-
-        description = str(
-            request.data.get(
-                "description",
-                deck.description or "",
-            )
-        ).strip()
-
-        if not name:
-            return Response(
-                {"error": "Deck name is required."},
-                status=400,
-            )
-
-        if len(name) > 100:
-            return Response(
-                {"error": "Deck name must be at most 100 characters."},
-                status=400,
-            )
+        serializer = DeckSerializer(data=request.data, deck=deck)
+        if not serializer.is_valid():
+            return Response({"error": serializer.errors['non_field_errors'][0]}, status=400)
+            
+        validated_data = serializer.validated_data
+        name = validated_data["name"]
+        description = validated_data["description"]
 
         deck = DeckRepository.update_deck(
             deck=deck,

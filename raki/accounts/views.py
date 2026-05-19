@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .repositories import UserRepository
+from .serializers import UserProfileUpdateSerializer, UserRegistrationSerializer
 
 User = get_user_model()
 
@@ -84,42 +85,15 @@ def user_profile(request):
 
             return Response({"error": "Invalid JSON"}, status=400)
 
-        email = data.get("email", user.email).strip()
-
-        first_name = data.get("first_name", user.first_name).strip()
-
-        last_name = data.get("last_name", user.last_name).strip()
-
-        phone = data.get("phone", user.profile.phone or "").strip()
-
-        # Validate email
-        if email != user.email:
-
-            try:
-                validate_email(email)
-
-            except ValidationError:
-
-                return Response({"error": "Email không hợp lệ"}, status=400)
-
-            if UserRepository.get_user_by_email(email).exclude(id=user.id).exists():
-
-                return Response({"error": "Email này đã được đăng ký"}, status=400)
-
-        # Validate first_name
-        if first_name and (len(first_name) < 2 or len(first_name) > 150):
-
-            return Response({"error": "Tên đầu phải từ 2 đến 150 ký tự"}, status=400)
-
-        # Validate last_name
-        if last_name and (len(last_name) < 2 or len(last_name) > 150):
-
-            return Response({"error": "Họ phải từ 2 đến 150 ký tự"}, status=400)
-
-        # Validate phone
-        if phone and len(phone) > 15:
-
-            return Response({"error": "Số điện thoại không hợp lệ"}, status=400)
+        serializer = UserProfileUpdateSerializer(data=data, user=user)
+        if not serializer.is_valid():
+            return Response({"error": serializer.errors['non_field_errors'][0]}, status=400)
+            
+        validated_data = serializer.validated_data
+        email = validated_data["email"]
+        first_name = validated_data["first_name"]
+        last_name = validated_data["last_name"]
+        phone = validated_data["phone"]
 
         try:
 
@@ -174,87 +148,17 @@ def register_view(request):
 
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-    username = data.get("username", "").strip()
-
-    password = data.get("password", "").strip()
-
-    confirm_password = data.get("confirm_password", "").strip()
-
-    email = data.get("email", "").strip()
-
-    first_name = data.get("first_name", "").strip()
-
-    last_name = data.get("last_name", "").strip()
-
-    phone = data.get("phone", "").strip()
-
-    # Validate required fields
-    if not all(
-        [
-            username,
-            password,
-            confirm_password,
-            email,
-            first_name,
-            last_name,
-        ]
-    ):
-
-        return JsonResponse(
-            {"error": "Vui lòng điền đầy đủ tất cả các trường bắt buộc"}, status=400
-        )
-
-    # Validate username
-    if len(username) < 3:
-
-        return JsonResponse(
-            {"error": "Tên đăng nhập phải có ít nhất 3 ký tự"}, status=400
-        )
-
-    if len(username) > 150:
-
-        return JsonResponse(
-            {"error": "Tên đăng nhập không được vượt quá 150 ký tự"}, status=400
-        )
-
-    if UserRepository.get_user_by_username(username).exists():
-
-        return JsonResponse({"error": "Tên đăng nhập đã tồn tại"}, status=400)
-
-    # Validate email
-    try:
-        validate_email(email)
-
-    except ValidationError:
-
-        return JsonResponse({"error": "Email không hợp lệ"}, status=400)
-
-    if UserRepository.get_user_by_email(email).exists():
-
-        return JsonResponse({"error": "Email này đã được đăng ký"}, status=400)
-
-    # Validate password
-    if len(password) < 6:
-
-        return JsonResponse({"error": "Mật khẩu phải có ít nhất 6 ký tự"}, status=400)
-
-    if password != confirm_password:
-
-        return JsonResponse({"error": "Mật khẩu xác nhận không khớp"}, status=400)
-
-    # Validate names
-    if len(first_name) < 2 or len(first_name) > 150:
-
-        return JsonResponse({"error": "Tên đầu phải từ 2 đến 150 ký tự"}, status=400)
-
-    if len(last_name) < 2 or len(last_name) > 150:
-
-        return JsonResponse({"error": "Họ phải từ 2 đến 150 ký tự"}, status=400)
-
-    # Validate phone
-    if phone and len(phone) > 15:
-
-        return JsonResponse({"error": "Số điện thoại không hợp lệ"}, status=400)
+    serializer = UserRegistrationSerializer(data=data)
+    if not serializer.is_valid():
+        return JsonResponse({"error": serializer.errors['non_field_errors'][0]}, status=400)
+        
+    validated_data = serializer.validated_data
+    username = validated_data["username"]
+    password = validated_data["password"]
+    email = validated_data["email"]
+    first_name = validated_data["first_name"]
+    last_name = validated_data["last_name"]
+    phone = validated_data["phone"]
 
     try:
 

@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from deck.repositories import DeckRepository
 from .repositories import CardRepository
 from card.services.review_service import ReviewService
+from .serializers import ReviewCardSerializer
 
 
 @api_view(["GET"])
@@ -251,18 +252,14 @@ def review_card(request, card_id):
             status=404,
         )
 
-    quality = request.data.get("quality")
-
-    if quality not in [
-        "again",
-        "hard",
-        "good",
-        "easy",
-    ]:
+    serializer = ReviewCardSerializer(data=request.data)
+    if not serializer.is_valid():
         return Response(
             {"error": "Invalid quality."},
             status=400,
         )
+
+    quality = serializer.validated_data["quality"]
 
     p, created = CardRepository.get_or_create_progress(
         user,
