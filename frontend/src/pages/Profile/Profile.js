@@ -15,6 +15,7 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editData, setEditData] = useState({});
+  const [formErrors, setFormErrors] = useState({});
 
   const fetchProfileData = useCallback(async () => {
     try {
@@ -61,12 +62,39 @@ const Profile = () => {
     }));
   };
 
+  const validateForm = () => {
+    const errors = {};
+
+    if (!editData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editData.email)) {
+      errors.email = "Invalid email";
+    }
+
+    if (editData.first_name && editData.first_name.length < 2) {
+      errors.first_name = "First name must be at least 2 chars";
+    }
+
+    if (editData.phone && editData.phone.length > 15) {
+      errors.phone = "Invalid phone";
+    }
+
+    return errors;
+  };
+
   const handleSaveProfile = async () => {
+    const errors = validateForm();
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
     try {
       setIsSaving(true);
       setError("");
 
-      const res = await api.put("/api/user/profile/update/", editData);
+      const res = await api.put("/api/user/profile/", editData);
 
       if (res.data.success) {
         setProfileData(res.data.user);
@@ -193,6 +221,7 @@ const Profile = () => {
                 type="email"
                 value={editData.email}
                 onChange={handleEditChange}
+                error={formErrors.email}
               />
 
               <Input
@@ -200,6 +229,7 @@ const Profile = () => {
                 name="first_name"
                 value={editData.first_name}
                 onChange={handleEditChange}
+                error={formErrors.first_name}
               />
 
               <Input
@@ -207,6 +237,7 @@ const Profile = () => {
                 name="last_name"
                 value={editData.last_name}
                 onChange={handleEditChange}
+                error={formErrors.last_name}
               />
 
               <Input
@@ -215,6 +246,7 @@ const Profile = () => {
                 type="tel"
                 value={editData.phone}
                 onChange={handleEditChange}
+                error={formErrors.phone}
               />
             </div>
 

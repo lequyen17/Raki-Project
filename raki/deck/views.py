@@ -13,7 +13,7 @@ from card.repositories import CardRepository
 # =========================
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
-def get_user_decks(request):
+def user_decks(request):
 
     user = request.user
 

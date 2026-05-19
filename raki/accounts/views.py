@@ -28,134 +28,140 @@ def getAuth(request):
     )
 
 
-@api_view(["GET"])
+@api_view(["GET", "PUT"])
 @permission_classes([IsAuthenticated])
-def get_user_profile(request):
+def user_profile(request):
 
     user = request.user
 
-    total_cards = UserRepository.count_total_cards(user)
-
-    try:
-        profile = user.profile
-
-        total_learned_cards = UserRepository.count_total_learned_cards(user)
-
-        if profile.total_learned_cards != total_learned_cards:
-            profile.total_learned_cards = total_learned_cards
-            profile.save(update_fields=["total_learned_cards"])
-
-        phone = profile.phone
-
-    except AttributeError:
-
-        phone = ""
-        total_learned_cards = 0
-
-    return Response(
-        {
-            "id": user.id,
-            ":username": user.username,
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "phone": phone,
-            "total_cards": total_cards,
-            "total_learned_cards": total_learned_cards,
-            "is_staff": user.is_staff,
-            "groups": list(user.groups.values_list("name", flat=True)),
-        }
-    )
-
-
-@api_view(["PUT"])
-@permission_classes([IsAuthenticated])
-def update_user_profile(request):
-
-    user = request.user
-
-    try:
-        data = json.loads(request.body)
-
-    except json.JSONDecodeError:
-
-        return Response({"error": "Invalid JSON"}, status=400)
-
-    email = data.get("email", user.email).strip()
-
-    first_name = data.get("first_name", user.first_name).strip()
-
-    last_name = data.get("last_name", user.last_name).strip()
-
-    phone = data.get("phone", user.profile.phone or "").strip()
-
-    # Validate email
-    if email != user.email:
-
-        try:
-            validate_email(email)
-
-        except ValidationError:
-
-            return Response({"error": "Email không hợp lệ"}, status=400)
-
-        if UserRepository.get_user_by_email(email).exclude(id=user.id).exists():
-
-            return Response({"error": "Email này đã được đăng ký"}, status=400)
-
-    # Validate first_name
-    if first_name and (len(first_name) < 2 or len(first_name) > 150):
-
-        return Response({"error": "Tên đầu phải từ 2 đến 150 ký tự"}, status=400)
-
-    # Validate last_name
-    if last_name and (len(last_name) < 2 or len(last_name) > 150):
-
-        return Response({"error": "Họ phải từ 2 đến 150 ký tự"}, status=400)
-
-    # Validate phone
-    if phone and len(phone) > 15:
-
-        return Response({"error": "Số điện thoại không hợp lệ"}, status=400)
-
-    try:
-
-        # Update user
-        user.email = email
-        user.first_name = first_name
-        user.last_name = last_name
-
-        user.save()
-
-        # Update profile
-        user.profile.phone = phone
-        user.profile.save()
+    # =========================
+    # GET PROFILE
+    # =========================
+    if request.method == "GET":
 
         total_cards = UserRepository.count_total_cards(user)
 
-        total_learned_cards = UserRepository.count_total_learned_cards(user)
+        try:
+            profile = user.profile
+
+            total_learned_cards = UserRepository.count_total_learned_cards(user)
+
+            if profile.total_learned_cards != total_learned_cards:
+                profile.total_learned_cards = total_learned_cards
+                profile.save(update_fields=["total_learned_cards"])
+
+            phone = profile.phone
+
+        except AttributeError:
+
+            phone = ""
+            total_learned_cards = 0
 
         return Response(
             {
-                "success": True,
-                "message": "Cập nhật hồ sơ thành công!",
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                    "phone": user.profile.phone,
-                    "total_cards": total_cards,
-                    "total_learned_cards": total_learned_cards,
-                },
-            },
-            status=200,
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "phone": phone,
+                "total_cards": total_cards,
+                "total_learned_cards": total_learned_cards,
+                "is_staff": user.is_staff,
+                "groups": list(user.groups.values_list("name", flat=True)),
+            }
         )
 
-    except Exception as e:
+    # =========================
+    # UPDATE PROFILE
+    # =========================
+    elif request.method == "PUT":
 
-        return Response({"error": f"Lỗi cập nhật hồ sơ: {str(e)}"}, status=500)
+        try:
+            data = json.loads(request.body)
+
+        except json.JSONDecodeError:
+
+            return Response({"error": "Invalid JSON"}, status=400)
+
+        email = data.get("email", user.email).strip()
+
+        first_name = data.get("first_name", user.first_name).strip()
+
+        last_name = data.get("last_name", user.last_name).strip()
+
+        phone = data.get("phone", user.profile.phone or "").strip()
+
+        # Validate email
+        if email != user.email:
+
+            try:
+                validate_email(email)
+
+            except ValidationError:
+
+                return Response({"error": "Email không hợp lệ"}, status=400)
+
+            if UserRepository.get_user_by_email(email).exclude(id=user.id).exists():
+
+                return Response({"error": "Email này đã được đăng ký"}, status=400)
+
+        # Validate first_name
+        if first_name and (len(first_name) < 2 or len(first_name) > 150):
+
+            return Response({"error": "Tên đầu phải từ 2 đến 150 ký tự"}, status=400)
+
+        # Validate last_name
+        if last_name and (len(last_name) < 2 or len(last_name) > 150):
+
+            return Response({"error": "Họ phải từ 2 đến 150 ký tự"}, status=400)
+
+        # Validate phone
+        if phone and len(phone) > 15:
+
+            return Response({"error": "Số điện thoại không hợp lệ"}, status=400)
+
+        try:
+
+            # Update user
+            user.email = email
+            user.first_name = first_name
+            user.last_name = last_name
+
+            user.save()
+
+            # Update profile
+            user.profile.phone = phone
+            user.profile.save()
+
+            total_cards = UserRepository.count_total_cards(user)
+
+            total_learned_cards = UserRepository.count_total_learned_cards(user)
+
+            return Response(
+                {
+                    "success": True,
+                    "message": "Cập nhật hồ sơ thành công!",
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                        "phone": user.profile.phone,
+                        "total_cards": total_cards,
+                        "total_learned_cards": total_learned_cards,
+                    },
+                },
+                status=200,
+            )
+
+        except Exception as e:
+
+            return Response(
+                {"error": f"Lỗi cập nhật hồ sơ: {str(e)}"},
+                status=500,
+            )
 
 
 @api_view(["POST"])

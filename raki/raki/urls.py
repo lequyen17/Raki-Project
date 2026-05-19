@@ -37,14 +37,9 @@ urlpatterns = [
     # Đường dẫn để lấy Access Token mới khi cái cũ hết hạn (Refresh Token)
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/register/", accounts_views.register_view, name="register"),
-    path("api/user/profile/", accounts_views.get_user_profile, name="user_profile"),
-    path(
-        "api/user/profile/update/",
-        accounts_views.update_user_profile,
-        name="update_user_profile",
-    ),
+    path("api/user/profile/", accounts_views.user_profile, name="user_profile"),
     # Các route của deck
-    path("api/user/decks/", deck_views.get_user_decks, name="user_decks"),
+    path("api/user/decks/", deck_views.user_decks, name="user_decks"),
     path("api/user/decks/move/", deck_views.move_user_deck, name="move_user_deck"),
     path(
         "api/user/decks/<int:deck_id>/",

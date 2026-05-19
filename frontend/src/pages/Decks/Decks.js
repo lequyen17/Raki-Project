@@ -135,6 +135,11 @@ const Decks = () => {
       return;
     }
 
+    if (payload.name.length > 100) {
+      setCreateError("Deck name must be at most 100 characters.");
+      return;
+    }
+
     try {
       setIsCreating(true);
       setCreateError("");
@@ -192,6 +197,10 @@ const Decks = () => {
 
     if (!payload.name) {
       setEditError("Deck name is required.");
+      return;
+    }
+    if (payload.name.length > 100) {
+      setEditError("Deck name must be at most 100 characters.");
       return;
     }
 
