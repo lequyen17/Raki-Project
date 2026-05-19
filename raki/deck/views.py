@@ -4,6 +4,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
+from raki.deck.services import DeckService
+
 from .repositories import DeckRepository
 from card.repositories import CardRepository
 from .serializers import DeckValidator, DeckMoveValidator
@@ -25,21 +27,13 @@ def user_decks(request):
         except ValueError as e:
             return Response({"error": str(e)}, status=400)
 
-        name = validated_data["name"]
-        description = validated_data["description"]
-
-        deck = DeckRepository.create_user_deck(
-            user=user,
-            name=name,
-            description=description,
-        )
+        deck = DeckService.create_deck(user, validated_data)
 
         return Response(
             {
                 "id": deck.id,
                 "name": deck.name,
                 "description": deck.description or "",
-                "total_cards": 0,
                 "parent_id": deck.parent_id,
                 "created_at": deck.created_at,
             },
@@ -92,10 +86,7 @@ def move_user_deck(request):
     deck = validated_data["deck"]
     parent = validated_data["parent"]
 
-    DeckRepository.move_deck(
-        deck,
-        parent,
-    )
+    DeckService.move_deck(deck, parent)
 
     return Response(
         {
@@ -133,14 +124,8 @@ def user_deck_detail(request, deck_id):
             validated_data = DeckValidator.validate(request.data, deck)
         except ValueError as e:
             return Response({"error": str(e)}, status=400)
-        name = validated_data["name"]
-        description = validated_data["description"]
 
-        deck = DeckRepository.update_deck(
-            deck=deck,
-            name=name,
-            description=description,
-        )
+        deck = DeckService.update_deck(deck, validated_data)
 
         return Response(
             {
@@ -154,7 +139,7 @@ def user_deck_detail(request, deck_id):
     # DELETE
     if request.method == "DELETE":
 
-        DeckRepository.delete_deck(deck)
+        DeckService.delete_deck(deck)
 
         return Response({"success": True})
 
@@ -164,49 +149,7 @@ def user_deck_detail(request, deck_id):
         user,
     )
 
-    # Lấy cả deck hiện tại và tất cả deck con cháu
-    def get_descendants(d):
-
-        descendants = [d.id]
-
-        children = DeckRepository.get_child_decks(
-            d,
-            user,
-        )
-
-        for child in children:
-            descendants.extend(get_descendants(child))
-
-        return descendants
-
-    all_deck_ids = get_descendants(deck)
-
-    cards_qs = DeckRepository.get_cards_by_deck_ids(all_deck_ids)
-
-    progress_qs = CardRepository.get_progress_by_cards_and_user(
-        cards_qs,
-        user,
-    )
-
-    total_cards = cards_qs.count()
-
-    progress_count = progress_qs.count()
-
-    now = timezone.now()
-
-    new_count = (total_cards - progress_count) + progress_qs.filter(
-        repetition=0
-    ).count()
-
-    learn_count = progress_qs.filter(
-        repetition__gt=0,
-        interval__lt=7,
-    ).count()
-
-    review_count = progress_qs.filter(
-        interval__gte=7,
-        next_review__lte=now,
-    ).count()
+    stats = DeckService.get_deck_stats(deck, user)
 
     return Response(
         {
@@ -214,11 +157,6 @@ def user_deck_detail(request, deck_id):
             "name": deck.name,
             "description": deck.description or "",
             "is_leaf": not has_subdecks,
-            "stats": {
-                "new": new_count,
-                "learn": learn_count,
-                "review": review_count,
-                "total": total_cards,
-            },
+            "stats": stats,
         }
     )

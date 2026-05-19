@@ -11,6 +11,8 @@ from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from raki.accounts.services import UserService
+
 from .repositories import UserRepository
 from .serializers import UserProfileValidator, UserRegistrationValidator
 
@@ -40,23 +42,7 @@ def user_profile(request):
     # =========================
     if request.method == "GET":
 
-        total_cards = UserRepository.count_total_cards(user)
-
-        try:
-            profile = user.profile
-
-            total_learned_cards = UserRepository.count_total_learned_cards(user)
-
-            if profile.total_learned_cards != total_learned_cards:
-                profile.total_learned_cards = total_learned_cards
-                profile.save(update_fields=["total_learned_cards"])
-
-            phone = profile.phone
-
-        except AttributeError:
-
-            phone = ""
-            total_learned_cards = 0
+        profile_data = UserService.get_user_profile_data(user)
 
         return Response(
             {
@@ -65,9 +51,9 @@ def user_profile(request):
                 "email": user.email,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "phone": phone,
-                "total_cards": total_cards,
-                "total_learned_cards": total_learned_cards,
+                "phone": profile_data["phone"],
+                "total_cards": profile_data["total_cards"],
+                "total_learned_cards": profile_data["total_learned_cards"],
                 "is_staff": user.is_staff,
                 "groups": list(user.groups.values_list("name", flat=True)),
             }
@@ -79,43 +65,11 @@ def user_profile(request):
     elif request.method == "PUT":
 
         try:
-            data = json.loads(request.body)
-
-        except json.JSONDecodeError:
-
-            return Response({"error": "Invalid JSON"}, status=400)
-
-        try:
             validated_data = UserProfileValidator.validate_update(
                 data=data,
                 user=user,
             )
-
-        except ValueError as e:
-
-            return Response({"error": str(e)}, status=400)
-
-        email = validated_data["email"]
-        first_name = validated_data["first_name"]
-        last_name = validated_data["last_name"]
-        phone = validated_data["phone"]
-
-        try:
-
-            # Update user
-            user.email = email
-            user.first_name = first_name
-            user.last_name = last_name
-
-            user.save()
-
-            # Update profile
-            user.profile.phone = phone
-            user.profile.save()
-
-            total_cards = UserRepository.count_total_cards(user)
-
-            total_learned_cards = UserRepository.count_total_learned_cards(user)
+            result = UserService.update_user_profile(user, validated_data)
 
             return Response(
                 {
@@ -127,9 +81,9 @@ def user_profile(request):
                         "email": user.email,
                         "first_name": user.first_name,
                         "last_name": user.last_name,
-                        "phone": user.profile.phone,
-                        "total_cards": total_cards,
-                        "total_learned_cards": total_learned_cards,
+                        "phone": result["phone"],
+                        "total_cards": result["total_cards"],
+                        "total_learned_cards": result["total_learned_cards"],
                     },
                 },
                 status=200,
@@ -147,40 +101,10 @@ def user_profile(request):
 def register_view(request):
 
     try:
-        data = json.loads(request.body)
+        validated_data = UserRegistrationValidator.validate(request.data)
+        user = UserService.register_user(validated_data)
 
-    except json.JSONDecodeError:
-
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-
-    try:
-        validated_data = UserRegistrationValidator.validate(data)
-    except ValueError as e:
-
-        return JsonResponse({"error": str(e)}, status=400)
-
-    username = validated_data["username"]
-    password = validated_data["password"]
-    email = validated_data["email"]
-    first_name = validated_data["first_name"]
-    last_name = validated_data["last_name"]
-    phone = validated_data["phone"]
-
-    try:
-
-        user = UserRepository.create_user(
-            username=username,
-            email=email,
-            password=password,
-            first_name=first_name,
-            last_name=last_name,
-        )
-
-        profile = user.profile
-        profile.phone = phone
-        profile.save()
-
-        return JsonResponse(
+        return Response(
             {
                 "success": True,
                 "message": "Đăng ký thành công!",
@@ -190,7 +114,6 @@ def register_view(request):
                     "email": user.email,
                     "first_name": user.first_name,
                     "last_name": user.last_name,
-                    "phone": profile.phone,
                 },
             },
             status=201,
