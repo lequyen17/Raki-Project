@@ -1,12 +1,23 @@
-from rest_framework import serializers
+class ReviewCardValidator:
 
-class ReviewCardSerializer(serializers.Serializer):
-    quality = serializers.ChoiceField(
-        choices=["again", "hard", "good", "easy"],
-        error_messages={"invalid_choice": "Invalid quality."}
-    )
+    VALID_QUALITIES = [
+        "again",
+        "hard",
+        "good",
+        "easy",
+    ]
 
-    def validate_quality(self, value):
-        if value not in ["again", "hard", "good", "easy"]:
-            raise serializers.ValidationError("Invalid quality.")
-        return value
+    @staticmethod
+    def validate(data):
+
+        quality = str(data.get("quality", "")).strip().lower()
+
+        if not quality:
+            raise ValueError("Quality is required.")
+
+        if quality not in ReviewCardValidator.VALID_QUALITIES:
+            raise ValueError("Invalid quality.")
+
+        return {
+            "quality": quality,
+        }

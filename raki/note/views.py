@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from note.services.note_service import NoteService
 from .repositories import NoteRepository
 from deck.repositories import DeckRepository
-from .serializers import NoteTypeSerializer, NoteCreateSerializer
+from .serializers import NoteTypeValidator, NoteCreateValidator
 
 
 @api_view(["GET", "POST"])
@@ -14,15 +14,14 @@ def note_types_view(request):
 
     if request.method == "POST":
 
-        serializer = NoteTypeSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response({"error": serializer.errors['non_field_errors'][0]}, status=400)
-            
-        validated_data = serializer.validated_data
+        try:
+            validated_data = NoteTypeValidator.validate(request.data)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=400)
+
         name = validated_data["name"]
         definitions_data = validated_data["definitions_data"]
         templates_data = validated_data["templates_data"]
-
         note_type = NoteRepository.create_note_type_with_relations(
             user=request.user,
             name=name,
@@ -88,14 +87,15 @@ def create_note(request, deck_id):
     if not deck:
         return Response({"error": "Deck not found"}, status=404)
 
-    serializer = NoteCreateSerializer(data=request.data, user=request.user)
-    if not serializer.is_valid():
-        error = serializer.errors['non_field_errors'][0]
-        status_code = 404 if "not found" in str(error).lower() else 400
-        return Response({"error": error}, status=status_code)
-        
-    note_type = serializer.validated_data["note_type"]
-    values_data = serializer.validated_data["values_data"]
+    try:
+        validated_data = NoteCreateValidator.validate(request.data, request.user)
+    except LookupError as e:
+        return Response({"error": str(e)}, status=404)
+    except ValueError as e:
+        return Response({"error": str(e)}, status=400)
+
+    note_type = validated_data["note_type"]
+    values_data = validated_data["values_data"]
 
     service = NoteService()
 

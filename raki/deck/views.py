@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from .repositories import DeckRepository
 from card.repositories import CardRepository
-from .serializers import DeckSerializer, DeckMoveSerializer
+from .serializers import DeckValidator, DeckMoveValidator
 
 
 # =========================
@@ -20,12 +20,11 @@ def user_decks(request):
 
     # CREATE
     if request.method == "POST":
+        try:
+            validated_data = DeckValidator.validate(request.data)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=400)
 
-        serializer = DeckSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response({"error": serializer.errors['non_field_errors'][0]}, status=400)
-            
-        validated_data = serializer.validated_data
         name = validated_data["name"]
         description = validated_data["description"]
 
@@ -81,14 +80,17 @@ def move_user_deck(request):
 
     user = request.user
 
-    serializer = DeckMoveSerializer(data=request.data, user=user)
-    if not serializer.is_valid():
-        error = serializer.errors['non_field_errors'][0]
-        status_code = 404 if "not found" in str(error).lower() else 400
-        return Response({"error": error}, status=status_code)
+    try:
+        validated_data = DeckMoveValidator.validate(request.data, user)
+    except LookupError as e:
 
-    deck = serializer.validated_data["deck"]
-    parent = serializer.validated_data["parent"]
+        return Response({"error": str(e)}, status=404)
+    except ValueError as e:
+
+        return Response({"error": str(e)}, status=400)
+
+    deck = validated_data["deck"]
+    parent = validated_data["parent"]
 
     DeckRepository.move_deck(
         deck,
@@ -127,11 +129,10 @@ def user_deck_detail(request, deck_id):
     # UPDATE
     if request.method == "PUT":
 
-        serializer = DeckSerializer(data=request.data, deck=deck)
-        if not serializer.is_valid():
-            return Response({"error": serializer.errors['non_field_errors'][0]}, status=400)
-            
-        validated_data = serializer.validated_data
+        try:
+            validated_data = DeckValidator.validate(request.data, deck)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=400)
         name = validated_data["name"]
         description = validated_data["description"]
 

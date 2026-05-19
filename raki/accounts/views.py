@@ -12,7 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .repositories import UserRepository
-from .serializers import UserProfileUpdateSerializer, UserRegistrationSerializer
+from .serializers import UserProfileValidator, UserRegistrationValidator
 
 User = get_user_model()
 
@@ -85,11 +85,16 @@ def user_profile(request):
 
             return Response({"error": "Invalid JSON"}, status=400)
 
-        serializer = UserProfileUpdateSerializer(data=data, user=user)
-        if not serializer.is_valid():
-            return Response({"error": serializer.errors['non_field_errors'][0]}, status=400)
-            
-        validated_data = serializer.validated_data
+        try:
+            validated_data = UserProfileValidator.validate_update(
+                data=data,
+                user=user,
+            )
+
+        except ValueError as e:
+
+            return Response({"error": str(e)}, status=400)
+
         email = validated_data["email"]
         first_name = validated_data["first_name"]
         last_name = validated_data["last_name"]
@@ -148,11 +153,12 @@ def register_view(request):
 
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-    serializer = UserRegistrationSerializer(data=data)
-    if not serializer.is_valid():
-        return JsonResponse({"error": serializer.errors['non_field_errors'][0]}, status=400)
-        
-    validated_data = serializer.validated_data
+    try:
+        validated_data = UserRegistrationValidator.validate(data)
+    except ValueError as e:
+
+        return JsonResponse({"error": str(e)}, status=400)
+
     username = validated_data["username"]
     password = validated_data["password"]
     email = validated_data["email"]
