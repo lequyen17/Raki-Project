@@ -1,21 +1,9 @@
-import json
-
-from django.contrib.auth import get_user_model
 from django.http import JsonResponse
-
-from django.core.exceptions import ValidationError
-from django.core.validators import validate_email
-
-from rest_framework.decorators import api_view
-from rest_framework.decorators import permission_classes
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from accounts.services import UserService
-
-from .serializers import UserProfileValidator, UserRegistrationValidator
-
-User = get_user_model()
 
 
 @api_view(["GET"])
@@ -62,62 +50,21 @@ def user_profile(request):
     # UPDATE PROFILE
     # =========================
     elif request.method == "PUT":
-
         try:
-            validated_data = UserProfileValidator.validate_update(
-                data=data,
-                user=user,
-            )
-            result = UserService.update_user_profile(user, validated_data)
-
-            return Response(
-                {
-                    "success": True,
-                    "message": "Cập nhật hồ sơ thành công!",
-                    "user": {
-                        "id": user.id,
-                        "username": user.username,
-                        "email": user.email,
-                        "first_name": user.first_name,
-                        "last_name": user.last_name,
-                        "phone": result["phone"],
-                        "total_cards": result["total_cards"],
-                        "total_learned_cards": result["total_learned_cards"],
-                    },
-                },
-                status=200,
-            )
-
+            data = UserService.update_user_profile(request.user, request.data)
+            return Response(data, status=200)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=400)
         except Exception as e:
-
-            return Response(
-                {"error": f"Lỗi cập nhật hồ sơ: {str(e)}"},
-                status=500,
-            )
+            return Response({"error": f"Lỗi cập nhật hồ sơ: {str(e)}"}, status=500)
 
 
 @api_view(["POST"])
 def register_view(request):
-
     try:
-        validated_data = UserRegistrationValidator.validate(request.data)
-        user = UserService.register_user(validated_data)
-
-        return Response(
-            {
-                "success": True,
-                "message": "Đăng ký thành công!",
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                },
-            },
-            status=201,
-        )
-
+        data = UserService.register_user(request.data)
+        return Response(data, status=201)
+    except ValueError as e:
+        return Response({"error": str(e)}, status=400)
     except Exception as e:
-
         return JsonResponse({"error": f"Lỗi đăng ký: {str(e)}"}, status=500)

@@ -1,3 +1,4 @@
+from deck.repositories import DeckRepository
 from note.repositories import NoteRepository
 from note.serializers import NoteTypeValidator, NoteCreateValidator
 from note.services.note_service import NoteService
@@ -53,7 +54,11 @@ class NoteMainService:
         return {"results": results}
 
     @staticmethod
-    def create_note(deck, user, request_data):
+    def create_note(deck_id, user, request_data):
+        deck = DeckRepository.get_deck_for_user(deck_id, user)
+        if not deck:
+            raise LookupError("Deck not found")
+
         validated_data = NoteCreateValidator.validate(request_data, user)
         note_type = validated_data["note_type"]
         values_data = validated_data["values_data"]

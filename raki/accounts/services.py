@@ -1,5 +1,6 @@
 from django.db import transaction
 from .repositories import UserRepository
+from .serializers import UserProfileValidator, UserRegistrationValidator
 
 
 class UserService:
@@ -22,44 +23,69 @@ class UserService:
             total_learned_cards = 0
 
         return {
-            "user": user,
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
             "phone": phone,
             "total_cards": total_cards,
             "total_learned_cards": total_learned_cards,
+            "is_staff": user.is_staff,
+            "groups": list(user.groups.values_list("name", flat=True)),
         }
 
     @staticmethod
     @transaction.atomic
     def update_user_profile(user, data):
         """Logic cập nhật thông tin user và profile"""
+        validated_data = UserProfileValidator.validate_update(data=data, user=user)
+
         # Update User
-        user.email = data["email"]
-        user.first_name = data["first_name"]
-        user.last_name = data["last_name"]
+        user.email = validated_data["email"]
+        user.first_name = validated_data["first_name"]
+        user.last_name = validated_data["last_name"]
         user.save()
 
         # Update Profile
         profile = user.profile
-        profile.phone = data["phone"]
+        profile.phone = validated_data["phone"]
         profile.save()
 
         # Lấy lại dữ liệu mới nhất để trả về
-        return UserService.get_user_profile_data(user)
+        profile_data = UserService.get_user_profile_data(user)
+        return {
+            "success": True,
+            "message": "Cập nhật hồ sơ thành công!",
+            "user": profile_data
+        }
 
     @staticmethod
     @transaction.atomic
     def register_user(data):
         """Logic đăng ký user mới"""
+        validated_data = UserRegistrationValidator.validate(data)
+
         user = UserRepository.create_user(
-            username=data["username"],
-            email=data["email"],
-            password=data["password"],
-            first_name=data["first_name"],
-            last_name=data["last_name"],
+            username=validated_data["username"],
+            email=validated_data["email"],
+            password=validated_data["password"],
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"],
         )
 
         profile = user.profile
-        profile.phone = data["phone"]
+        profile.phone = validated_data.get("phone", "")
         profile.save()
 
-        return user
+        return {
+            "success": True,
+            "message": "Đăng ký thành công!",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+            },
+        }

@@ -1,37 +1,103 @@
 from django.utils import timezone
 from deck.repositories import DeckRepository
 from card.repositories import CardRepository
+from .serializers import DeckValidator, DeckMoveValidator
 
 
 class DeckService:
+
+    @staticmethod
+    def _get_deck_or_404(deck_id, user):
+        deck = DeckRepository.get_deck_for_user(deck_id, user)
+        if not deck:
+            raise LookupError("Deck not found.")
+        return deck
 
     # =========================
     # CREATE
     # =========================
     @staticmethod
-    def create_deck(user, validated_data):
-        return DeckRepository.create_user_deck(
+    def create_deck(user, data):
+        validated_data = DeckValidator.validate(data)
+        deck = DeckRepository.create_user_deck(
             user=user,
             name=validated_data["name"],
             description=validated_data["description"],
         )
+        return {
+            "id": deck.id,
+            "name": deck.name,
+            "description": deck.description or "",
+            "parent_id": deck.parent_id,
+            "created_at": deck.created_at,
+        }
+
+    # =========================
+    # GET ALL USER DECKS
+    # =========================
+    @staticmethod
+    def get_user_decks(user):
+        decks = DeckRepository.get_user_decks(user)
+        results = []
+        for deck in decks:
+            results.append(
+                {
+                    "id": deck.id,
+                    "name": deck.name,
+                    "description": deck.description or "",
+                    "total_cards": deck.total_cards,
+                    "parent_id": deck.parent_id,
+                    "created_at": deck.created_at,
+                }
+            )
+        return {
+            "count": decks.count(),
+            "results": results,
+        }
+
+    # =========================
+    # GET DETAIL
+    # =========================
+    @staticmethod
+    def get_deck_detail(deck_id, user):
+        deck = DeckService._get_deck_or_404(deck_id, user)
+        has_subdecks = DeckRepository.has_subdecks(deck, user)
+        stats = DeckService.get_deck_stats(deck, user)
+        return {
+            "id": deck.id,
+            "name": deck.name,
+            "description": deck.description or "",
+            "is_leaf": not has_subdecks,
+            "stats": stats,
+        }
 
     # =========================
     # UPDATE
     # =========================
     @staticmethod
-    def update_deck(deck, validated_data):
-        return DeckRepository.update_deck(
+    def update_deck(deck_id, user, data):
+        deck = DeckService._get_deck_or_404(deck_id, user)
+        validated_data = DeckValidator.validate(data, deck)
+        deck = DeckRepository.update_deck(
             deck=deck,
             name=validated_data["name"],
             description=validated_data["description"],
         )
+        return {
+            "id": deck.id,
+            "name": deck.name,
+            "description": deck.description or "",
+            "parent_id": deck.parent_id,
+        }
 
     # =========================
     # MOVE (business rule nằm ở service)
     # =========================
     @staticmethod
-    def move_deck(deck, parent):
+    def move_deck(user, data):
+        validated_data = DeckMoveValidator.validate(data, user)
+        deck = validated_data["deck"]
+        parent = validated_data["parent"]
 
         if parent and parent.id == deck.id:
             raise ValueError("A deck cannot be moved into itself.")
@@ -43,14 +109,20 @@ class DeckService:
             cursor = cursor.parent
 
         DeckRepository.move_deck(deck, parent)
-        return deck
+        return {
+            "success": True,
+            "deck_id": deck.id,
+            "parent_id": deck.parent_id,
+        }
 
     # =========================
     # DELETE
     # =========================
     @staticmethod
-    def delete_deck(deck):
+    def delete_deck(deck_id, user):
+        deck = DeckService._get_deck_or_404(deck_id, user)
         DeckRepository.delete_deck(deck)
+        return {"success": True}
 
     # =========================
     # DESCENDANTS TREE

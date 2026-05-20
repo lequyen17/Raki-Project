@@ -7,7 +7,11 @@ from card.serializers import ReviewCardValidator
 
 class CardMainService:
     @staticmethod
-    def list_cards_by_deck(deck, user):
+    def list_cards_by_deck(deck_id, user):
+        deck = DeckRepository.get_deck_for_user(deck_id, user)
+        if not deck:
+            raise LookupError("Deck not found.")
+
         def get_descendants(d):
             descendants = [d.id]
             children = DeckRepository.get_child_decks(d, user)
@@ -41,7 +45,11 @@ class CardMainService:
         }
 
     @staticmethod
-    def get_study_cards(deck, user):
+    def get_study_cards(deck_id, user):
+        deck = DeckRepository.get_deck_for_user(deck_id, user)
+        if not deck:
+            raise LookupError("Deck not found.")
+
         today = timezone.localdate()
 
         def get_descendants(d):
@@ -149,7 +157,11 @@ class CardMainService:
         }
 
     @staticmethod
-    def review_card(card, user, request_data):
+    def review_card(card_id, user, request_data):
+        card = CardRepository.get_card_for_review(card_id, user)
+        if not card:
+            raise LookupError("Card not found.")
+
         validated_data = ReviewCardValidator.validate(request_data)
         quality = validated_data["quality"]
 
