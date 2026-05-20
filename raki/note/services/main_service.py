@@ -1,7 +1,8 @@
 from deck.repositories import DeckRepository
 from note.repositories import NoteRepository
 from note.serializers import NoteTypeValidator, NoteCreateValidator
-from note.services.note_service import NoteService
+from raki.note.services.create_note import NoteService
+
 
 class NoteMainService:
     @staticmethod
@@ -10,7 +11,7 @@ class NoteMainService:
         name = validated_data["name"]
         definitions_data = validated_data["definitions_data"]
         templates_data = validated_data["templates_data"]
-        
+
         note_type = NoteRepository.create_note_type_with_relations(
             user=user,
             name=name,
