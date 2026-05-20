@@ -15,6 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from drf_spectacular.utils import extend_schema
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
@@ -28,10 +29,32 @@ from accounts import views as accounts_views
 from deck import views as deck_views
 from card import views as card_views
 from note import views as note_views
+from raki.openapi_common import (
+    TokenObtainPairRequestSerializer,
+    TokenPairResponseSerializer,
+    TokenRefreshRequestSerializer,
+    TokenRefreshResponseSerializer,
+)
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+
+TokenObtainPairView = extend_schema(
+    tags=["Auth"],
+    summary="Đăng nhập (JWT access + refresh)",
+    auth=[],
+    request=TokenObtainPairRequestSerializer,
+    responses={200: TokenPairResponseSerializer},
+)(TokenObtainPairView)
+
+TokenRefreshView = extend_schema(
+    tags=["Auth"],
+    summary="Làm mới access token",
+    auth=[],
+    request=TokenRefreshRequestSerializer,
+    responses={200: TokenRefreshResponseSerializer},
+)(TokenRefreshView)
 
 urlpatterns = [
     path("admin/", admin.site.urls),

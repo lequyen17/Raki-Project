@@ -1,11 +1,27 @@
 from django.http import JsonResponse
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from raki.api_validation import parse_request
+from raki.openapi_common import ErrorResponseSerializer
+from accounts.serializers import (
+    CurrentUserSerializer,
+    ProfileUpdateResponseSerializer,
+    RegisterResponseSerializer,
+    UserProfileSerializer,
+    UserProfileUpdateSerializer,
+    UserRegistrationSerializer,
+)
 from accounts.services import UserService
 
 
+@extend_schema(
+    tags=["Accounts"],
+    summary="Thông tin user đang đăng nhập",
+    responses={200: CurrentUserSerializer},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def getAuth(request):
@@ -18,17 +34,29 @@ def getAuth(request):
     )
 
 
+@extend_schema(
+    methods=["GET"],
+    tags=["Accounts"],
+    summary="Lấy hồ sơ người dùng",
+    responses={200: UserProfileSerializer},
+)
+@extend_schema(
+    methods=["PUT"],
+    tags=["Accounts"],
+    summary="Cập nhật hồ sơ",
+    request=UserProfileUpdateSerializer,
+    responses={
+        200: ProfileUpdateResponseSerializer,
+        400: ErrorResponseSerializer,
+        500: ErrorResponseSerializer,
+    },
+)
 @api_view(["GET", "PUT"])
 @permission_classes([IsAuthenticated])
 def user_profile(request):
-
     user = request.user
 
-    # =========================
-    # GET PROFILE
-    # =========================
     if request.method == "GET":
-
         profile_data = UserService.get_user_profile_data(user)
 
         return Response(
@@ -46,25 +74,38 @@ def user_profile(request):
             }
         )
 
-    # =========================
-    # UPDATE PROFILE
-    # =========================
-    elif request.method == "PUT":
-        try:
-            data = UserService.update_user_profile(request.user, request.data)
-            return Response(data, status=200)
-        except ValueError as e:
-            return Response({"error": str(e)}, status=400)
-        except Exception as e:
-            return Response({"error": f"Lỗi cập nhật hồ sơ: {str(e)}"}, status=500)
+    validated, error_response = parse_request(
+        request, UserProfileUpdateSerializer, user=user
+    )
+    if error_response:
+        return error_response
+
+    try:
+        data = UserService.update_user_profile(user, validated)
+        return Response(data, status=200)
+    except Exception as e:
+        return Response({"error": f"Lỗi cập nhật hồ sơ: {str(e)}"}, status=500)
 
 
+@extend_schema(
+    tags=["Accounts"],
+    summary="Đăng ký tài khoản",
+    auth=[],
+    request=UserRegistrationSerializer,
+    responses={
+        201: RegisterResponseSerializer,
+        400: ErrorResponseSerializer,
+        500: ErrorResponseSerializer,
+    },
+)
 @api_view(["POST"])
 def register_view(request):
+    validated, error_response = parse_request(request, UserRegistrationSerializer)
+    if error_response:
+        return error_response
+
     try:
-        data = UserService.register_user(request.data)
+        data = UserService.register_user(validated)
         return Response(data, status=201)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=400)
     except Exception as e:
         return JsonResponse({"error": f"Lỗi đăng ký: {str(e)}"}, status=500)

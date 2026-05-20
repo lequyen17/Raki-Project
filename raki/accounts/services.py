@@ -1,6 +1,5 @@
 from django.db import transaction
 from .repositories import UserRepository
-from .serializers import UserProfileValidator, UserRegistrationValidator
 
 
 class UserService:
@@ -37,10 +36,8 @@ class UserService:
 
     @staticmethod
     @transaction.atomic
-    def update_user_profile(user, data):
+    def update_user_profile(user, validated_data):
         """Logic cập nhật thông tin user và profile"""
-        validated_data = UserProfileValidator.validate_update(data=data, user=user)
-
         # Update User
         user.email = validated_data["email"]
         user.first_name = validated_data["first_name"]
@@ -62,10 +59,8 @@ class UserService:
 
     @staticmethod
     @transaction.atomic
-    def register_user(data):
+    def register_user(validated_data):
         """Logic đăng ký user mới"""
-        validated_data = UserRegistrationValidator.validate(data)
-
         user = UserRepository.create_user(
             username=validated_data["username"],
             email=validated_data["email"],

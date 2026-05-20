@@ -1,45 +1,49 @@
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
+from rest_framework import serializers
 
 from .repositories import UserRepository
 
 
-class UserProfileValidator:
+class UserProfileUpdateSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False, allow_blank=True)
+    first_name = serializers.CharField(
+        required=False, allow_blank=True, max_length=150
+    )
+    last_name = serializers.CharField(
+        required=False, allow_blank=True, max_length=150
+    )
+    phone = serializers.CharField(required=False, allow_blank=True, max_length=15)
 
-    @staticmethod
-    def validate_update(data, user):
+    def validate(self, attrs):
+        user = self.context["user"]
 
-        email = data.get("email", user.email).strip()
-        first_name = data.get("first_name", user.first_name).strip()
-        last_name = data.get("last_name", user.last_name).strip()
+        email = str(attrs.get("email", user.email)).strip()
+        first_name = str(attrs.get("first_name", user.first_name)).strip()
+        last_name = str(attrs.get("last_name", user.last_name)).strip()
 
         try:
-            phone = data.get("phone", user.profile.phone or "").strip()
+            phone = str(attrs.get("phone", user.profile.phone or "")).strip()
         except AttributeError:
-            phone = data.get("phone", "").strip()
+            phone = str(attrs.get("phone", "")).strip()
 
-        # Validate email
         if email != user.email:
-
             try:
                 validate_email(email)
-            except ValidationError:
-                raise ValueError("Email không hợp lệ")
+            except DjangoValidationError:
+                raise serializers.ValidationError("Email không hợp lệ")
 
             if UserRepository.get_user_by_email(email).exclude(id=user.id).exists():
-                raise ValueError("Email này đã được đăng ký")
+                raise serializers.ValidationError("Email này đã được đăng ký")
 
-        # Validate first_name
         if first_name and (len(first_name) < 2 or len(first_name) > 150):
-            raise ValueError("Tên đầu phải từ 2 đến 150 ký tự")
+            raise serializers.ValidationError("Tên đầu phải từ 2 đến 150 ký tự")
 
-        # Validate last_name
         if last_name and (len(last_name) < 2 or len(last_name) > 150):
-            raise ValueError("Họ phải từ 2 đến 150 ký tự")
+            raise serializers.ValidationError("Họ phải từ 2 đến 150 ký tự")
 
-        # Validate phone
         if phone and len(phone) > 15:
-            raise ValueError("Số điện thoại không hợp lệ")
+            raise serializers.ValidationError("Số điện thoại không hợp lệ")
 
         return {
             "email": email,
@@ -49,68 +53,64 @@ class UserProfileValidator:
         }
 
 
-class UserRegistrationValidator:
+class UserRegistrationSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+    email = serializers.EmailField()
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    phone = serializers.CharField(required=False, allow_blank=True, max_length=15)
 
-    @staticmethod
-    def validate(data):
+    def validate(self, attrs):
+        username = attrs.get("username", "").strip()
+        password = attrs.get("password", "").strip()
+        confirm_password = attrs.get("confirm_password", "").strip()
+        email = attrs.get("email", "").strip()
+        first_name = attrs.get("first_name", "").strip()
+        last_name = attrs.get("last_name", "").strip()
+        phone = attrs.get("phone", "").strip()
 
-        username = data.get("username", "").strip()
-        password = data.get("password", "").strip()
-        confirm_password = data.get("confirm_password", "").strip()
-        email = data.get("email", "").strip()
-        first_name = data.get("first_name", "").strip()
-        last_name = data.get("last_name", "").strip()
-        phone = data.get("phone", "").strip()
-
-        # Required fields
         if not all(
-            [
-                username,
-                password,
-                confirm_password,
-                email,
-                first_name,
-                last_name,
-            ]
+            [username, password, confirm_password, email, first_name, last_name]
         ):
-            raise ValueError("Vui lòng điền đầy đủ tất cả các trường bắt buộc")
+            raise serializers.ValidationError(
+                "Vui lòng điền đầy đủ tất cả các trường bắt buộc"
+            )
 
-        # Username
         if len(username) < 3:
-            raise ValueError("Tên đăng nhập phải có ít nhất 3 ký tự")
+            raise serializers.ValidationError("Tên đăng nhập phải có ít nhất 3 ký tự")
 
         if len(username) > 150:
-            raise ValueError("Tên đăng nhập không được vượt quá 150 ký tự")
+            raise serializers.ValidationError(
+                "Tên đăng nhập không được vượt quá 150 ký tự"
+            )
 
         if UserRepository.get_user_by_username(username).exists():
-            raise ValueError("Tên đăng nhập đã tồn tại")
+            raise serializers.ValidationError("Tên đăng nhập đã tồn tại")
 
-        # Email
         try:
             validate_email(email)
-        except ValidationError:
-            raise ValueError("Email không hợp lệ")
+        except DjangoValidationError:
+            raise serializers.ValidationError("Email không hợp lệ")
 
         if UserRepository.get_user_by_email(email).exists():
-            raise ValueError("Email này đã được đăng ký")
+            raise serializers.ValidationError("Email này đã được đăng ký")
 
-        # Password
         if len(password) < 6:
-            raise ValueError("Mật khẩu phải có ít nhất 6 ký tự")
+            raise serializers.ValidationError("Mật khẩu phải có ít nhất 6 ký tự")
 
         if password != confirm_password:
-            raise ValueError("Mật khẩu xác nhận không khớp")
+            raise serializers.ValidationError("Mật khẩu xác nhận không khớp")
 
-        # Names
         if len(first_name) < 2 or len(first_name) > 150:
-            raise ValueError("Tên đầu phải từ 2 đến 150 ký tự")
+            raise serializers.ValidationError("Tên đầu phải từ 2 đến 150 ký tự")
 
         if len(last_name) < 2 or len(last_name) > 150:
-            raise ValueError("Họ phải từ 2 đến 150 ký tự")
+            raise serializers.ValidationError("Họ phải từ 2 đến 150 ký tự")
 
-        # Phone
         if phone and len(phone) > 15:
-            raise ValueError("Số điện thoại không hợp lệ")
+            raise serializers.ValidationError("Số điện thoại không hợp lệ")
 
         return {
             "username": username,
@@ -120,3 +120,45 @@ class UserRegistrationValidator:
             "last_name": last_name,
             "phone": phone,
         }
+
+
+# --- OpenAPI response schemas ---
+
+
+class CurrentUserSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+
+
+class UserProfileSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    email = serializers.EmailField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    phone = serializers.CharField()
+    total_cards = serializers.IntegerField()
+    total_learned_cards = serializers.IntegerField()
+    is_staff = serializers.BooleanField()
+    groups = serializers.ListField(child=serializers.CharField())
+
+
+class RegisteredUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    email = serializers.EmailField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+
+
+class RegisterResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField()
+    message = serializers.CharField()
+    user = RegisteredUserSerializer()
+
+
+class ProfileUpdateResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField()
+    message = serializers.CharField()
+    user = UserProfileSerializer()

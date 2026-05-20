@@ -3,7 +3,6 @@ from django.utils import timezone
 from deck.repositories import DeckRepository
 from card.repositories import CardRepository
 from card.services.review_service import ReviewService
-from card.serializers import ReviewCardValidator
 
 class CardMainService:
     @staticmethod
@@ -157,12 +156,11 @@ class CardMainService:
         }
 
     @staticmethod
-    def review_card(card_id, user, request_data):
+    def review_card(card_id, user, validated_data):
         card = CardRepository.get_card_for_review(card_id, user)
         if not card:
             raise LookupError("Card not found.")
 
-        validated_data = ReviewCardValidator.validate(request_data)
         quality = validated_data["quality"]
 
         p, created = CardRepository.get_or_create_progress(user, card)

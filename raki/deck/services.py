@@ -1,7 +1,6 @@
 from django.utils import timezone
 from deck.repositories import DeckRepository
 from card.repositories import CardRepository
-from .serializers import DeckValidator, DeckMoveValidator
 
 
 class DeckService:
@@ -17,8 +16,7 @@ class DeckService:
     # CREATE
     # =========================
     @staticmethod
-    def create_deck(user, data):
-        validated_data = DeckValidator.validate(data)
+    def create_deck(user, validated_data):
         deck = DeckRepository.create_user_deck(
             user=user,
             name=validated_data["name"],
@@ -75,9 +73,7 @@ class DeckService:
     # UPDATE
     # =========================
     @staticmethod
-    def update_deck(deck_id, user, data):
-        deck = DeckService._get_deck_or_404(deck_id, user)
-        validated_data = DeckValidator.validate(data, deck)
+    def update_deck(deck, validated_data):
         deck = DeckRepository.update_deck(
             deck=deck,
             name=validated_data["name"],
@@ -94,20 +90,9 @@ class DeckService:
     # MOVE (business rule nằm ở service)
     # =========================
     @staticmethod
-    def move_deck(user, data):
-        validated_data = DeckMoveValidator.validate(data, user)
+    def move_deck(validated_data):
         deck = validated_data["deck"]
         parent = validated_data["parent"]
-
-        if parent and parent.id == deck.id:
-            raise ValueError("A deck cannot be moved into itself.")
-
-        cursor = parent
-        while cursor:
-            if cursor.id == deck.id:
-                raise ValueError("Cannot move into its own subdeck.")
-            cursor = cursor.parent
-
         DeckRepository.move_deck(deck, parent)
         return {
             "success": True,
