@@ -1,7 +1,7 @@
 from deck.repositories import DeckRepository
 from note.repositories import NoteRepository
 from note.serializers import NoteTypeValidator, NoteCreateValidator
-from raki.note.services.create_note import NoteService
+from note.services.create_note import NoteService
 
 
 class NoteMainService:

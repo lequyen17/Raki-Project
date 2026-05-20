@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "deck",
     "note",
     "card",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -132,6 +133,7 @@ CORS_ALLOWED_ORIGINS = [
 
 # Đảm bảo Django cho phép dùng Session trong API
 REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
@@ -145,4 +147,10 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,  # Cấp Refresh Token mới mỗi khi làm mới Access Token
     "BLACKLIST_AFTER_ROTATION": True,  # Vô hiệu hóa Token cũ sau khi đã xoay vòng
     "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Raki API",
+    "DESCRIPTION": "API documentation",
+    "VERSION": "1.0.0",
 }

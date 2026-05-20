@@ -3,7 +3,7 @@ from django.db import transaction
 from note.models import Note
 from note.models import FieldValue
 
-from raki.note.services.card_service import (
+from note.services.card_service import (
     CardFactory,
 )
 

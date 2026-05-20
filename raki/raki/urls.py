@@ -15,6 +15,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+)
+
 from django.contrib import admin
 from django.urls import path
 
@@ -30,6 +35,17 @@ from rest_framework_simplejwt.views import (
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # ======================
+    # SWAGGER
+    # ======================
+    # file schema OpenAPI
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    # giao diện swagger
+    path(
+        "api/docs/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
     # Các route của accounts
     # Đường dẫn đăng nhập để lấy Token (thay cho login_view cũ)
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
