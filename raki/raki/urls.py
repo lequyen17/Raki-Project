@@ -33,38 +33,38 @@ urlpatterns = [
     # Các route của accounts
     # Đường dẫn đăng nhập để lấy Token (thay cho login_view cũ)
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("auth/me", accounts_views.getAuth, name="current-user"),
+    path("api/auth/", accounts_views.getAuth, name="current-user"),
     # Đường dẫn để lấy Access Token mới khi cái cũ hết hạn (Refresh Token)
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/register/", accounts_views.register_view, name="register"),
-    path("api/user/profile/", accounts_views.user_profile, name="user_profile"),
+    path("api/profile/", accounts_views.user_profile, name="user_profile"),
     # Các route của deck
-    path("api/user/decks/", deck_views.user_decks, name="user_decks"),
-    path("api/user/decks/move/", deck_views.move_user_deck, name="move_user_deck"),
+    path("api/decks/", deck_views.user_decks, name="user_decks"),
+    path("api/decks/move/", deck_views.move_user_deck, name="move_user_deck"),
     path(
-        "api/user/decks/<int:deck_id>/",
+        "api/decks/<int:deck_id>/",
         deck_views.user_deck_detail,
         name="user_deck_detail",
     ),
     path(
-        "api/user/decks/<int:deck_id>/cards/",
+        "api/decks/<int:deck_id>/cards/",
         card_views.list_cards_by_deck,
         name="list_cards_by_deck",
     ),
     path(
-        "api/user/decks/<int:deck_id>/study/",
+        "api/decks/<int:deck_id>/study/",
         card_views.get_study_cards,
         name="get_study_cards",
     ),
     path(
-        "api/user/cards/<int:card_id>/review/",
+        "api/cards/<int:card_id>/review/",
         card_views.review_card,
         name="review_card",
     ),
     # Các route của note
-    path("api/user/note-types/", note_views.note_types_view, name="note_types"),
+    path("api/note-types/", note_views.note_types_view, name="note_types"),
     path(
-        "api/user/decks/<int:deck_id>/notes/",
+        "api/decks/<int:deck_id>/notes/",
         note_views.create_note,
         name="create_note_by_deck",
     ),

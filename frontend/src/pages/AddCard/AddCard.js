@@ -34,7 +34,7 @@ const AddCard = () => {
 
   const fetchDeckInfo = async () => {
     try {
-      const res = await api.get(`/api/user/decks/${deckId}/cards/`);
+      const res = await api.get(`/api/decks/${deckId}/cards/`);
       setDeckName(res.data?.deck_name || "");
     } catch (err) {
       console.error("Failed to fetch deck info", err);
@@ -43,7 +43,7 @@ const AddCard = () => {
 
   const fetchNoteTypes = async () => {
     try {
-      const res = await api.get("/api/user/note-types/");
+      const res = await api.get("/api/note-types/");
       setNoteTypes(res.data.results || []);
       if (
         res.data.results &&
@@ -94,7 +94,7 @@ const AddCard = () => {
     }
 
     try {
-      await api.post(`/api/user/decks/${deckId}/notes/`, {
+      await api.post(`/api/decks/${deckId}/notes/`, {
         note_type_id: selectedNoteTypeId,
         values: noteValues,
       });
@@ -225,7 +225,7 @@ const AddCard = () => {
     }
 
     try {
-      const res = await api.post("/api/user/note-types/", {
+      const res = await api.post("/api/note-types/", {
         name: newNoteTypeName,
         definitions: validDefs,
         templates: newTemplates.map(({ name, is_cloze, front, back }) => ({

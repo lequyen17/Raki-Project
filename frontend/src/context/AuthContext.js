@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
     if (!token) return;
 
     try {
-      const response = await api.get("/auth/me");
+      const response = await api.get("/api/auth/");
       const userData = response.data;
 
       // Cập nhật cả State và LocalStorage

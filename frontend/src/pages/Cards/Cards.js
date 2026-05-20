@@ -22,7 +22,7 @@ const Cards = () => {
     try {
       setLoading(true);
       setError("");
-      const res = await api.get(`/api/user/decks/${deckId}/cards/`);
+      const res = await api.get(`/api/decks/${deckId}/cards/`);
       setDeckName(res.data?.deck_name || "");
       setCards(res.data?.results || []);
     } catch (err) {

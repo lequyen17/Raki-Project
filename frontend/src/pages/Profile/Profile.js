@@ -26,7 +26,7 @@ const Profile = () => {
         return;
       }
 
-      const res = await api.get("/api/user/profile/");
+      const res = await api.get("/api/profile/");
       setProfileData(res.data);
       setEditData({
         email: res.data.email,
@@ -94,7 +94,7 @@ const Profile = () => {
       setIsSaving(true);
       setError("");
 
-      const res = await api.put("/api/user/profile/", editData);
+      const res = await api.put("/api/profile/", editData);
 
       if (res.data.success) {
         setProfileData(res.data.user);

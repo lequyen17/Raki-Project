@@ -62,7 +62,7 @@ const Decks = () => {
       try {
         setLoading(true);
         setError("");
-        const res = await api.get("/api/user/decks/");
+        const res = await api.get("/api/decks/");
         setDecks(res.data?.results || []);
       } catch (err) {
         if (err.response?.status === 401) {
@@ -143,7 +143,7 @@ const Decks = () => {
     try {
       setIsCreating(true);
       setCreateError("");
-      const res = await api.post("/api/user/decks/", payload);
+      const res = await api.post("/api/decks/", payload);
       setDecks((prev) => [res.data, ...prev]);
       setShowCreateModal(false);
       setNewDeck({ name: "", description: "" });
@@ -207,7 +207,7 @@ const Decks = () => {
     try {
       setIsEditing(true);
       setEditError("");
-      const res = await api.put(`/api/user/decks/${selectedDeckId}/`, payload);
+      const res = await api.put(`/api/decks/${selectedDeckId}/`, payload);
       const updatedDeck = res.data;
 
       setDecks((prev) =>
@@ -264,7 +264,7 @@ const Decks = () => {
 
     try {
       setMoveError("");
-      await api.post("/api/user/decks/move/", {
+      await api.post("/api/decks/move/", {
         deck_id: draggingDeckId,
         parent_id: targetDeckId,
       });
@@ -292,7 +292,7 @@ const Decks = () => {
 
     try {
       setMoveError("");
-      await api.post("/api/user/decks/move/", {
+      await api.post("/api/decks/move/", {
         deck_id: draggingDeckId,
         parent_id: null,
       });
@@ -318,7 +318,7 @@ const Decks = () => {
     setStatsError("");
     setStatsLoading(true);
     try {
-      const res = await api.get(`/api/user/decks/${deckId}/study/`);
+      const res = await api.get(`/api/decks/${deckId}/study/`);
       setSelectedDeckId(deckId);
       setSelectedDeckInfo(res.data);
     } catch (err) {
@@ -338,8 +338,8 @@ const Decks = () => {
     }
     try {
       setDeletingDeck(true);
-      await api.delete(`/api/user/decks/${selectedDeckId}/`);
-      const res = await api.get("/api/user/decks/");
+      await api.delete(`/api/decks/${selectedDeckId}/`);
+      const res = await api.get("/api/decks/");
       setDecks(res.data?.results || []);
       setSelectedDeckId(null);
       setSelectedDeckInfo(null);
