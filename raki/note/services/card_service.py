@@ -1,9 +1,15 @@
+from abc import ABC, abstractmethod
 import re
-
 from card.models import Card
 
 
-class ClozeCardFactory:
+class CardFactory(ABC):
+    @abstractmethod
+    def create_cards(self, note, template, values_data):
+        pass
+
+
+class ClozeCardFactory(CardFactory):
 
     def get_max_cloze(self, template):
 
@@ -54,3 +60,42 @@ class ClozeCardFactory:
             cards.append(card)
 
         return cards
+
+
+class NormalCardFactory(CardFactory):
+
+    def create_cards(self, note, template, values_data=None):
+
+        card = Card.objects.create(
+            note=note,
+            template=template,
+            cloze_index=0,
+        )
+
+        return [card]
+
+
+class CardService:
+
+    def create_cards(
+        self,
+        note,
+        template,
+        values_data,
+    ):
+
+        is_cloze_template = "<!--CLOZE_TEMPLATE-->" in template.front
+
+        if is_cloze_template:
+
+            factory = ClozeCardFactory()
+
+        else:
+
+            factory = NormalCardFactory()
+
+        return factory.create_cards(
+            note,
+            template,
+            values_data,
+        )

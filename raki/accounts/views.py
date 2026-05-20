@@ -11,9 +11,8 @@ from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from raki.accounts.services import UserService
+from accounts.services import UserService
 
-from .repositories import UserRepository
 from .serializers import UserProfileValidator, UserRegistrationValidator
 
 User = get_user_model()

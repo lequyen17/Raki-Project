@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from raki.deck.services import DeckService
+from deck.services import DeckService
 
 from .repositories import DeckRepository
 from card.repositories import CardRepository
