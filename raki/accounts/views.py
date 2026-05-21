@@ -70,7 +70,6 @@ def user_profile(request):
                 "total_cards": profile_data["total_cards"],
                 "total_learned_cards": profile_data["total_learned_cards"],
                 "is_staff": user.is_staff,
-                "groups": list(user.groups.values_list("name", flat=True)),
             }
         )
 

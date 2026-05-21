@@ -31,7 +31,6 @@ class UserService:
             "total_cards": total_cards,
             "total_learned_cards": total_learned_cards,
             "is_staff": user.is_staff,
-            "groups": list(user.groups.values_list("name", flat=True)),
         }
 
     @staticmethod
@@ -54,7 +53,7 @@ class UserService:
         return {
             "success": True,
             "message": "Cập nhật hồ sơ thành công!",
-            "user": profile_data
+            "user": profile_data,
         }
 
     @staticmethod

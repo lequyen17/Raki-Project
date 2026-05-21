@@ -7,12 +7,8 @@ from .repositories import UserRepository
 
 class UserProfileUpdateSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False, allow_blank=True)
-    first_name = serializers.CharField(
-        required=False, allow_blank=True, max_length=150
-    )
-    last_name = serializers.CharField(
-        required=False, allow_blank=True, max_length=150
-    )
+    first_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
+    last_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
     phone = serializers.CharField(required=False, allow_blank=True, max_length=15)
 
     def validate(self, attrs):
@@ -141,7 +137,6 @@ class UserProfileSerializer(serializers.Serializer):
     total_cards = serializers.IntegerField()
     total_learned_cards = serializers.IntegerField()
     is_staff = serializers.BooleanField()
-    groups = serializers.ListField(child=serializers.CharField())
 
 
 class RegisteredUserSerializer(serializers.Serializer):
