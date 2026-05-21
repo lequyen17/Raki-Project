@@ -8,8 +8,6 @@ class ReviewCardSerializer(serializers.Serializer):
 
     def validate_quality(self, value):
         quality = str(value).strip().lower()
-        if not quality:
-            raise serializers.ValidationError("Quality is required.")
         if quality not in self.VALID_QUALITIES:
             raise serializers.ValidationError("Invalid quality.")
         return quality

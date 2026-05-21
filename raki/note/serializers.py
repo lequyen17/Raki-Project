@@ -41,9 +41,6 @@ class NoteTypeSerializer(serializers.Serializer):
         definitions_data = attrs.get("definitions", [])
         templates_data = attrs.get("templates", [])
 
-        if not name:
-            raise serializers.ValidationError("Name is required")
-
         if not definitions_data:
             raise serializers.ValidationError("At least one field is required")
 
@@ -126,9 +123,6 @@ class NoteCreateSerializer(serializers.Serializer):
         user = self.context["user"]
         note_type_id = attrs.get("note_type_id")
         values_data = attrs.get("values", {})
-
-        if not note_type_id:
-            raise serializers.ValidationError("note_type_id is required")
 
         note_type = NoteRepository.get_by_id_and_user(note_type_id, user)
 

@@ -1,13 +1,18 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from rest_framework import serializers
+
 from .repositories import UserRepository
 
 
 class UserProfileUpdateSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False, allow_blank=True)
-    first_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
-    last_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
+    first_name = serializers.CharField(
+        required=False, allow_blank=True, max_length=150, min_length=2
+    )
+    last_name = serializers.CharField(
+        required=False, allow_blank=True, max_length=150, min_length=2
+    )
     phone = serializers.CharField(required=False, allow_blank=True, max_length=15)
 
     def validate(self, attrs):
@@ -23,22 +28,9 @@ class UserProfileUpdateSerializer(serializers.Serializer):
             phone = str(attrs.get("phone", "")).strip()
 
         if email != user.email:
-            try:
-                validate_email(email)
-            except DjangoValidationError:
-                raise serializers.ValidationError("Email không hợp lệ")
 
             if UserRepository.get_user_by_email(email).exclude(id=user.id).exists():
-                raise serializers.ValidationError("Email này đã được đăng ký")
-
-        if first_name and (len(first_name) < 2 or len(first_name) > 150):
-            raise serializers.ValidationError("Tên đầu phải từ 2 đến 150 ký tự")
-
-        if last_name and (len(last_name) < 2 or len(last_name) > 150):
-            raise serializers.ValidationError("Họ phải từ 2 đến 150 ký tự")
-
-        if phone and len(phone) > 15:
-            raise serializers.ValidationError("Số điện thoại không hợp lệ")
+                raise serializers.ValidationError("Email has already been taken.")
 
         return {
             "email": email,
@@ -49,12 +41,12 @@ class UserProfileUpdateSerializer(serializers.Serializer):
 
 
 class UserRegistrationSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=150)
-    password = serializers.CharField(write_only=True)
+    username = serializers.CharField(max_length=150, min_length=3)
+    password = serializers.CharField(write_only=True, min_length=6)
     confirm_password = serializers.CharField(write_only=True)
     email = serializers.EmailField()
-    first_name = serializers.CharField(max_length=150)
-    last_name = serializers.CharField(max_length=150)
+    first_name = serializers.CharField(max_length=150, min_length=2)
+    last_name = serializers.CharField(max_length=150, min_length=2)
     phone = serializers.CharField(required=False, allow_blank=True, max_length=15)
 
     def validate(self, attrs):
@@ -66,46 +58,14 @@ class UserRegistrationSerializer(serializers.Serializer):
         last_name = attrs.get("last_name", "").strip()
         phone = attrs.get("phone", "").strip()
 
-        if not all(
-            [username, password, confirm_password, email, first_name, last_name]
-        ):
-            raise serializers.ValidationError(
-                "Vui lòng điền đầy đủ tất cả các trường bắt buộc"
-            )
-
-        if len(username) < 3:
-            raise serializers.ValidationError("Tên đăng nhập phải có ít nhất 3 ký tự")
-
-        if len(username) > 150:
-            raise serializers.ValidationError(
-                "Tên đăng nhập không được vượt quá 150 ký tự"
-            )
-
         if UserRepository.get_user_by_username(username).exists():
-            raise serializers.ValidationError("Tên đăng nhập đã tồn tại")
-
-        try:
-            validate_email(email)
-        except DjangoValidationError:
-            raise serializers.ValidationError("Email không hợp lệ")
+            raise serializers.ValidationError("Username has already been taken.")
 
         if UserRepository.get_user_by_email(email).exists():
-            raise serializers.ValidationError("Email này đã được đăng ký")
-
-        if len(password) < 6:
-            raise serializers.ValidationError("Mật khẩu phải có ít nhất 6 ký tự")
+            raise serializers.ValidationError("Email has already been taken.")
 
         if password != confirm_password:
-            raise serializers.ValidationError("Mật khẩu xác nhận không khớp")
-
-        if len(first_name) < 2 or len(first_name) > 150:
-            raise serializers.ValidationError("Tên đầu phải từ 2 đến 150 ký tự")
-
-        if len(last_name) < 2 or len(last_name) > 150:
-            raise serializers.ValidationError("Họ phải từ 2 đến 150 ký tự")
-
-        if phone and len(phone) > 15:
-            raise serializers.ValidationError("Số điện thoại không hợp lệ")
+            raise serializers.ValidationError("Confirm password does not match.")
 
         return {
             "username": username,
