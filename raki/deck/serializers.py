@@ -61,7 +61,6 @@ class DeckItemSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
     description = serializers.CharField()
-    total_cards = serializers.IntegerField(required=False)
     parent_id = serializers.IntegerField(allow_null=True)
     created_at = serializers.DateTimeField(required=False)
 
@@ -78,14 +77,6 @@ class DeckStatsSerializer(serializers.Serializer):
     total = serializers.IntegerField()
 
 
-class DeckDetailResponseSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    description = serializers.CharField()
-    is_leaf = serializers.BooleanField()
-    stats = DeckStatsSerializer()
-
-
 class DeckMoveResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField()
     deck_id = serializers.IntegerField()
@@ -94,3 +85,27 @@ class DeckMoveResponseSerializer(serializers.Serializer):
 
 class SuccessResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField()
+
+
+class DeckDetailCountsSerializer(serializers.Serializer):
+    new = serializers.IntegerField()
+    learning = serializers.IntegerField()
+    review = serializers.IntegerField()
+    total = serializers.IntegerField()
+    today_completed_new = serializers.IntegerField()
+
+
+class DeckDetailOverallStatsSerializer(serializers.Serializer):
+    total = serializers.IntegerField()
+    new = serializers.IntegerField()
+    learning = serializers.IntegerField()
+    review = serializers.IntegerField()
+    average_ease = serializers.FloatField()
+
+
+class DeckDetailResponseSerializer(serializers.Serializer):
+    deck_id = serializers.IntegerField()
+    name = serializers.CharField()
+    description = serializers.CharField(allow_blank=True, allow_null=True)
+    counts = DeckDetailCountsSerializer()
+    overall_stats = DeckDetailOverallStatsSerializer()

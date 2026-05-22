@@ -31,7 +31,7 @@ class NoteService:
             for definition in definitions:
 
                 value = values_data.get(
-                    str(definition.id),
+                    definition.id,
                     "",
                 )
 

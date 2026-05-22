@@ -30,6 +30,7 @@ const Study = () => {
       const res = await api.get(`/api/decks/${deckId}/study/`);
       setDeckName(res.data.deck_name);
       setCards(res.data.results || []);
+      console.log(res.data.results);
     } catch (err) {
       if (err.response?.status === 401) {
         localStorage.removeItem("access_token");

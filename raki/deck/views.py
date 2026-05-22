@@ -76,8 +76,7 @@ def move_user_deck(request):
 @extend_schema(
     methods=["GET"],
     tags=["Decks"],
-    operation_id="deck_detail",
-    summary="Chi tiết deck",
+    summary="Chi tiết deck (thông tin + thống kê)",
     responses={
         200: DeckDetailResponseSerializer,
         404: ErrorResponseSerializer,
@@ -107,7 +106,10 @@ def move_user_deck(request):
 @permission_classes([IsAuthenticated])
 def user_deck_detail(request, deck_id):
     try:
-        if request.method == "PUT":
+        if request.method == "GET":
+            data = DeckService.get_deck_detail(deck_id, request.user)
+            return Response(data)
+        elif request.method == "PUT":
             deck = DeckRepository.get_deck_for_user(deck_id, request.user)
             if not deck:
                 return Response({"error": "Deck not found."}, status=404)
@@ -123,8 +125,7 @@ def user_deck_detail(request, deck_id):
         elif request.method == "DELETE":
             data = DeckService.delete_deck(deck_id, request.user)
             return Response(data)
-        else:
-            data = DeckService.get_deck_detail(deck_id, request.user)
-            return Response(data)
+
     except LookupError as e:
         return Response({"error": str(e)}, status=404)
+

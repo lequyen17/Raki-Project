@@ -77,8 +77,7 @@ urlpatterns = [
     # ======================
     # SWAGGER
     # ======================
-    # file schema OpenAPI
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+
     # giao diện swagger
     path(
         "api/docs/elements/",

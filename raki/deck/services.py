@@ -1,4 +1,5 @@
 from django.utils import timezone
+
 from deck.repositories import DeckRepository
 from card.repositories import CardRepository
 
@@ -54,22 +55,6 @@ class DeckService:
         }
 
     # =========================
-    # GET DETAIL
-    # =========================
-    @staticmethod
-    def get_deck_detail(deck_id, user):
-        deck = DeckService._get_deck_or_404(deck_id, user)
-        has_subdecks = DeckRepository.has_subdecks(deck, user)
-        stats = DeckService.get_deck_stats(deck, user)
-        return {
-            "id": deck.id,
-            "name": deck.name,
-            "description": deck.description or "",
-            "is_leaf": not has_subdecks,
-            "stats": stats,
-        }
-
-    # =========================
     # UPDATE
     # =========================
     @staticmethod
@@ -84,6 +69,7 @@ class DeckService:
             "name": deck.name,
             "description": deck.description or "",
             "parent_id": deck.parent_id,
+            "created_at": deck.created_at,
         }
 
     # =========================
@@ -127,38 +113,83 @@ class DeckService:
         return dfs(deck)
 
     # =========================
-    # STATS
+    # DECK DETAIL (info + stats)
     # =========================
     @staticmethod
-    def get_deck_stats(deck, user):
+    def get_deck_detail(deck_id, user):
+        deck = DeckService._get_deck_or_404(deck_id, user)
+        today = timezone.localdate()
 
-        all_ids = DeckService.get_descendant_ids(deck, user)
+        all_deck_ids = DeckService.get_descendant_ids(deck, user)
 
-        cards_qs = DeckRepository.get_cards_by_deck_ids(all_ids)
-        progress_qs = CardRepository.get_progress_by_cards_and_user(cards_qs, user)
+        # Count new cards already started today
+        new_already_started_today = CardRepository.count_started_new_today(
+            all_deck_ids,
+            user,
+            today,
+        )
 
-        total_cards = cards_qs.count()
-        progress_count = progress_qs.count()
+        NEW_LIMIT_PER_DAY = 20
+        remaining_new_quota = max(0, NEW_LIMIT_PER_DAY - new_already_started_today)
 
-        now = timezone.now()
+        # Get cards + progress
+        cards = CardRepository.get_cards_by_deck_ids(all_deck_ids)
+        progress_dict = CardRepository.get_progress_dict(cards, user)
 
-        new_count = (total_cards - progress_count) + progress_qs.filter(
-            repetition=0
-        ).count()
+        # Build today's session counts
+        session_new_count = 0
+        session_learning_count = 0
+        session_review_count = 0
 
-        learn_count = progress_qs.filter(
-            repetition__gt=0,
-            interval__lt=7,
-        ).count()
+        for card in cards:
+            p = progress_dict.get(card.id)
+            if not p:
+                if session_new_count < remaining_new_quota:
+                    session_new_count += 1
+            elif p.next_review <= today:
+                if p.status == "learning":
+                    session_learning_count += 1
+                elif p.status == "review":
+                    session_review_count += 1
 
-        review_count = progress_qs.filter(
-            interval__gte=7,
-            next_review__lte=now,
-        ).count()
+        # Overall stats
+        overall_new = 0
+        overall_learning = 0
+        overall_review = 0
+        easiness_sum = 0
+        easiness_count = 0
+
+        for card in cards:
+            p = progress_dict.get(card.id)
+            if not p:
+                overall_new += 1
+            else:
+                if p.status == "learning":
+                    overall_learning += 1
+                elif p.status == "review":
+                    overall_review += 1
+                    easiness_sum += p.easiness
+                    easiness_count += 1
+
+        avg_ease = easiness_sum / easiness_count if easiness_count > 0 else 2.5
 
         return {
-            "new": new_count,
-            "learn": learn_count,
-            "review": review_count,
-            "total": total_cards,
+            "deck_id": deck.id,
+            "name": deck.name,
+            "description": deck.description,
+            "counts": {
+                "new": session_new_count,
+                "learning": session_learning_count,
+                "review": session_review_count,
+                "total": session_new_count
+                + session_learning_count
+                + session_review_count,
+            },
+            "overall_stats": {
+                "total": len(cards),
+                "new": overall_new,
+                "learning": overall_learning,
+                "review": overall_review,
+                "average_ease": avg_ease,
+            },
         }

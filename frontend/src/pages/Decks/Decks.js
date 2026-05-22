@@ -318,7 +318,7 @@ const Decks = () => {
     setStatsError("");
     setStatsLoading(true);
     try {
-      const res = await api.get(`/api/decks/${deckId}/study/`);
+      const res = await api.get(`/api/decks/${deckId}/`);
       setSelectedDeckId(deckId);
       setSelectedDeckInfo(res.data);
     } catch (err) {

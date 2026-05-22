@@ -82,7 +82,7 @@ class NoteTypeSerializer(serializers.Serializer):
 
                 if not has_field_tag:
                     raise serializers.ValidationError(
-                        "Normal templates must contain at least one field tag"
+                        "Normal templates must contain at least one field tag like {{Front}} or {{Back}}"
                     )
 
             if re.search(TYPE_TAG_REGEX, front):

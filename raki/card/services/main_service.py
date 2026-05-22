@@ -76,25 +76,17 @@ class CardMainService:
 
         # 3. Build study session
         results = []
-        session_new_count = 0
-        session_learning_count = 0
-        session_review_count = 0
 
         for card in cards:
             p = progress_dict.get(card.id)
 
             if not p:
-                if session_new_count < remaining_new_quota:
+                if len([r for r in results if r["status"] == "new"]) < remaining_new_quota:
                     status = "new"
-                    session_new_count += 1
                 else:
                     continue
             elif p.next_review <= today:
                 status = p.status
-                if status == "learning":
-                    session_learning_count += 1
-                elif status == "review":
-                    session_review_count += 1
             else:
                 continue
 
@@ -113,45 +105,8 @@ class CardMainService:
                 }
             )
 
-        # 4. Overall stats
-        overall_new = 0
-        overall_learning = 0
-        overall_review = 0
-        easiness_sum = 0
-        easiness_count = 0
-
-        for card in cards:
-            p = progress_dict.get(card.id)
-            if not p:
-                overall_new += 1
-            else:
-                if p.status == "learning":
-                    overall_learning += 1
-                elif p.status == "review":
-                    overall_review += 1
-                    easiness_sum += p.easiness
-                    easiness_count += 1
-
-        avg_ease = easiness_sum / easiness_count if easiness_count > 0 else 2.5
-
         return {
-            "deck_id": deck.id,
-            "name": deck.name,
-            "description": deck.description,
-            "counts": {
-                "new": session_new_count,
-                "learning": session_learning_count,
-                "review": session_review_count,
-                "total": len(results),
-                "today_completed_new": new_already_started_today,
-            },
-            "overall_stats": {
-                "total": len(cards),
-                "new": overall_new,
-                "learning": overall_learning,
-                "review": overall_review,
-                "average_ease": avg_ease,
-            },
+            "deck_name": deck.name,
             "results": results,
         }
 

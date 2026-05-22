@@ -53,26 +53,7 @@ class StudyCardItemSerializer(serializers.Serializer):
     field_values = serializers.DictField(child=serializers.CharField())
 
 
-class StudyCountsSerializer(serializers.Serializer):
-    new = serializers.IntegerField()
-    learning = serializers.IntegerField()
-    review = serializers.IntegerField()
-    total = serializers.IntegerField()
-    today_completed_new = serializers.IntegerField()
-
-
-class StudyOverallStatsSerializer(serializers.Serializer):
-    total = serializers.IntegerField()
-    new = serializers.IntegerField()
-    learning = serializers.IntegerField()
-    review = serializers.IntegerField()
-    average_ease = serializers.FloatField()
-
-
 class StudySessionResponseSerializer(serializers.Serializer):
-    deck_id = serializers.IntegerField()
-    name = serializers.CharField()
-    description = serializers.CharField(allow_blank=True, allow_null=True)
-    counts = StudyCountsSerializer()
-    overall_stats = StudyOverallStatsSerializer()
+    deck_name = serializers.CharField()
     results = StudyCardItemSerializer(many=True)
+
