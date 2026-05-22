@@ -36,6 +36,9 @@ class DeckMoveSerializer(serializers.Serializer):
         if not deck:
             raise LookupError("Deck not found.")
 
+        if parent_id is None:
+            return {"deck": deck, "parent": None}
+
         parent = DeckRepository.get_parent_deck_for_user(parent_id, user)
 
         if not parent:
