@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.validators import validate_email
+from django.core.validators import RegexValidator, validate_email
 from rest_framework import serializers
 
 from .repositories import UserRepository
@@ -13,7 +13,18 @@ class UserProfileUpdateSerializer(serializers.Serializer):
     last_name = serializers.CharField(
         required=False, allow_blank=True, max_length=150, min_length=2
     )
-    phone = serializers.CharField(required=False, allow_blank=True, max_length=15)
+    phone = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=10,
+        min_length=10,
+        validators=[
+            RegexValidator(
+                regex=r"^0\d{9}$",
+                message="Phone number must start with 0 and be exactly 10 digits long.",
+            )
+        ],
+    )
 
     def validate(self, attrs):
         user = self.context["user"]
@@ -47,7 +58,18 @@ class UserRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()
     first_name = serializers.CharField(max_length=150, min_length=2)
     last_name = serializers.CharField(max_length=150, min_length=2)
-    phone = serializers.CharField(required=False, allow_blank=True, max_length=15)
+    phone = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=10,
+        min_length=10,
+        validators=[
+            RegexValidator(
+                regex=r"^0\d{9}$",
+                message="Phone number must start with 0 and be exactly 10 digits long.",
+            )
+        ],
+    )
 
     def validate(self, attrs):
         username = attrs.get("username", "").strip()
@@ -104,6 +126,7 @@ class RegisteredUserSerializer(serializers.Serializer):
     email = serializers.EmailField()
     first_name = serializers.CharField()
     last_name = serializers.CharField()
+    phone = serializers.CharField()
 
 
 class RegisterResponseSerializer(serializers.Serializer):

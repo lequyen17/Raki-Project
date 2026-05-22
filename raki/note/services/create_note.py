@@ -6,6 +6,7 @@ from note.models import FieldValue
 from note.services.card_service import (
     CardFactory,
 )
+from note.services import card_service
 
 
 class NoteService:
@@ -40,16 +41,16 @@ class NoteService:
                     value=value,
                 )
 
+            service = card_service.CardService()
+
             # create cards
             templates = note_type.templates.all()
-
-            card_factory = CardFactory()
 
             created_cards = []
 
             for template in templates:
 
-                cards = card_factory.create_cards(
+                cards = service.create_cards(
                     note,
                     template,
                     values_data,

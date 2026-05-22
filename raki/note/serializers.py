@@ -112,34 +112,50 @@ class NoteTypeSerializer(serializers.Serializer):
         }
 
 
+class NoteValueSerializer(serializers.Serializer):
+    # Định nghĩa cấu trúc cho từng item trong list
+    def_id = serializers.IntegerField(required=True)
+    value = serializers.CharField(allow_blank=False, required=True)
+
+
 class NoteCreateSerializer(serializers.Serializer):
     note_type_id = serializers.IntegerField()
-    values = serializers.DictField(
-        child=serializers.CharField(allow_blank=True),
-        help_text="Map definition id (string) -> field value",
-    )
+    values = NoteValueSerializer(many=True)  # Chấp nhận một danh sách các object
 
     def validate(self, attrs):
         user = self.context["user"]
         note_type_id = attrs.get("note_type_id")
-        values_data = attrs.get("values", {})
+        values_list = attrs.get("values", [])
 
+        # 1. Kiểm tra NoteType
         note_type = NoteRepository.get_by_id_and_user(note_type_id, user)
-
         if not note_type:
-            raise LookupError("NoteType not found or not authorized")
+            raise serializers.ValidationError(
+                {"note_type_id": "NoteType not found or not authorized"}
+            )
 
-        required_definitions = {str(d.id): d for d in note_type.definitions.all()}
+        # 2. Chuyển list gửi lên thành dict để dễ truy xuất: {def_id: value}
+        # Ví dụ: [{"def_id": "1", "value": "A"}] -> {"1": "A"}
+        input_data = {item["def_id"]: item["value"] for item in values_list}
 
-        for def_id, definition in required_definitions.items():
-            value = values_data.get(def_id)
+        # 3. Lấy các định nghĩa bắt buộc từ Database
+        required_definitions = note_type.definitions.all()
 
+        for definition in required_definitions:
+
+            value = input_data.get(definition.id)
+
+            # Kiểm tra nếu thiếu field hoặc field rỗng
             if value is None or not str(value).strip():
                 raise serializers.ValidationError(
-                    f'Field "{definition.name}" is required'
+                    f'Field "{definition.name}" (ID: {definition.id}) is required'
                 )
 
-        return {"note_type": note_type, "values_data": values_data}
+        # Trả về dữ liệu đã qua xử lý
+        return {
+            "note_type": note_type,
+            "values_data": input_data,  # Trả về dạng dict cho logic phía sau dễ dùng
+        }
 
 
 # --- OpenAPI response schemas ---

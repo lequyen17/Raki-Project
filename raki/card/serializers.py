@@ -9,7 +9,9 @@ class ReviewCardSerializer(serializers.Serializer):
     def validate_quality(self, value):
         quality = str(value).strip().lower()
         if quality not in self.VALID_QUALITIES:
-            raise serializers.ValidationError("Invalid quality.")
+            raise serializers.ValidationError(
+                "Invalid quality. It must be one of: again, hard, good, easy."
+            )
         return quality
 
 

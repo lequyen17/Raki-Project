@@ -154,14 +154,4 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API documentation for flashcard study app",
     "VERSION": "1.0.0",
     "COMPONENT_SPLIT_REQUEST": True,
-    "APPEND_COMPONENTS": {
-        "securitySchemes": {
-            "BearerAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT",
-            }
-        }
-    },
-    "SECURITY": [{"BearerAuth": []}],
 }

@@ -93,10 +93,15 @@ const AddCard = () => {
       return;
     }
 
+    const payload = Object.entries(noteValues).map(([id, val]) => ({
+      def_id: id,
+      value: val,
+    }));
+
     try {
       await api.post(`/api/decks/${deckId}/notes/`, {
         note_type_id: selectedNoteTypeId,
-        values: noteValues,
+        values: payload,
       });
 
       toast.success("Card added successfully.");
