@@ -1,0 +1,130 @@
+.card-detail-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.card-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.card-detail-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+  flex: 1;
+}
+
+.card-detail-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.card-detail-loading,
+.card-detail-error {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-color);
+  font-size: 1.2rem;
+}
+
+.card-detail-error {
+  color: var(--danger-color);
+}
+
+.card-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.card-edit-fields {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.card-edit-fields h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: var(--text-color);
+}
+
+.card-edit-field-group {
+  margin-bottom: 16px;
+}
+
+.card-edit-field-group:last-child {
+  margin-bottom: 0;
+}
+
+.card-edit-field-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--text-color);
+}
+
+.card-edit-field-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--bg-input);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 1rem;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.card-edit-field-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.card-preview-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.card-preview-container h3 {
+  text-align: center;
+  margin-bottom: 12px;
+  color: var(--text-color);
+}
+
+.card-preview {
+  min-height: 300px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+}
+
+/* We reuse .study-card styles from Study.css by applying the class in the JS */
+.card-preview .study-card-section {
+  flex: 1;
+  padding: 24px;
+  /* Reset background since we have container background */
+  background: transparent;
+  box-shadow: none;
+}
+
+@media (max-width: 768px) {
+  .card-preview-section {
+    grid-template-columns: 1fr;
+  }
+}

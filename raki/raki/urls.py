@@ -115,6 +115,11 @@ urlpatterns = [
         card_views.review_card,
         name="review_card",
     ),
+    path(
+        "api/cards/<int:card_id>/",
+        card_views.card_detail,
+        name="card_detail",
+    ),
     # Các route của note
     path("api/note-types/", note_views.note_types_view, name="note_types"),
     path(

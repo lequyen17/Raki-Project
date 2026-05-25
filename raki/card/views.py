@@ -10,6 +10,8 @@ from card.serializers import (
     ReviewCardResponseSerializer,
     ReviewCardSerializer,
     StudySessionResponseSerializer,
+    CardDetailResponseSerializer,
+    CardUpdateSerializer,
 )
 from card.services.main_service import CardMainService
 
@@ -72,3 +74,61 @@ def review_card(request, card_id):
         return Response(data)
     except LookupError as e:
         return Response({"error": str(e)}, status=404)
+
+
+@extend_schema(
+    methods=["GET"],
+    tags=["Cards"],
+    summary="Chi tiết thẻ",
+    responses={
+        200: CardDetailResponseSerializer,
+        404: ErrorResponseSerializer,
+    },
+)
+@extend_schema(
+    methods=["PUT"],
+    tags=["Cards"],
+    summary="Cập nhật thẻ",
+    request=CardUpdateSerializer,
+    responses={
+        200: CardDetailResponseSerializer,
+        400: ErrorResponseSerializer,
+        404: ErrorResponseSerializer,
+    },
+)
+@extend_schema(
+    methods=["DELETE"],
+    tags=["Cards"],
+    summary="Xóa thẻ",
+    responses={
+        200: {"type": "object", "properties": {"success": {"type": "boolean"}}},
+        404: ErrorResponseSerializer,
+    },
+)
+@api_view(["GET", "PUT", "DELETE"])
+@permission_classes([IsAuthenticated])
+def card_detail(request, card_id):
+    if request.method == "GET":
+        try:
+            data = CardMainService.get_card_detail(card_id, request.user)
+            return Response(data)
+        except LookupError as e:
+            return Response({"error": str(e)}, status=404)
+
+    elif request.method == "PUT":
+        validated, error_response = parse_request(request, CardUpdateSerializer)
+        if error_response:
+            return error_response
+
+        try:
+            data = CardMainService.update_card(card_id, request.user, validated["field_values"])
+            return Response(data)
+        except LookupError as e:
+            return Response({"error": str(e)}, status=404)
+
+    elif request.method == "DELETE":
+        try:
+            data = CardMainService.delete_card(card_id, request.user)
+            return Response(data)
+        except LookupError as e:
+            return Response({"error": str(e)}, status=404)

@@ -1,25 +1,212 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
+import api from "../../api/api";
+import { tokenizeTemplate } from "../../utils/cardParser";
+import { mapApiError } from "../../utils/errorMapper";
+import Button from "../../components/Common/Button/Button";
+import "./CardDetail.css";
 
-function CardDetail() {
-  const { id } = useParams(); // Lấy ID từ URL
+const CardDetail = () => {
+  const { t } = useTranslation();
+  const { cardId } = useParams();
   const navigate = useNavigate();
+
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFields, setEditFields] = useState({});
+
+  useEffect(() => {
+    fetchCardDetail();
+  }, [cardId]);
+
+  const fetchCardDetail = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await api.get(`/api/cards/${cardId}/`);
+      setCard(res.data);
+      setEditFields(res.data.field_values);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        localStorage.removeItem("access_token");
+        navigate("/login");
+        return;
+      }
+      setError(
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "common.error")
+          : "Error loading card details",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditChange = (field, value) => {
+    setEditFields((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      const res = await api.put(`/api/cards/${cardId}/`, {
+        field_values: editFields,
+      });
+      setCard(res.data);
+      setIsEditing(false);
+      toast.success(t("common.save_success") || "Saved successfully");
+    } catch (err) {
+      toast.error(
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "common.error")
+          : "Error saving card",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(t("common.confirm_delete") || "Are you sure you want to delete this card?")) {
+      return;
+    }
+    try {
+      setLoading(true);
+      await api.delete(`/api/cards/${cardId}/`);
+      toast.success(t("common.delete_success") || "Deleted successfully");
+      navigate(-1);
+    } catch (err) {
+      toast.error(
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "common.error")
+          : "Error deleting card",
+      );
+      setLoading(false);
+    }
+  };
+
+  if (loading && !card) {
+    return <div className="card-detail-loading">{t("common.loading") || "Loading..."}</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="card-detail-error">
+        <p>{error}</p>
+        <Button onClick={() => navigate(-1)}>
+          {t("common.back") || "Back"}
+        </Button>
+      </div>
+    );
+  }
+
+  if (!card) return null;
+
+  // Use the edited fields for previewing if in edit mode, otherwise use saved fields
+  const displayFields = isEditing ? editFields : card.field_values;
+
+  const frontHTML = tokenizeTemplate(
+    card.template.front,
+    displayFields,
+    card.cloze_index || 0,
+    false,
+    {},
+    card.template.back,
+  );
+
+  let rawBackTemplate = card.template.back;
+  if (rawBackTemplate.includes("{{FrontSide}}")) {
+    rawBackTemplate = rawBackTemplate.replace(
+      /\{\{FrontSide\}\}/g,
+      card.template.front,
+    );
+  }
+
+  const backHTML = tokenizeTemplate(
+    rawBackTemplate,
+    displayFields,
+    card.cloze_index || 0,
+    true,
+    {}, // no typed answers for preview
+  );
+
   return (
-    <div className="card-detail-container" style={{ padding: "20px" }}>
-      <button onClick={() => navigate(-1)}> &larr; Quay lại</button>
+    <div className="card-detail-page">
+      <div className="card-detail-header">
+        <Button color="gray" onClick={() => navigate(-1)}>
+          {t("common.back") || "Back"}
+        </Button>
+        <h1 className="card-detail-title">
+          Card {card.id}
+        </h1>
+        <div className="card-detail-actions">
+          {!isEditing ? (
+            <>
+              <Button color="blue" onClick={() => setIsEditing(true)}>
+                {t("common.edit") || "Edit"}
+              </Button>
+              <Button color="red" onClick={handleDelete}>
+                {t("common.delete") || "Delete"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button color="green" onClick={handleSave} disabled={loading}>
+                {t("common.save") || "Save"}
+              </Button>
+              <Button color="gray" onClick={() => setIsEditing(false)}>
+                {t("common.cancel") || "Cancel"}
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
 
-      <hr />
+      <div className="card-detail-content">
+        {isEditing && (
+          <div className="card-edit-fields">
+            <h3>{t("common.edit_fields") || "Edit Fields"}</h3>
+            {Object.keys(editFields).map((field) => (
+              <div key={field} className="card-edit-field-group">
+                <label className="card-edit-field-label">{field}</label>
+                <textarea
+                  className="card-edit-field-input"
+                  value={editFields[field]}
+                  onChange={(e) => handleEditChange(field, e.target.value)}
+                  rows={3}
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
-      <div className="card-detail-actions">
-        <button onClick={() => alert("Chỉnh sửa")}>Edit Card</button>
-        <button onClick={() => alert("Xóa")} style={{ color: "red" }}>
-          Delete
-        </button>
+        <div className="card-preview-section">
+          <div className="card-preview-container">
+            <h3>{t("common.front") || "Front"}</h3>
+            <div className="card-preview study-card">
+              <div
+                className="study-card-section study-front"
+                dangerouslySetInnerHTML={{ __html: frontHTML }}
+              />
+            </div>
+          </div>
+          <div className="card-preview-container">
+            <h3>{t("common.back") || "Back"}</h3>
+            <div className="card-preview study-card">
+              <div
+                className="study-card-section study-back"
+                dangerouslySetInnerHTML={{ __html: backHTML }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
-}
+};
 
 export default CardDetail;

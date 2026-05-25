@@ -57,3 +57,13 @@ class StudySessionResponseSerializer(serializers.Serializer):
     deck_name = serializers.CharField()
     results = StudyCardItemSerializer(many=True)
 
+
+class CardDetailResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    cloze_index = serializers.IntegerField(allow_null=True)
+    template = StudyCardTemplateSerializer()
+    field_values = serializers.DictField(child=serializers.CharField())
+
+
+class CardUpdateSerializer(serializers.Serializer):
+    field_values = serializers.DictField(child=serializers.CharField())

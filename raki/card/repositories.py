@@ -69,3 +69,22 @@ class CardRepository:
                 "next_review": timezone.localdate(),
             },
         )
+
+    @staticmethod
+    def get_card_by_id(card_id, user):
+        try:
+            return Card.objects.select_related("note", "template").prefetch_related("note__values__definition").get(
+                id=card_id,
+                note__deck__deck_users__user=user,
+            )
+        except Card.DoesNotExist:
+            return None
+
+    @staticmethod
+    def delete_card(card_id, user):
+        card = CardRepository.get_card_by_id(card_id, user)
+        if card:
+            # Delete the note, which will cascade and delete all associated cards
+            card.note.delete()
+            return True
+        return False

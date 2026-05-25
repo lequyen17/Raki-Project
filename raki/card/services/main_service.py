@@ -127,3 +127,53 @@ class CardMainService:
             "interval": updated_progress.interval,
             "status": updated_progress.status,
         }
+
+    @staticmethod
+    def get_card_detail(card_id, user):
+        card = CardRepository.get_card_by_id(card_id, user)
+        if not card:
+            raise LookupError("CARD_NOT_FOUND")
+
+        field_values = {fv.definition.name: fv.value for fv in card.note.values.all()}
+
+        return {
+            "id": card.id,
+            "cloze_index": card.cloze_index,
+            "template": {
+                "front": card.template.front,
+                "back": card.template.back,
+            },
+            "field_values": field_values,
+        }
+
+    @staticmethod
+    def update_card(card_id, user, field_values):
+        card = CardRepository.get_card_by_id(card_id, user)
+        if not card:
+            raise LookupError("CARD_NOT_FOUND")
+
+        # Update field values of the associated note
+        for fv in card.note.values.all():
+            if fv.definition.name in field_values:
+                fv.value = field_values[fv.definition.name]
+                fv.save()
+
+        # Re-fetch or build the response directly
+        updated_field_values = {fv.definition.name: fv.value for fv in card.note.values.all()}
+
+        return {
+            "id": card.id,
+            "cloze_index": card.cloze_index,
+            "template": {
+                "front": card.template.front,
+                "back": card.template.back,
+            },
+            "field_values": updated_field_values,
+        }
+
+    @staticmethod
+    def delete_card(card_id, user):
+        success = CardRepository.delete_card(card_id, user)
+        if not success:
+            raise LookupError("CARD_NOT_FOUND")
+        return {"success": True}
