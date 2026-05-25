@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import api from "../../api/api";
+import { mapApiError } from "../../utils/errorMapper";
 import DeckLeft from "./components/DeckLeft";
 import DeckRight from "./components/DeckRight";
 import CreateDeck from "./components/CreateDeck";
@@ -25,6 +27,7 @@ const buildDeckTree = (items) => {
 };
 
 const Decks = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [decks, setDecks] = useState([]);
   const [searchText, setSearchText] = useState("");
@@ -70,7 +73,7 @@ const Decks = () => {
           navigate("/login");
           return;
         }
-        setError("Could not load deck list. Please try again.");
+        setError(t("decks.error_load"));
       } finally {
         setLoading(false);
       }
@@ -131,12 +134,12 @@ const Decks = () => {
     };
 
     if (!payload.name) {
-      setCreateError("Deck name is required.");
+      setCreateError(t("decks.error_name_required"));
       return;
     }
 
     if (payload.name.length > 100) {
-      setCreateError("Deck name must be at most 100 characters.");
+      setCreateError(t("decks.error_name_max"));
       return;
     }
 
@@ -154,7 +157,9 @@ const Decks = () => {
         return;
       }
       setCreateError(
-        err.response?.data?.error || "Cannot create deck. Please try again.",
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "decks.error_create")
+          : t("decks.error_create"),
       );
     } finally {
       setIsCreating(false);
@@ -186,7 +191,7 @@ const Decks = () => {
   const handleEditDeck = async (e) => {
     e.preventDefault();
     if (!selectedDeckId) {
-      setEditError("No deck selected for editing.");
+      setEditError(t("decks.error_no_deck_selected"));
       return;
     }
 
@@ -196,11 +201,11 @@ const Decks = () => {
     };
 
     if (!payload.name) {
-      setEditError("Deck name is required.");
+      setEditError(t("decks.error_name_required"));
       return;
     }
     if (payload.name.length > 100) {
-      setEditError("Deck name must be at most 100 characters.");
+      setEditError(t("decks.error_name_max"));
       return;
     }
 
@@ -238,7 +243,11 @@ const Decks = () => {
         navigate("/login");
         return;
       }
-      setEditError(err.response?.data?.error || "Failed to update deck.");
+      setEditError(
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "decks.error_update")
+          : t("decks.error_update"),
+      );
     } finally {
       setIsEditing(false);
     }
@@ -258,7 +267,7 @@ const Decks = () => {
 
   const handleDropOnDeck = async (targetDeckId) => {
     if (!draggingDeckId || draggingDeckId === targetDeckId) {
-      setMoveError("Cannot drop onto the same deck.");
+      setMoveError(t("decks.error_move_same"));
       return;
     }
 
@@ -278,7 +287,11 @@ const Decks = () => {
       );
       setExpandedIds((prev) => new Set(prev).add(targetDeckId));
     } catch (err) {
-      setMoveError(err.response?.data?.error || "Failed to move deck.");
+      setMoveError(
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "decks.error_move")
+          : t("decks.error_move"),
+      );
     } finally {
       setDraggingDeckId(null);
       setDropTargetId(null);
@@ -303,7 +316,11 @@ const Decks = () => {
         ),
       );
     } catch (err) {
-      setMoveError(err.response?.data?.error || "Failed to move deck.");
+      setMoveError(
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "decks.error_move")
+          : t("decks.error_move"),
+      );
     } finally {
       setDraggingDeckId(null);
       setDropTargetId(null);
@@ -325,7 +342,9 @@ const Decks = () => {
       setSelectedDeckId(null);
       setSelectedDeckInfo(null);
       setStatsError(
-        err.response?.data?.error || "Could not load deck statistics.",
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "decks.error_stats")
+          : t("decks.error_stats"),
       );
     } finally {
       setStatsLoading(false);
@@ -333,7 +352,7 @@ const Decks = () => {
   };
 
   const handleDeleteDeck = async () => {
-    if (!window.confirm("Are you sure you want to delete this deck?")) {
+    if (!window.confirm(t("decks.confirm_delete"))) {
       return;
     }
     try {
@@ -345,7 +364,11 @@ const Decks = () => {
       setSelectedDeckInfo(null);
       setStatsError("");
     } catch (err) {
-      setStatsError(err.response?.data?.error || "Failed to delete deck.");
+      setStatsError(
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "decks.error_delete")
+          : t("decks.error_delete"),
+      );
     } finally {
       setDeletingDeck(false);
     }

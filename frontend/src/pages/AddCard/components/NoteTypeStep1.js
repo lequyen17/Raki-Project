@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 const NoteTypeStep1 = ({
   newNoteTypeName,
@@ -10,20 +11,22 @@ const NoteTypeStep1 = ({
   ntError,
   handleNextNtStep1,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="nt-step-1">
       <div className="form-group">
-        <label className="form-label">NoteType Name</label>
+        <label className="form-label">{t("noteType.name_label")}</label>
         <input
           className="form-input"
           value={newNoteTypeName}
           onChange={(e) => setNewNoteTypeName(e.target.value)}
-          placeholder="e.g. English-Vietnamese"
+          placeholder={t("noteType.name_placeholder")}
         />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Field Definitions</label>
+        <label className="form-label">{t("noteType.field_definitions")}</label>
         <div className="definitions-inputs">
           {newDefinitions.map((def) => (
             <div key={def.id} className="input-row">
@@ -31,7 +34,7 @@ const NoteTypeStep1 = ({
                 className="form-input"
                 value={def.value}
                 onChange={(e) => handleDefChange(def.id, e.target.value)}
-                placeholder="Field Name"
+                placeholder={t("noteType.field_placeholder")}
               />
               {newDefinitions.length > 1 && (
                 <button
@@ -48,7 +51,7 @@ const NoteTypeStep1 = ({
           className="btn-secondary btn-small"
           onClick={handleAddDefinition}
         >
-          + Add Another Field
+          {t("noteType.add_field")}
         </button>
       </div>
 
@@ -56,7 +59,7 @@ const NoteTypeStep1 = ({
 
       <div className="section-footer">
         <button className="btn-primary" onClick={handleNextNtStep1}>
-          Next: Design Layout &rarr;
+          {t("noteType.next_design_layout")}
         </button>
       </div>
     </div>

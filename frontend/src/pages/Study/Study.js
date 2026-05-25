@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import api from "../../api/api";
+import { mapApiError } from "../../utils/errorMapper";
 import { tokenizeTemplate } from "../../utils/cardParser";
 import toast from "react-hot-toast";
 import "./Study.css";
 
 const Study = () => {
+  const { t } = useTranslation();
   const { deckId } = useParams();
   const navigate = useNavigate();
 
@@ -37,7 +40,11 @@ const Study = () => {
         navigate("/login");
         return;
       }
-      setError(err.response?.data?.error || "Could not load study cards.");
+      setError(
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "study.error_load")
+          : t("study.error_load"),
+      );
     } finally {
       setLoading(false);
     }
@@ -79,7 +86,11 @@ const Study = () => {
       setCurrentIndex((prev) => prev + 1);
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.error || "Review failed.");
+      toast.error(
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "study.error_review")
+          : t("study.error_review"),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -102,7 +113,7 @@ const Study = () => {
   };
 
   if (loading) {
-    return <div className="study-loading">Preparing your study session...</div>;
+    return <div className="study-loading">{t("study.preparing")}</div>;
   }
 
   if (error) {
@@ -110,7 +121,7 @@ const Study = () => {
       <div className="study-error">
         <p>{error}</p>
         <button className="study-back-btn" onClick={() => navigate("/decks")}>
-          Back to Decks
+          {t("study.back_to_decks_btn")}
         </button>
       </div>
     );
@@ -122,15 +133,17 @@ const Study = () => {
   if (isFinished) {
     return (
       <div className="study-finished-container">
-        <h2>Great job!</h2>
-        <p>
-          You have completed today's session for <strong>{deckName}</strong>.
-        </p>
+        <h2>{t("study.finished_title")}</h2>
+        <p
+          dangerouslySetInnerHTML={{
+            __html: t("study.finished_message", { deckName }),
+          }}
+        />
         <button
           className="study-show-answer-btn"
           onClick={() => navigate("/decks")}
         >
-          Back to Deck List
+          {t("study.back_to_deck_list")}
         </button>
       </div>
     );
@@ -161,18 +174,16 @@ const Study = () => {
     typedAnswers,
   );
 
-  // Split on <hr id='answer'> if present, and replace with back content, or Anki-like styling
+  // Split on <hr id='answer'> if present
   if (backHTML.includes("<hr id='answer'>")) {
-    // We already have the front generated natively by Anki on the back, but here we just render the raw backHTML
-    // because typically Anki's {{FrontSide}} is used, but Raki doesn't support {{FrontSide}} yet.
-    // If we want we can just show backHTML.
+    // Render the raw backHTML as-is
   }
 
   return (
     <div className="study-container">
       <div className="study-header">
         <button className="study-back-btn" onClick={() => navigate("/decks")}>
-          &larr; Back to Decks
+          {t("study.back_to_decks")}
         </button>
         <div className="study-header-meta">
           <div className="study-deck-name">{deckName}</div>
@@ -205,7 +216,7 @@ const Study = () => {
       <div className="study-controls">
         {!showAnswer ? (
           <button className="study-show-answer-btn" onClick={handleShowAnswer}>
-            Show Answer
+            {t("study.show_answer")}
           </button>
         ) : (
           <div className="study-answer-actions">
@@ -215,7 +226,7 @@ const Study = () => {
               disabled={submitting}
               onClick={() => setShowAnswer(false)}
             >
-              View Front Again
+              {t("study.view_front_again")}
             </button>
             <div className="study-rating-buttons">
               <button
@@ -223,7 +234,7 @@ const Study = () => {
                 disabled={submitting}
                 onClick={() => handleReview("again")}
               >
-                <span className="btn-label">Again</span>
+                <span className="btn-label">{t("study.again")}</span>
                 <span className="btn-hint">&lt;1m</span>
               </button>
               <button
@@ -231,7 +242,7 @@ const Study = () => {
                 disabled={submitting}
                 onClick={() => handleReview("hard")}
               >
-                <span className="btn-label">Hard</span>
+                <span className="btn-label">{t("study.hard")}</span>
                 <span className="btn-hint">&lt;10m</span>
               </button>
               <button
@@ -239,14 +250,14 @@ const Study = () => {
                 disabled={submitting}
                 onClick={() => handleReview("good")}
               >
-                <span className="btn-label">Good</span>
+                <span className="btn-label">{t("study.good")}</span>
               </button>
               <button
                 className="btn-easy"
                 disabled={submitting}
                 onClick={() => handleReview("easy")}
               >
-                <span className="btn-label">Easy</span>
+                <span className="btn-label">{t("study.easy")}</span>
               </button>
             </div>
           </div>

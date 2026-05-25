@@ -1,10 +1,12 @@
 import React, { useState, useContext, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AuthContext } from "../../../context/AuthContext.js";
 import "./Header.css";
 import Button from "../../../components/Common/Button/Button.js";
 
 const Header = () => {
+  const { t } = useTranslation();
   const { currentUser, logout } = useContext(AuthContext);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -56,10 +58,10 @@ const Header = () => {
                 to="/register"
                 className="raki-button raki-button--secondary"
               >
-                Register
+                {t("header.register")}
               </Link>
               <Link to="/login" className="raki-button raki-button--primary">
-                Login
+                {t("header.login")}
               </Link>
             </div>
           ) : (
@@ -78,28 +80,28 @@ const Header = () => {
                     className="raki-profile__item"
                     onClick={handleDecksClick}
                   >
-                    My Decks
+                    {t("header.my_decks")}
                   </button>
 
                   <button
                     className="raki-profile__item"
                     onClick={handleProfileClick}
                   >
-                    My Profile
+                    {t("header.my_profile")}
                   </button>
 
                   <button
                     className="raki-profile__item"
                     onClick={handleSettingClick}
                   >
-                    Settings
+                    {t("header.settings")}
                   </button>
 
                   <button
                     className="raki-profile__item raki-profile__item--danger"
                     onClick={logout}
                   >
-                    Log Out
+                    {t("header.logout")}
                   </button>
                 </div>
               )}

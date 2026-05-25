@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import ClozeEditor from "../../../components/ClozeEditor/ClozeEditor";
 
 const NoteTypeStep2 = ({
@@ -12,6 +13,8 @@ const NoteTypeStep2 = ({
   submitCreateNoteType,
   ntError,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="nt-step-2-layout">
       <div className="nt-sidebar">
@@ -26,50 +29,40 @@ const NoteTypeStep2 = ({
             }}
           >
             <label className="form-label" style={{ marginBottom: 0 }}>
-              Available Fields (Drag into textareas):
+              {t("noteType.available_fields")}
             </label>
 
             <div className="help-tooltip-wrapper">
               <span className="help-icon">?</span>
 
               <div className="help-tooltip">
-                <h3>Available Fields Guidance:</h3>
+                <h3>{t("noteType.help_title")}</h3>
 
                 <ul>
                   <li>
-                    <strong>General Information:</strong> Use {"{{"} and {"}}"}{" "}
-                    to create value placeholders. The value enclosed will be
-                    replaced with user input during card creation.
+                    <strong>{t("noteType.help_general_label")}</strong>{" "}
+                    {t("noteType.help_general")}
                   </li>
 
                   <li>
-                    <strong>Input Fields:</strong> Drag the specialized
-                    {" {{type:...}} "}tag to the "Back Design" to automatically
-                    add an input text area on the front for writing practice and
-                    automatic grading. Note: Do not drag this to the front.
+                    <strong>{t("noteType.help_input_label")}</strong>{" "}
+                    {t("noteType.help_input")}
                   </li>
 
                   <li>
-                    <strong>Cloze Deletion:</strong> To create fill-in-the-blank
-                    questions, you can use two different methods:
+                    <strong>{t("noteType.help_cloze_label")}</strong>{" "}
+                    {t("noteType.help_cloze_intro")}
                     <ul>
                       <li>
-                        <strong>Static Text:</strong> Use{" "}
-                        <code>{"{{c1::your text}}"}</code> to hide specific text
-                        directly. For example, <code>{"{{c1::Hanoi}}"}</code>{" "}
-                        will hide the word "Hanoi".
+                        <strong>{t("noteType.help_cloze_static_label")}</strong>{" "}
+                        {t("noteType.help_cloze_static")}
                       </li>
                       <li>
-                        <strong>Field Reference:</strong> Use{" "}
-                        <code>{"{{c1::{{FieldName}}}}"}</code> to hide the
-                        content of a specific field. For example,{" "}
-                        <code>{"{{c1::{{Definition}}}}"}</code> will pull the
-                        text from your "Definition" field and hide it.
+                        <strong>{t("noteType.help_cloze_field_label")}</strong>{" "}
+                        {t("noteType.help_cloze_field")}
                       </li>
                       <li>
-                        You can create multiple blanks by incrementing the
-                        index: <code>{"{{c1::...}}"}</code>,{" "}
-                        <code>{"{{c2::...}}"}</code>, etc.
+                        {t("noteType.help_cloze_multiple")}
                       </li>
                     </ul>
                   </li>
@@ -124,14 +117,14 @@ const NoteTypeStep2 = ({
             <div key={tmpl.id} className="template-box-item">
               <header className="template-box-header">
                 <h3 className="template-box-title">
-                  Card Template #{index + 1}
+                  {t("noteType.card_template", { index: index + 1 })}
                 </h3>
                 {newTemplates.length > 1 && (
                   <button
                     className="btn-delete-link"
                     onClick={() => handleRemoveTemplate(tmpl.id)}
                   >
-                    Remove
+                    {t("noteType.remove")}
                   </button>
                 )}
               </header>
@@ -145,7 +138,7 @@ const NoteTypeStep2 = ({
                   }}
                 >
                   <div className="form-group flex-1">
-                    <label className="form-label">Template Name</label>
+                    <label className="form-label">{t("noteType.template_name_label")}</label>
                     <input
                       className="form-input"
                       value={tmpl.name}
@@ -160,7 +153,7 @@ const NoteTypeStep2 = ({
                         e.preventDefault();
                         e.stopPropagation();
                       }}
-                      placeholder="e.g. Recognition Card"
+                      placeholder={t("noteType.template_name_placeholder")}
                     />
                   </div>
                   <div
@@ -175,7 +168,7 @@ const NoteTypeStep2 = ({
                         marginBottom: 0,
                       }}
                     >
-                      Cloze
+                      {t("noteType.cloze_label")}
                     </label>
                     <label className="switch">
                       <input
@@ -199,7 +192,7 @@ const NoteTypeStep2 = ({
                     style={tmpl.is_cloze ? { gridColumn: "1 / -1" } : {}}
                   >
                     <label className="form-label">
-                      {tmpl.is_cloze ? "Text Design" : "Front Design"}
+                      {tmpl.is_cloze ? t("noteType.text_design") : t("noteType.front_design")}
                     </label>
                     {tmpl.is_cloze ? (
                       <ClozeEditor
@@ -232,7 +225,7 @@ const NoteTypeStep2 = ({
                   </div>
                   {!tmpl.is_cloze && (
                     <div className="form-group">
-                      <label className="form-label">Back Design</label>
+                      <label className="form-label">{t("noteType.back_design")}</label>
                       <textarea
                         className="form-textarea design-area"
                         value={tmpl.back}
@@ -241,7 +234,7 @@ const NoteTypeStep2 = ({
                         }
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDropToTemplate(e, tmpl.id, "back")}
-                        placeholder="Use {{Field}} syntax"
+                        placeholder={t("noteType.back_placeholder")}
                       />
                     </div>
                   )}
@@ -256,7 +249,7 @@ const NoteTypeStep2 = ({
           type="button"
           onClick={handleAddTemplateDraft}
         >
-          + Add Another Template
+          {t("noteType.add_template")}
         </button>
 
         <div className="section-footer split section-footer--spaced">
@@ -265,14 +258,14 @@ const NoteTypeStep2 = ({
             type="button"
             onClick={() => setNtStep(1)}
           >
-            &larr; Back to Fields
+            {t("noteType.back_to_fields")}
           </button>
           <button
             className="btn-primary"
             type="button"
             onClick={submitCreateNoteType}
           >
-            Create NoteType & Continue
+            {t("noteType.create_and_continue")}
           </button>
         </div>
       </div>

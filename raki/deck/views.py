@@ -112,7 +112,7 @@ def user_deck_detail(request, deck_id):
         elif request.method == "PUT":
             deck = DeckRepository.get_deck_for_user(deck_id, request.user)
             if not deck:
-                return Response({"error": "Deck not found."}, status=404)
+                return Response({"error": "DECK_NOT_FOUND"}, status=404)
 
             validated, error_response = parse_request(
                 request, DeckSerializer, deck=deck

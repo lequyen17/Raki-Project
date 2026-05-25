@@ -1,8 +1,10 @@
 import React, { useRef } from "react";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import "./ClozeEditor.css";
 
 const ClozeEditor = ({ value, onChange, placeholder, className, isCloze, onDragOver, onDrop }) => {
+  const { t } = useTranslation();
   const textareaRef = useRef(null);
 
   const handleClozeClick = () => {
@@ -14,7 +16,7 @@ const ClozeEditor = ({ value, onChange, placeholder, className, isCloze, onDragO
     const selectedText = value.substring(start, end);
 
     if (!selectedText) {
-      toast.error("Please select some text to cloze.");
+      toast.error(t("cloze.toast_select_text"));
       return;
     }
 
@@ -56,9 +58,9 @@ const ClozeEditor = ({ value, onChange, placeholder, className, isCloze, onDragO
             type="button"
             className="cloze-btn"
             onClick={handleClozeClick}
-            title="Highlight text and click to create a cloze deletion."
+            title={t("cloze.toast_select_text")}
           >
-            [ + Cloze ]
+            {t("cloze.button")}
           </button>
         </div>
       )}

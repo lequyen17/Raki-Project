@@ -1,12 +1,15 @@
 import React, { useContext, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../api/api";
+import { mapApiError } from "../../utils/errorMapper";
 import Button from "../../components/Common/Button/Button.js";
 import Input from "../../components/Common/Input/Input.js";
 import "./Profile.css";
 
 const Profile = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentUser, logout, setCurrentUser } = useContext(AuthContext);
   const [profileData, setProfileData] = useState(null);
@@ -37,14 +40,14 @@ const Profile = () => {
       setError("");
     } catch (err) {
       console.error("Error fetching profile:", err);
-      setError("Cannot load profile data");
+      setError(t("profile.error_load"));
       if (err.response?.status === 401) {
         logout();
       }
     } finally {
       setLoading(false);
     }
-  }, [navigate, logout]);
+  }, [navigate, logout, t]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -66,17 +69,17 @@ const Profile = () => {
     const errors = {};
 
     if (!editData.email.trim()) {
-      errors.email = "Email is required";
+      errors.email = t("profile.error_email_required");
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editData.email)) {
-      errors.email = "Invalid email";
+      errors.email = t("profile.error_email_invalid");
     }
 
     if (editData.first_name && editData.first_name.length < 2) {
-      errors.first_name = "First name must be at least 2 chars";
+      errors.first_name = t("profile.error_first_name_min");
     }
 
     if (editData.phone && editData.phone.length > 15) {
-      errors.phone = "Invalid phone";
+      errors.phone = t("profile.error_phone_invalid");
     }
 
     return errors;
@@ -104,9 +107,9 @@ const Profile = () => {
       }
     } catch (err) {
       if (err.response?.data?.error) {
-        setError(err.response.data.error);
+        setError(mapApiError(err.response.data.error, t, "profile.error_update"));
       } else {
-        setError("Cannot update profile");
+        setError(t("profile.error_update"));
       }
     } finally {
       setIsSaving(false);
@@ -127,7 +130,7 @@ const Profile = () => {
   if (loading) {
     return (
       <div className="profile-container">
-        <p>Loading...</p>
+        <p>{t("common.loading")}</p>
       </div>
     );
   }
@@ -135,7 +138,7 @@ const Profile = () => {
   if (!profileData) {
     return (
       <div className="profile-container">
-        <p>Profile data not found</p>
+        <p>{t("profile.not_found")}</p>
       </div>
     );
   }
@@ -143,80 +146,80 @@ const Profile = () => {
   return (
     <div className="profile-container">
       <div className="profile-card">
-        <h1 className="profile-title">My Profile</h1>
+        <h1 className="profile-title">{t("profile.title")}</h1>
 
         {error && <div className="error-box">{error}</div>}
 
         {!isEditing ? (
           <>
             <div className="section">
-              <h2 className="section-title">Personal Information</h2>
+              <h2 className="section-title">{t("profile.personal_info")}</h2>
               <div className="info-grid">
                 <div className="info-row">
-                  <span className="label">Username:</span>
+                  <span className="label">{t("profile.username_label")}</span>
                   <span className="value">{profileData.username}</span>
                 </div>
                 <div className="info-row">
-                  <span className="label">Email:</span>
+                  <span className="label">{t("profile.email_label")}</span>
                   <span className="value">{profileData.email}</span>
                 </div>
                 <div className="info-row">
-                  <span className="label">First Name:</span>
+                  <span className="label">{t("profile.first_name_label")}</span>
                   <span className="value">
-                    {profileData.first_name || "Not updated yet"}
+                    {profileData.first_name || t("common.not_updated")}
                   </span>
                 </div>
                 <div className="info-row">
-                  <span className="label">Last Name:</span>
+                  <span className="label">{t("profile.last_name_label")}</span>
                   <span className="value">
-                    {profileData.last_name || "Not updated yet"}
+                    {profileData.last_name || t("common.not_updated")}
                   </span>
                 </div>
                 <div className="info-row">
-                  <span className="label">Phone Number:</span>
+                  <span className="label">{t("profile.phone_label")}</span>
                   <span className="value">
-                    {profileData.phone || "Not updated yet"}
+                    {profileData.phone || t("common.not_updated")}
                   </span>
                 </div>
               </div>
             </div>
 
             <div className="section">
-              <h2 className="section-title">Learning Statistics</h2>
+              <h2 className="section-title">{t("profile.learning_stats")}</h2>
               <div className="stats-grid">
                 <div className="stat-card">
                   <div className="stat-number">{profileData.total_cards}</div>
-                  <div className="stat-label">Total Cards</div>
+                  <div className="stat-label">{t("profile.total_cards")}</div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-number">
                     {profileData.total_learned_cards}
                   </div>
-                  <div className="stat-label">Learned Cards</div>
+                  <div className="stat-label">{t("profile.learned_cards")}</div>
                 </div>
               </div>
             </div>
 
             <div className="button-group">
               <Button onClick={() => navigate("/decks")} color="blue" size="lg">
-                Back to Home
+                {t("profile.back_to_home")}
               </Button>
               <Button
                 onClick={() => setIsEditing(true)}
                 color="green"
                 size="lg"
               >
-                Edit Profile
+                {t("profile.edit_profile")}
               </Button>
             </div>
           </>
         ) : (
           <>
             <div className="section">
-              <h2 className="section-title">Edit Information</h2>
+              <h2 className="section-title">{t("profile.edit_info")}</h2>
 
               <Input
-                label="Email"
+                label={t("profile.email_label")}
                 name="email"
                 type="email"
                 value={editData.email}
@@ -225,7 +228,7 @@ const Profile = () => {
               />
 
               <Input
-                label="First Name"
+                label={t("profile.first_name_label")}
                 name="first_name"
                 value={editData.first_name}
                 onChange={handleEditChange}
@@ -233,7 +236,7 @@ const Profile = () => {
               />
 
               <Input
-                label="Last Name"
+                label={t("profile.last_name_label")}
                 name="last_name"
                 value={editData.last_name}
                 onChange={handleEditChange}
@@ -241,7 +244,7 @@ const Profile = () => {
               />
 
               <Input
-                label="Phone Number"
+                label={t("profile.phone_label")}
                 name="phone"
                 type="tel"
                 value={editData.phone}
@@ -257,7 +260,7 @@ const Profile = () => {
                 color="blue"
                 size="lg"
               >
-                Save Changes
+                {t("profile.save_changes")}
               </Button>
 
               <Button
@@ -266,7 +269,7 @@ const Profile = () => {
                 size="lg"
                 color="green"
               >
-                Cancel
+                {t("profile.cancel")}
               </Button>
             </div>
           </>

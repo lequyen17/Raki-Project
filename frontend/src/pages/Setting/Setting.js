@@ -14,12 +14,12 @@ const Setting = () => {
   return (
     <div className="setting" style={{ padding: "20px" }}>
       {/* 1. Dùng t('key') để dịch các tiêu đề */}
-      <h1>{t("settings_title")}</h1>
-      <p>{t("settings_description")}</p>
+      <h1>{t("settings.title")}</h1>
+      <p>{t("settings.description")}</p>
 
       <div className="language-selector" style={{ marginTop: "20px" }}>
         <label htmlFor="language-select" style={{ marginRight: "10px" }}>
-          {t("select_language")}:
+          {t("settings.select_language")}:
         </label>
 
         {/* 2. Dropdown chọn ngôn ngữ */}
@@ -38,7 +38,7 @@ const Setting = () => {
 
       <div style={{ marginTop: "30px", color: "#666" }}>
         <small>
-          {t("current_lang_is")}: <strong>{i18n.language.toUpperCase()}</strong>
+          {t("settings.current_lang_is")}: <strong>{i18n.language.toUpperCase()}</strong>
         </small>
       </div>
     </div>

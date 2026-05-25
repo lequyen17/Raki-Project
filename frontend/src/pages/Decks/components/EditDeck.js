@@ -1,6 +1,6 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import Button from "../../../components/Common/Button/Button.js";
-import Input from "../../../components/Common/Input/Input.js";
 
 const EditDeck = ({
   handleCloseEditModal,
@@ -10,13 +10,15 @@ const EditDeck = ({
   editError,
   isEditing,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="deck-modal-overlay" onClick={handleCloseEditModal}>
       <div className="deck-modal" onClick={(e) => e.stopPropagation()}>
-        <h2 className="deck-modal-title">Edit Deck</h2>
+        <h2 className="deck-modal-title">{t("decks.edit_title")}</h2>
         <form onSubmit={handleEditDeck}>
           <label className="deck-modal-label" htmlFor="edit-deck-name">
-            Deck name
+            {t("decks.edit_name_label")}
           </label>
           <input
             id="edit-deck-name"
@@ -31,7 +33,7 @@ const EditDeck = ({
           />
 
           <label className="deck-modal-label" htmlFor="edit-deck-description">
-            Description
+            {t("decks.edit_description_label")}
           </label>
           <textarea
             id="edit-deck-description"
@@ -56,7 +58,7 @@ const EditDeck = ({
               onClick={handleCloseEditModal}
               disabled={isEditing}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
 
             <Button
@@ -65,7 +67,7 @@ const EditDeck = ({
               isLoading={isEditing}
               disabled={isEditing}
             >
-              Save Changes
+              {t("decks.edit_submit")}
             </Button>
           </div>
         </form>

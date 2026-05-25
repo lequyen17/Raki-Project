@@ -21,7 +21,7 @@ i18n
       },
     },
     fallbackLng: "en", // Ngôn ngữ dự phòng khi không tìm thấy ngôn ngữ được chọn
-    debug: true, // Hiện log trên Console để dễ debug, khi ra sản phẩm thì chỉnh thành false
+    debug: false,
     interpolation: {
       escapeValue: false, // React đã tự bảo vệ khỏi XSS nên không cần escape
     },

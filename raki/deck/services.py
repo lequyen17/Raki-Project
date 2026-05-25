@@ -10,7 +10,7 @@ class DeckService:
     def _get_deck_or_404(deck_id, user):
         deck = DeckRepository.get_deck_for_user(deck_id, user)
         if not deck:
-            raise LookupError("Deck not found.")
+            raise LookupError("DECK_NOT_FOUND")
         return deck
 
     # =========================

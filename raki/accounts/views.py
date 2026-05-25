@@ -83,7 +83,7 @@ def user_profile(request):
         data = UserService.update_user_profile(user, validated)
         return Response(data, status=200)
     except Exception as e:
-        return Response({"error": f"Lỗi cập nhật hồ sơ: {str(e)}"}, status=500)
+        return Response({"error": "PROFILE_UPDATE_FAILED"}, status=500)
 
 
 @extend_schema(
@@ -107,4 +107,4 @@ def register_view(request):
         data = UserService.register_user(validated)
         return Response(data, status=201)
     except Exception as e:
-        return JsonResponse({"error": f"Lỗi đăng ký: {str(e)}"}, status=500)
+        return JsonResponse({"error": "REGISTER_FAILED"}, status=500)

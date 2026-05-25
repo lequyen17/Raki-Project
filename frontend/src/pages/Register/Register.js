@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import api from "../../api/api";
+import { mapApiError } from "../../utils/errorMapper";
 import Button from "../../components/Common/Button/Button.js";
 import Input from "../../components/Common/Input/Input.js";
 import "./Register.css";
 
 const Register = () => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -34,49 +37,49 @@ const Register = () => {
     const newErrors = {};
 
     if (!formData.username.trim()) {
-      newErrors.username = "Username is required";
+      newErrors.username = t("register.error_username_required");
     } else if (formData.username.trim().length < 3) {
-      newErrors.username = "Username must be at least 3 characters";
+      newErrors.username = t("register.error_username_min");
     } else if (formData.username.trim().length > 150) {
-      newErrors.username = "Username must be 150 characters or less";
+      newErrors.username = t("register.error_username_max");
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = t("register.error_email_required");
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-      newErrors.email = "Invalid email address";
+      newErrors.email = t("register.error_email_invalid");
     }
 
     if (!formData.first_name.trim()) {
-      newErrors.first_name = "First name is required";
+      newErrors.first_name = t("register.error_first_name_required");
     } else if (formData.first_name.trim().length < 2) {
-      newErrors.first_name = "First name must be at least 2 characters";
+      newErrors.first_name = t("register.error_first_name_min");
     } else if (formData.first_name.trim().length > 150) {
-      newErrors.first_name = "First name must be 150 characters or less";
+      newErrors.first_name = t("register.error_first_name_max");
     }
 
     if (!formData.last_name.trim()) {
-      newErrors.last_name = "Last name is required";
+      newErrors.last_name = t("register.error_last_name_required");
     } else if (formData.last_name.trim().length < 2) {
-      newErrors.last_name = "Last name must be at least 2 characters";
+      newErrors.last_name = t("register.error_last_name_min");
     } else if (formData.last_name.trim().length > 150) {
-      newErrors.last_name = "Last name must be 150 characters or less";
+      newErrors.last_name = t("register.error_last_name_max");
     }
 
     if (!formData.password) {
-      newErrors.password = "Password is required";
+      newErrors.password = t("register.error_password_required");
     } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+      newErrors.password = t("register.error_password_min");
     }
 
     if (!formData.confirm_password) {
-      newErrors.confirm_password = "Please confirm your password";
+      newErrors.confirm_password = t("register.error_confirm_required");
     } else if (formData.password !== formData.confirm_password) {
-      newErrors.confirm_password = "Password confirmation does not match";
+      newErrors.confirm_password = t("register.error_confirm_mismatch");
     }
 
     if (formData.phone && formData.phone.length > 15) {
-      newErrors.phone = "Invalid phone number";
+      newErrors.phone = t("register.error_phone_invalid");
     }
 
     return newErrors;
@@ -121,9 +124,9 @@ const Register = () => {
       navigate("/login");
     } catch (err) {
       if (err.response && err.response.data && err.response.data.error) {
-        setGeneralError(err.response.data.error);
+        setGeneralError(mapApiError(err.response.data.error, t, "common.error_system"));
       } else {
-        setGeneralError("System error. Please try again later.");
+        setGeneralError(t("common.error_system"));
       }
     } finally {
       setLoading(false);
@@ -133,84 +136,84 @@ const Register = () => {
   return (
     <div className="register-wrapper">
       <form onSubmit={handleSubmit} className="register-card">
-        <h2 className="register-title">Create Account</h2>
+        <h2 className="register-title">{t("register.title")}</h2>
 
         {success && (
           <div className="success">
-            Registration successful! Redirecting to login...
+            {t("register.success_message")}
           </div>
         )}
         {generalError && <div className="error">{generalError}</div>}
 
         <Input
-          label="First Name"
+          label={t("register.first_name_label")}
           name="first_name"
           value={formData.first_name}
           onChange={handleChange}
-          placeholder="Enter first name"
+          placeholder={t("register.first_name_placeholder")}
           required
           error={errors.first_name}
         />
 
         <Input
-          label="Last Name"
+          label={t("register.last_name_label")}
           name="last_name"
           value={formData.last_name}
           onChange={handleChange}
-          placeholder="Enter last name"
+          placeholder={t("register.last_name_placeholder")}
           required
           error={errors.last_name}
         />
 
         <Input
-          label="Username"
+          label={t("register.username_label")}
           name="username"
           value={formData.username}
           onChange={handleChange}
-          placeholder="Enter username"
+          placeholder={t("register.username_placeholder")}
           required
           error={errors.username}
         />
 
         <Input
-          label="Email"
+          label={t("register.email_label")}
           name="email"
           type="email"
           value={formData.email}
           onChange={handleChange}
-          placeholder="Enter email"
+          placeholder={t("register.email_placeholder")}
           required
           error={errors.email}
         />
 
         <Input
-          label="Phone Number"
+          label={t("register.phone_label")}
           name="phone"
           type="tel"
           value={formData.phone}
           onChange={handleChange}
-          placeholder="Enter phone (optional)"
+          placeholder={t("register.phone_placeholder")}
           error={errors.phone}
         />
 
         <Input
-          label="Password"
+          label={t("register.password_label")}
           name="password"
           type="password"
           value={formData.password}
           onChange={handleChange}
-          placeholder="Enter password"
+          placeholder={t("register.password_placeholder")}
           required
           error={errors.password}
         />
 
         <Input
-          label="Confirm Password"
+          label={t("register.confirm_password_label")}
           name="confirm_password"
           type="password"
           value={formData.confirm_password}
           onChange={handleChange}
-          placeholder="Confirm password"
+          placeholder={t("register.confirm_password_placeholder")}
           required
           error={errors.confirm_password}
         />
@@ -224,14 +227,14 @@ const Register = () => {
             size="lg"
             isLoading={loading} // Truyền state loading vào đây
           >
-            Register
+            {t("register.submit")}
           </Button>
         </div>
 
         <div className="login-link">
-          Already have an account?{" "}
+          {t("register.already_have_account")}{" "}
           <Link to="/login" className="link">
-            Login here
+            {t("register.login_here")}
           </Link>
         </div>
       </form>

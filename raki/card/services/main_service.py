@@ -9,7 +9,7 @@ class CardMainService:
     def list_cards_by_deck(deck_id, user):
         deck = DeckRepository.get_deck_for_user(deck_id, user)
         if not deck:
-            raise LookupError("Deck not found.")
+            raise LookupError("DECK_NOT_FOUND")
 
         def get_descendants(d):
             descendants = [d.id]
@@ -47,7 +47,7 @@ class CardMainService:
     def get_study_cards(deck_id, user):
         deck = DeckRepository.get_deck_for_user(deck_id, user)
         if not deck:
-            raise LookupError("Deck not found.")
+            raise LookupError("DECK_NOT_FOUND")
 
         today = timezone.localdate()
 
@@ -114,7 +114,7 @@ class CardMainService:
     def review_card(card_id, user, validated_data):
         card = CardRepository.get_card_for_review(card_id, user)
         if not card:
-            raise LookupError("Card not found.")
+            raise LookupError("CARD_NOT_FOUND")
 
         quality = validated_data["quality"]
 

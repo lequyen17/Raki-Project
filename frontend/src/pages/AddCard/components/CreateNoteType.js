@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import NoteTypeStep1 from "./NoteTypeStep1";
 import NoteTypeStep2 from "./NoteTypeStep2";
 
@@ -22,15 +23,17 @@ const CreateNoteType = ({
   handleAddTemplateDraft,
   submitCreateNoteType,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="notetype-form-section card-card">
       <div className="section-header">
-        <h2 className="section-title">Design Your Custom NoteType</h2>
+        <h2 className="section-title">{t("noteType.design_title")}</h2>
         <button
           className="btn-text"
           onClick={() => setShowCreateNoteType(false)}
         >
-          Cancel
+          {t("noteType.cancel")}
         </button>
       </div>
 

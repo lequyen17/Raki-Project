@@ -1,8 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import "./Footer.css";
 
 const Footer = () => {
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -14,20 +16,20 @@ const Footer = () => {
             <span className="raki-footer__logo-accent">ra</span>ki
           </div>
           <p className="raki-footer__desc">
-            Raki is an interactive flashcard app to help you study effectively.
+            {t("footer.description")}
           </p>
         </div>
 
         {/* RIGHT */}
         <div className="raki-footer__links">
           <div className="raki-footer__col">
-            <h4>Product</h4>
-            <Link to="/decks">My Decks</Link>
-            <Link to="/profile">Profile</Link>
+            <h4>{t("footer.product")}</h4>
+            <Link to="/decks">{t("footer.my_decks")}</Link>
+            <Link to="/profile">{t("footer.profile")}</Link>
           </div>
 
           <div className="raki-footer__col">
-            <h4>Contact</h4>
+            <h4>{t("footer.contact")}</h4>
             <p>support@raki.com</p>
             <p>+84 123 456 789</p>
           </div>
@@ -36,7 +38,7 @@ const Footer = () => {
 
       {/* BOTTOM */}
       <div className="raki-footer__bottom">
-        <p>© {currentYear} Raki. All rights reserved.</p>
+        <p>{t("footer.copyright", { year: currentYear })}</p>
       </div>
     </footer>
   );

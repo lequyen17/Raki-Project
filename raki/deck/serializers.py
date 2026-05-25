@@ -34,7 +34,7 @@ class DeckMoveSerializer(serializers.Serializer):
         deck = DeckRepository.get_deck_for_user(deck_id, user)
 
         if not deck:
-            raise LookupError("Deck not found.")
+            raise LookupError("DECK_NOT_FOUND")
 
         if parent_id is None:
             return {"deck": deck, "parent": None}
@@ -42,16 +42,16 @@ class DeckMoveSerializer(serializers.Serializer):
         parent = DeckRepository.get_parent_deck_for_user(parent_id, user)
 
         if not parent:
-            raise LookupError("Target parent deck not found.")
+            raise LookupError("PARENT_DECK_NOT_FOUND")
 
         if parent.id == deck.id:
-            raise serializers.ValidationError("A deck cannot be moved into itself.")
+            raise serializers.ValidationError("DECK_MOVE_SELF")
 
         cursor = parent
 
         while cursor:
             if cursor.id == deck.id:
-                raise serializers.ValidationError("Cannot move into its own subdeck.")
+                raise serializers.ValidationError("DECK_MOVE_SUBDECK")
             cursor = cursor.parent
 
         return {"deck": deck, "parent": parent}

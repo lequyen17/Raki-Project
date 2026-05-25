@@ -21,7 +21,16 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Không chạy refresh token logic cho request login
+    const isLoginRequest =
+      originalRequest.url?.includes("/api/token/") &&
+      !originalRequest.url?.includes("/api/token/refresh/");
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isLoginRequest
+    ) {
       originalRequest._retry = true;
 
       const refresh = localStorage.getItem("refresh_token");

@@ -10,7 +10,7 @@ class ReviewCardSerializer(serializers.Serializer):
         quality = str(value).strip().lower()
         if quality not in self.VALID_QUALITIES:
             raise serializers.ValidationError(
-                "Invalid quality. It must be one of: again, hard, good, easy."
+                "INVALID_QUALITY"
             )
         return quality
 

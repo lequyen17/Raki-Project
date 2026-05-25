@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import Button from "../../../components/Common/Button/Button.js";
 import Input from "../../../components/Common/Input/Input.js";
 import Pagination, {
@@ -30,6 +31,8 @@ const DeckLeft = ({
   selectedDeckId,
   handleSelectDeck,
 }) => {
+  const { t } = useTranslation();
+
   const renderNode = (node, depth) => {
     const currentDepth = depth ?? 0;
 
@@ -71,7 +74,7 @@ const DeckLeft = ({
           <span className="deck-row-name ">{node.name}</span>
 
           <div className="deck-row-main">
-            <span className="deck-row-count">{sumTotalCards(node)} cards</span>
+            <span className="deck-row-count">{sumTotalCards(node)} {t("common.cards")}</span>
 
             <Button
               variant="outline"
@@ -79,7 +82,7 @@ const DeckLeft = ({
               size="sm"
               onClick={() => handleSelectDeck(node.id)}
             >
-              View
+              {t("common.view")}
             </Button>
           </div>
         </div>
@@ -100,13 +103,13 @@ const DeckLeft = ({
 
   return (
     <div className="decks-container">
-      <h1 className="decks-title">My Decks</h1>
+      <h1 className="decks-title">{t("decks.title")}</h1>
 
       <div className="decks-toolbar">
         <input
           type="text"
           className="decks-search"
-          placeholder="Search deck..."
+          placeholder={t("decks.search_placeholder")}
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
@@ -116,18 +119,18 @@ const DeckLeft = ({
           size="md"
           onClick={handleOpenCreateModal}
         >
-          Add New Deck
+          {t("decks.add_new_deck")}
         </Button>
       </div>
 
-      {loading && <p className="decks-state">Loading decks...</p>}
+      {loading && <p className="decks-state">{t("decks.loading")}</p>}
       {error && <p className="decks-error">{error}</p>}
       {moveError && <p className="decks-error">{moveError}</p>}
 
       {!loading && !error && (
         <>
           {treeDecks.length === 0 ? (
-            <p className="decks-state">No matching decks found.</p>
+            <p className="decks-state">{t("decks.no_decks_found")}</p>
           ) : (
             <>
               <div className="deck-tree-list">

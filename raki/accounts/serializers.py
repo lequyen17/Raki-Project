@@ -21,7 +21,7 @@ class UserProfileUpdateSerializer(serializers.Serializer):
         validators=[
             RegexValidator(
                 regex=r"^0\d{9}$",
-                message="Phone number must start with 0 and be exactly 10 digits long.",
+                message="PHONE_INVALID_FORMAT",
             )
         ],
     )
@@ -41,7 +41,7 @@ class UserProfileUpdateSerializer(serializers.Serializer):
         if email != user.email:
 
             if UserRepository.get_user_by_email(email).exclude(id=user.id).exists():
-                raise serializers.ValidationError("Email has already been taken.")
+                raise serializers.ValidationError("EMAIL_TAKEN")
 
         return {
             "email": email,
@@ -66,7 +66,7 @@ class UserRegistrationSerializer(serializers.Serializer):
         validators=[
             RegexValidator(
                 regex=r"^0\d{9}$",
-                message="Phone number must start with 0 and be exactly 10 digits long.",
+                message="PHONE_INVALID_FORMAT",
             )
         ],
     )
@@ -81,13 +81,13 @@ class UserRegistrationSerializer(serializers.Serializer):
         phone = attrs.get("phone", "").strip()
 
         if UserRepository.get_user_by_username(username).exists():
-            raise serializers.ValidationError("Username has already been taken.")
+            raise serializers.ValidationError("USERNAME_TAKEN")
 
         if UserRepository.get_user_by_email(email).exists():
-            raise serializers.ValidationError("Email has already been taken.")
+            raise serializers.ValidationError("EMAIL_TAKEN")
 
         if password != confirm_password:
-            raise serializers.ValidationError("Confirm password does not match.")
+            raise serializers.ValidationError("CONFIRM_PASSWORD_MISMATCH")
 
         return {
             "username": username,

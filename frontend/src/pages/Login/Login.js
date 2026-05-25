@@ -1,5 +1,6 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import api from "../../api/api";
 import { AuthContext } from "../../context/AuthContext";
 import Button from "../../components/Common/Button/Button.js";
@@ -7,6 +8,7 @@ import Input from "../../components/Common/Input/Input.js";
 import "./Login.css"; // CSS đã được import ở đây
 
 const Login = () => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,9 +39,9 @@ const Login = () => {
         err.response &&
         (err.response.status === 400 || err.response.status === 401)
       ) {
-        setError("Invalid username or password.");
+        setError(t("login.error_invalid"));
       } else {
-        setError("System error. Please try again later.");
+        setError(t("common.error_system"));
       }
     } finally {
       setLoading(false);
@@ -49,28 +51,28 @@ const Login = () => {
   return (
     <div className="login-wrapper">
       <form onSubmit={handleSubmit} className="login-card">
-        <h2 className="login-title">Login</h2>
+        <h2 className="login-title">{t("login.title")}</h2>
 
         {error && <div className="login-error">{error}</div>}
 
         <Input
-          label="Username"
+          label={t("login.username_label")}
           name="username"
           type="text"
           value={formData.username}
           onChange={handleChange}
           required
-          placeholder="Enter your username"
+          placeholder={t("login.username_placeholder")}
         />
 
         <Input
-          label="Password"
+          label={t("login.password_label")}
           name="password"
           type="password"
           value={formData.password}
           onChange={handleChange}
           required
-          placeholder="Enter your password"
+          placeholder={t("login.password_placeholder")}
         />
 
         <div
@@ -82,7 +84,7 @@ const Login = () => {
             size="lg" // Kích thước trung bình
             isLoading={loading} // Truyền state loading vào đây
           >
-            Sign In
+            {t("login.submit")}
           </Button>
         </div>
       </form>
