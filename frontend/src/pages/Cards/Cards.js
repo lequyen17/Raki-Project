@@ -76,7 +76,9 @@ const Cards = () => {
   }, [cards, searchText, filter]);
 
   const {
-    page, setPage, totalPages,
+    page,
+    setPage,
+    totalPages,
     paginatedItems: paginatedCards,
   } = usePagination(filteredCards);
 
@@ -99,24 +101,42 @@ const Cards = () => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return t("common.not_scheduled");
     return date.toLocaleDateString("en-US", {
-      year: "numeric", month: "short", day: "numeric",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
+  };
+
+  const handleView = (id) => {
+    navigate(`/cards/${id}`);
   };
 
   return (
     <div className="cards-page">
       <div className="cards-container">
         <div className="cards-actions">
-          <Button color="gray" type="button" size="md"
-            onClick={() => navigate("/decks")}>
+          <Button
+            color="gray"
+            type="button"
+            size="md"
+            onClick={() => navigate("/decks")}
+          >
             {t("cards.back_to_decks")}
           </Button>
-          <Button type="button" color="green" size="md"
-            onClick={() => navigate(`/decks/${deckId}/add-card`)}>
+          <Button
+            type="button"
+            color="green"
+            size="md"
+            onClick={() => navigate(`/decks/${deckId}/add-card`)}
+          >
             {t("cards.add_card")}
           </Button>
-          <Button type="button" color="blue" size="md"
-            onClick={() => navigate(`/decks/${deckId}/study`)}>
+          <Button
+            type="button"
+            color="blue"
+            size="md"
+            onClick={() => navigate(`/decks/${deckId}/study`)}
+          >
             {t("cards.study_now")}
           </Button>
         </div>
@@ -126,7 +146,9 @@ const Cards = () => {
             {t("cards.title")} {deckName ? `- ${deckName}` : ""}
           </h1>
           <div className="cards-stats">
-            <span className="cards-chip">{t("cards.total", { count: summary.total })}</span>
+            <span className="cards-chip">
+              {t("cards.total", { count: summary.total })}
+            </span>
             <span className="cards-chip cards-chip--due">
               {t("cards.due", { count: summary.due })}
             </span>
@@ -141,24 +163,41 @@ const Cards = () => {
 
         <div className="cards-toolbar">
           <input
-            type="text" className="cards-search"
+            type="text"
+            className="cards-search"
             placeholder={t("cards.search_placeholder")}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
           />
           <div className="cards-filters">
-            <button type="button"
+            <button
+              type="button"
               className={`cards-filter-btn ${filter === "all" ? "is-active" : ""}`}
-              onClick={() => setFilter("all")}>{t("cards.filter_all")}</button>
-            <button type="button"
+              onClick={() => setFilter("all")}
+            >
+              {t("cards.filter_all")}
+            </button>
+            <button
+              type="button"
               className={`cards-filter-btn ${filter === "due" ? "is-active" : ""}`}
-              onClick={() => setFilter("due")}>{t("cards.filter_due")}</button>
-            <button type="button"
+              onClick={() => setFilter("due")}
+            >
+              {t("cards.filter_due")}
+            </button>
+            <button
+              type="button"
               className={`cards-filter-btn ${filter === "new" ? "is-active" : ""}`}
-              onClick={() => setFilter("new")}>{t("cards.filter_new")}</button>
-            <button type="button"
+              onClick={() => setFilter("new")}
+            >
+              {t("cards.filter_new")}
+            </button>
+            <button
+              type="button"
               className={`cards-filter-btn ${filter === "scheduled" ? "is-active" : ""}`}
-              onClick={() => setFilter("scheduled")}>{t("cards.filter_scheduled")}</button>
+              onClick={() => setFilter("scheduled")}
+            >
+              {t("cards.filter_scheduled")}
+            </button>
           </div>
         </div>
 
@@ -179,8 +218,24 @@ const Cards = () => {
                     return (
                       <div key={card.id} className="card-item">
                         <div className="card-item-main">
-                          <h3 className="card-item-title">{t("cards.card_id", { id: card.id })}</h3>
-                          <span className={`card-status card-status--${status}`}>
+                          <div className="card-item-header">
+                            <h3 className="card-item-title">
+                              {t("cards.card_id", { id: card.id })}
+                            </h3>
+
+                            {/* Nút View thêm vào ở đây */}
+                            <button
+                              className="btn-view"
+                              onClick={() => handleView(card.id)}
+                              title={t("common.view")}
+                            >
+                              {t("common.view")}
+                            </button>
+                          </div>
+
+                          <span
+                            className={`card-status card-status--${status}`}
+                          >
                             {status === "due"
                               ? t("cards.status_due")
                               : status === "new"
@@ -189,14 +244,22 @@ const Cards = () => {
                           </span>
                         </div>
                         <div className="card-item-meta">
-                          <span className="card-meta-label">{t("cards.next_review")}</span>
-                          <span className="card-meta-value">{formatDate(card.next_review)}</span>
+                          <span className="card-meta-label">
+                            {t("cards.next_review")}
+                          </span>
+                          <span className="card-meta-value">
+                            {formatDate(card.next_review)}
+                          </span>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                />
               </>
             )}
           </>
