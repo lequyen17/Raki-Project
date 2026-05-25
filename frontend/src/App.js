@@ -9,6 +9,7 @@ import AddCard from "./pages/AddCard/AddCard";
 import Study from "./pages/Study/Study";
 import Header from "./components/Common/Header/Header";
 import Footer from "./components/Common/Footer/Footer";
+import Setting from "./pages/Setting/Setting";
 import { AuthProvider } from "./context/AuthContext";
 import { Toaster } from "react-hot-toast";
 
@@ -29,6 +30,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Setting />} />
         </Routes>
         <Footer />
       </AuthProvider>

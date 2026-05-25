@@ -25,7 +25,10 @@ const Header = () => {
     setMenuOpen(false);
     navigate("/profile");
   };
-
+  const handleSettingClick = () => {
+    setMenuOpen(false);
+    navigate("/settings");
+  };
   const handleDecksClick = () => {
     setMenuOpen(false);
     navigate("/decks");
@@ -83,6 +86,13 @@ const Header = () => {
                     onClick={handleProfileClick}
                   >
                     My Profile
+                  </button>
+
+                  <button
+                    className="raki-profile__item"
+                    onClick={handleSettingClick}
+                  >
+                    Settings
                   </button>
 
                   <button

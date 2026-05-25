@@ -1,0 +1,8 @@
+{
+  "welcome": "Welcome to my App!",
+  "login": "Login",
+  "settings_title": "Settings",
+  "settings_description": "This is the settings page.",
+  "select_language": "Select Language",
+  "current_lang_is": "Current language"
+}
