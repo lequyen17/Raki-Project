@@ -186,7 +186,7 @@ const CardDetail = () => {
 
         <div className="card-preview-section">
           <div className="card-preview-container">
-            <h3>{t("common.front") || "Front"}</h3>
+            <h3>{t("cards.front")}</h3>
             <div className="card-preview study-card">
               <div
                 className="study-card-section study-front"
@@ -195,7 +195,7 @@ const CardDetail = () => {
             </div>
           </div>
           <div className="card-preview-container">
-            <h3>{t("common.back") || "Back"}</h3>
+            <h3>{t("cards.back")}</h3>
             <div className="card-preview study-card">
               <div
                 className="study-card-section study-back"

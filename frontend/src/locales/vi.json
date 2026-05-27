@@ -183,7 +183,9 @@
     "status_new": "Mới",
     "status_scheduled": "Đã lên lịch",
     "next_review": "Lần ôn tập tiếp theo",
-    "error_load": "Không thể tải danh sách thẻ."
+    "error_load": "Không thể tải danh sách thẻ.",
+    "front": "Mặt trước",
+    "back": "Mặt sau"
   },
 
   "addCard": {
