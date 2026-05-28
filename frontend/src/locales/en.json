@@ -12,7 +12,10 @@
     "error_system": "System error. Please try again later.",
     "not_updated": "Not updated yet",
     "not_scheduled": "Not scheduled",
-    "cards": "cards"
+    "cards": "cards",
+    "save_success": "Saved successfully",
+    "delete_confirm": "Are you sure you want to delete this item?",
+    "delete_success": "Deleted successfully"
   },
 
   "header": {
@@ -183,7 +186,9 @@
     "status_new": "New",
     "status_scheduled": "Scheduled",
     "next_review": "Next review",
-    "error_load": "Could not load card list."
+    "error_load": "Could not load card list.",
+    "front": "Front",
+    "back": "Back"
   },
 
   "addCard": {

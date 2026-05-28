@@ -12,7 +12,10 @@
     "error_system": "Lỗi hệ thống. Vui lòng thử lại sau.",
     "not_updated": "Chưa cập nhật",
     "not_scheduled": "Chưa lên lịch",
-    "cards": "thẻ"
+    "cards": "thẻ",
+    "save_success": "Lưu thành công",
+    "delete_confirm": "Bạn có chắc muốn xóa mục này?",
+    "delete_success": "Xóa thành công"
   },
 
   "header": {

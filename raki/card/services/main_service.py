@@ -4,6 +4,7 @@ from deck.repositories import DeckRepository
 from card.repositories import CardRepository
 from card.services.review_service import ReviewService
 
+
 class CardMainService:
     @staticmethod
     def list_cards_by_deck(deck_id, user):
@@ -81,7 +82,10 @@ class CardMainService:
             p = progress_dict.get(card.id)
 
             if not p:
-                if len([r for r in results if r["status"] == "new"]) < remaining_new_quota:
+                if (
+                    len([r for r in results if r["status"] == "new"])
+                    < remaining_new_quota
+                ):
                     status = "new"
                 else:
                     continue
@@ -90,7 +94,10 @@ class CardMainService:
             else:
                 continue
 
-            field_values = {fv.definition.name: fv.value for fv in card.note.values.all()}
+            field_values = [
+                {"name": fv.definition.name, "value": fv.value}
+                for fv in card.note.values.all()
+            ]
 
             results.append(
                 {
@@ -134,7 +141,10 @@ class CardMainService:
         if not card:
             raise LookupError("CARD_NOT_FOUND")
 
-        field_values = {fv.definition.name: fv.value for fv in card.note.values.all()}
+        field_values = [
+            {"name": fv.definition.name, "value": fv.value}
+            for fv in card.note.values.all()
+        ]
 
         return {
             "id": card.id,
@@ -147,20 +157,26 @@ class CardMainService:
         }
 
     @staticmethod
-    def update_card(card_id, user, field_values):
+    def update_card(card_id, user, field_values_list):
         card = CardRepository.get_card_by_id(card_id, user)
         if not card:
             raise LookupError("CARD_NOT_FOUND")
 
-        # Update field values of the associated note
+        data_dict = {item["name"]: item["value"] for item in field_values_list}
+
+        # 3. Cập nhật vào Database
         for fv in card.note.values.all():
-            if fv.definition.name in field_values:
-                fv.value = field_values[fv.definition.name]
+            field_name = fv.definition.name
+            if field_name in data_dict:
+                fv.value = data_dict[field_name]
                 fv.save()
 
-        # Re-fetch or build the response directly
-        updated_field_values = {fv.definition.name: fv.value for fv in card.note.values.all()}
-
+        # 4. Cấu trúc lại dữ liệu trả về theo đúng định dạng List của Serializer
+        # Để khớp với CardDetailResponseSerializer (field_values = CardDetailValueSerializer(many=True))
+        updated_fields_response = [
+            {"name": fv.definition.name, "value": fv.value}
+            for fv in card.note.values.all()
+        ]
         return {
             "id": card.id,
             "cloze_index": card.cloze_index,
@@ -168,7 +184,7 @@ class CardMainService:
                 "front": card.template.front,
                 "back": card.template.back,
             },
-            "field_values": updated_field_values,
+            "field_values": updated_fields_response,
         }
 
     @staticmethod

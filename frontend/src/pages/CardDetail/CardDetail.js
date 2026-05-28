@@ -17,7 +17,7 @@ const CardDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const [editFields, setEditFields] = useState({});
+  const [editFields, setEditFields] = useState([]);
 
   useEffect(() => {
     fetchCardDetail();
@@ -29,7 +29,7 @@ const CardDetail = () => {
       setError("");
       const res = await api.get(`/api/cards/${cardId}/`);
       setCard(res.data);
-      setEditFields(res.data.field_values);
+      setEditFields(res.data.field_values || []);
     } catch (err) {
       if (err.response?.status === 401) {
         localStorage.removeItem("access_token");
@@ -46,8 +46,12 @@ const CardDetail = () => {
     }
   };
 
-  const handleEditChange = (field, value) => {
-    setEditFields((prev) => ({ ...prev, [field]: value }));
+  const handleEditChange = (fieldName, value) => {
+    setEditFields((prev) =>
+      prev.map((field) =>
+        field.name === fieldName ? { ...field, value } : field,
+      ),
+    );
   };
 
   const handleSave = async () => {
@@ -58,7 +62,7 @@ const CardDetail = () => {
       });
       setCard(res.data);
       setIsEditing(false);
-      toast.success(t("common.save_success") || "Saved successfully");
+      toast.success(t("common.save_success"));
     } catch (err) {
       toast.error(
         err.response?.data?.error
@@ -71,13 +75,13 @@ const CardDetail = () => {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(t("common.confirm_delete") || "Are you sure you want to delete this card?")) {
+    if (!window.confirm(t("common.delete_confirm"))) {
       return;
     }
     try {
       setLoading(true);
       await api.delete(`/api/cards/${cardId}/`);
-      toast.success(t("common.delete_success") || "Deleted successfully");
+      toast.success(t("common.delete_success"));
       navigate(-1);
     } catch (err) {
       toast.error(
@@ -90,16 +94,14 @@ const CardDetail = () => {
   };
 
   if (loading && !card) {
-    return <div className="card-detail-loading">{t("common.loading") || "Loading..."}</div>;
+    return <div className="card-detail-loading">{t("common.loading")}</div>;
   }
 
   if (error) {
     return (
       <div className="card-detail-error">
         <p>{error}</p>
-        <Button onClick={() => navigate(-1)}>
-          {t("common.back") || "Back"}
-        </Button>
+        <Button onClick={() => navigate(-1)}>{t("common.back")}</Button>
       </div>
     );
   }
@@ -107,7 +109,12 @@ const CardDetail = () => {
   if (!card) return null;
 
   // Use the edited fields for previewing if in edit mode, otherwise use saved fields
-  const displayFields = isEditing ? editFields : card.field_values;
+  const displayFieldsList = isEditing ? editFields : card.field_values;
+  
+  const displayFields = (displayFieldsList || []).reduce((acc, curr) => {
+    acc[curr.name] = curr.value;
+    return acc;
+  }, {});
 
   const frontHTML = tokenizeTemplate(
     card.template.front,
@@ -138,28 +145,26 @@ const CardDetail = () => {
     <div className="card-detail-page">
       <div className="card-detail-header">
         <Button color="gray" onClick={() => navigate(-1)}>
-          {t("common.back") || "Back"}
+          {t("common.back")}
         </Button>
-        <h1 className="card-detail-title">
-          Card {card.id}
-        </h1>
+        <h1 className="card-detail-title">Card {card.id}</h1>
         <div className="card-detail-actions">
           {!isEditing ? (
             <>
               <Button color="blue" onClick={() => setIsEditing(true)}>
-                {t("common.edit") || "Edit"}
+                {t("common.edit")}
               </Button>
               <Button color="red" onClick={handleDelete}>
-                {t("common.delete") || "Delete"}
+                {t("common.delete")}
               </Button>
             </>
           ) : (
             <>
               <Button color="green" onClick={handleSave} disabled={loading}>
-                {t("common.save") || "Save"}
+                {t("common.save")}
               </Button>
               <Button color="gray" onClick={() => setIsEditing(false)}>
-                {t("common.cancel") || "Cancel"}
+                {t("common.cancel")}
               </Button>
             </>
           )}
@@ -169,14 +174,14 @@ const CardDetail = () => {
       <div className="card-detail-content">
         {isEditing && (
           <div className="card-edit-fields">
-            <h3>{t("common.edit_fields") || "Edit Fields"}</h3>
-            {Object.keys(editFields).map((field) => (
-              <div key={field} className="card-edit-field-group">
-                <label className="card-edit-field-label">{field}</label>
+            <h3>{t("common.edit")}</h3>
+            {(editFields || []).map((field) => (
+              <div key={field.name} className="card-edit-field-group">
+                <label className="card-edit-field-label">{field.name}</label>
                 <textarea
                   className="card-edit-field-input"
-                  value={editFields[field]}
-                  onChange={(e) => handleEditChange(field, e.target.value)}
+                  value={field.value}
+                  onChange={(e) => handleEditChange(field.name, e.target.value)}
                   rows={3}
                 />
               </div>
