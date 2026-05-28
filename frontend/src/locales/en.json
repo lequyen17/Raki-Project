@@ -15,7 +15,8 @@
     "cards": "cards",
     "save_success": "Saved successfully",
     "delete_confirm": "Are you sure you want to delete this item?",
-    "delete_success": "Deleted successfully"
+    "delete_success": "Deleted successfully",
+    "error": "Error"
   },
 
   "header": {

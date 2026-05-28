@@ -15,7 +15,8 @@
     "cards": "thẻ",
     "save_success": "Lưu thành công",
     "delete_confirm": "Bạn có chắc muốn xóa mục này?",
-    "delete_success": "Xóa thành công"
+    "delete_success": "Xóa thành công",
+    "error": "Lỗi"
   },
 
   "header": {
