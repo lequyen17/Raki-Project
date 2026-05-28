@@ -22,11 +22,13 @@ class DeckService:
             user=user,
             name=validated_data["name"],
             description=validated_data["description"],
+            is_public=validated_data.get("is_public", False),
         )
         return {
             "id": deck.id,
             "name": deck.name,
             "description": deck.description or "",
+            "is_public": deck.is_public,
             "parent_id": deck.parent_id,
             "created_at": deck.created_at,
         }
@@ -44,6 +46,7 @@ class DeckService:
                     "id": deck.id,
                     "name": deck.name,
                     "description": deck.description or "",
+                    "is_public": deck.is_public,
                     "total_cards": deck.total_cards,
                     "parent_id": deck.parent_id,
                     "created_at": deck.created_at,
@@ -63,11 +66,13 @@ class DeckService:
             deck=deck,
             name=validated_data["name"],
             description=validated_data["description"],
+            is_public=validated_data.get("is_public", deck.is_public),
         )
         return {
             "id": deck.id,
             "name": deck.name,
             "description": deck.description or "",
+            "is_public": deck.is_public,
             "parent_id": deck.parent_id,
             "created_at": deck.created_at,
         }
@@ -177,6 +182,7 @@ class DeckService:
             "deck_id": deck.id,
             "name": deck.name,
             "description": deck.description,
+            "is_public": deck.is_public,
             "counts": {
                 "new": session_new_count,
                 "learning": session_learning_count,

@@ -8,6 +8,7 @@ class DeckSerializer(serializers.Serializer):
     description = serializers.CharField(
         required=False, allow_blank=True, allow_null=True
     )
+    is_public = serializers.BooleanField(required=False)
 
     def validate(self, attrs):
         deck = self.context.get("deck")
@@ -15,11 +16,13 @@ class DeckSerializer(serializers.Serializer):
         if deck:
             name = str(attrs.get("name", deck.name)).strip()
             description = str(attrs.get("description", deck.description or "")).strip()
+            is_public = attrs.get("is_public", deck.is_public)
         else:
             name = str(attrs.get("name", "")).strip()
             description = str(attrs.get("description", "")).strip()
+            is_public = attrs.get("is_public", False)
 
-        return {"name": name, "description": description}
+        return {"name": name, "description": description, "is_public": is_public}
 
 
 class DeckMoveSerializer(serializers.Serializer):
@@ -66,6 +69,7 @@ class DeckItemSerializer(serializers.Serializer):
     description = serializers.CharField()
     parent_id = serializers.IntegerField(allow_null=True)
     created_at = serializers.DateTimeField(required=False)
+    is_public = serializers.BooleanField()
 
 
 class DeckListResponseSerializer(serializers.Serializer):
@@ -110,5 +114,6 @@ class DeckDetailResponseSerializer(serializers.Serializer):
     deck_id = serializers.IntegerField()
     name = serializers.CharField()
     description = serializers.CharField(allow_blank=True, allow_null=True)
+    is_public = serializers.BooleanField()
     counts = DeckDetailCountsSerializer()
     overall_stats = DeckDetailOverallStatsSerializer()

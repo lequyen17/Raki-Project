@@ -16,10 +16,11 @@ class DeckRepository:
         )
 
     @staticmethod
-    def create_user_deck(user, name, description=""):
+    def create_user_deck(user, name, description="", is_public=False):
         deck = Deck.objects.create(
             name=name,
             description=description,
+            is_public=is_public,
             parent=None,
         )
 
@@ -52,14 +53,16 @@ class DeckRepository:
             return None
 
     @staticmethod
-    def update_deck(deck, name, description):
+    def update_deck(deck, name, description, is_public=False):
         deck.name = name
         deck.description = description
+        deck.is_public = is_public
 
         deck.save(
             update_fields=[
                 "name",
                 "description",
+                "is_public",
             ]
         )
 

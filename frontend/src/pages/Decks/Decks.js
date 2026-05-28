@@ -49,6 +49,7 @@ const Decks = () => {
   const [editError, setEditError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [deletingDeck, setDeletingDeck] = useState(false);
+  const [sharingDeck, setSharingDeck] = useState(false);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -374,6 +375,48 @@ const Decks = () => {
     }
   };
 
+  const handleShareDeck = async () => {
+    if (!selectedDeckId || !selectedDeckInfo) {
+      return;
+    }
+    
+    try {
+      setSharingDeck(true);
+      setStatsError("");
+      const payload = {
+        name: selectedDeckInfo.name,
+        description: selectedDeckInfo.description,
+        is_public: !selectedDeckInfo.is_public,
+      };
+      const res = await api.put(`/api/decks/${selectedDeckId}/`, payload);
+      const updatedDeck = res.data;
+
+      setDecks((prev) =>
+        prev.map((deck) =>
+          deck.id === selectedDeckId
+            ? { ...deck, is_public: updatedDeck.is_public }
+            : deck,
+        ),
+      );
+      setSelectedDeckInfo((prev) =>
+        prev ? { ...prev, is_public: updatedDeck.is_public } : prev,
+      );
+    } catch (err) {
+      if (err.response?.status === 401) {
+        localStorage.removeItem("access_token");
+        navigate("/login");
+        return;
+      }
+      setStatsError(
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "decks.error_update")
+          : t("decks.error_update"),
+      );
+    } finally {
+      setSharingDeck(false);
+    }
+  };
+
   return (
     <div
       className="decks-page"
@@ -425,6 +468,8 @@ const Decks = () => {
           handleOpenEditModal={handleOpenEditModal}
           deletingDeck={deletingDeck}
           handleDeleteDeck={handleDeleteDeck}
+          sharingDeck={sharingDeck}
+          handleShareDeck={handleShareDeck}
         />
       </div>
 

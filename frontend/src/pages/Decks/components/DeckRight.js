@@ -11,6 +11,8 @@ const DeckRight = ({
   handleOpenEditModal,
   deletingDeck,
   handleDeleteDeck,
+  sharingDeck,
+  handleShareDeck,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -40,11 +42,27 @@ const DeckRight = ({
 
       {selectedDeckInfo && !statsLoading && (
         <>
-          <div className="deck-info-section">
-            <h3 className="deck-info-title">{selectedDeckInfo.name}</h3>
-            {selectedDeckInfo.description && (
-              <p className="deck-info-description">{selectedDeckInfo.description}</p>
-            )}
+          <div className="deck-info-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <h3 className="deck-info-title">{selectedDeckInfo.name}</h3>
+              {selectedDeckInfo.description && (
+                <p className="deck-info-description">{selectedDeckInfo.description}</p>
+              )}
+            </div>
+            <div className="deck-share-toggle">
+              <span className="deck-share-label">
+                {selectedDeckInfo.is_public ? t("decks.shared") : t("decks.share")}
+              </span>
+              <button
+                type="button"
+                className={`toggle-switch ${selectedDeckInfo.is_public ? "active" : ""} ${sharingDeck ? "loading" : ""}`}
+                onClick={handleShareDeck}
+                disabled={sharingDeck}
+                aria-pressed={selectedDeckInfo.is_public}
+              >
+                <span className="toggle-slider"></span>
+              </button>
+            </div>
           </div>
 
           <div className="deck-stat-group">
