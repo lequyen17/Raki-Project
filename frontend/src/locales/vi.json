@@ -25,7 +25,9 @@
     "my_decks": "Bộ thẻ của tôi",
     "my_profile": "Hồ sơ của tôi",
     "settings": "Cài đặt",
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "MY_DECKS": "BỘ THẺ",
+    "COMMUNITY": "CỘNG ĐỒNG"
   },
 
   "footer": {

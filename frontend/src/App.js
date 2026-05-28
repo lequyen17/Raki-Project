@@ -7,6 +7,7 @@ import Decks from "./pages/Decks/Decks";
 import Cards from "./pages/Cards/Cards";
 import AddCard from "./pages/AddCard/AddCard";
 import Study from "./pages/Study/Study";
+import Community from "./pages/Community/Community";
 import CardDetail from "./pages/CardDetail/CardDetail";
 import Header from "./components/Common/Header/Header";
 import Footer from "./components/Common/Footer/Footer";
@@ -33,6 +34,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Setting />} />
           <Route path="/cards/:cardId" element={<CardDetail />} />
+          <Route path="/community" element={<Community />} />
         </Routes>
         <Footer />
       </AuthProvider>

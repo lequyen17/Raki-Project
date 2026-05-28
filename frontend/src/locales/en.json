@@ -25,7 +25,9 @@
     "my_decks": "My Decks",
     "my_profile": "My Profile",
     "settings": "Settings",
-    "logout": "Log Out"
+    "logout": "Log Out",
+    "MY_DECKS": "MY DECKS",
+    "COMMUNITY": "COMMUNITY"
   },
 
   "footer": {
