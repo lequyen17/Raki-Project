@@ -2,6 +2,8 @@ from django.utils import timezone
 
 from deck.repositories import DeckRepository
 from card.repositories import CardRepository
+from deck.models import Deck, UserDeck
+from card.models import Card, Progress
 
 
 class DeckService:
@@ -11,6 +13,13 @@ class DeckService:
         deck = DeckRepository.get_deck_for_user(deck_id, user)
         if not deck:
             raise LookupError("DECK_NOT_FOUND")
+        return deck
+
+    @staticmethod
+    def _get_deck_for_owner_or_404(deck_id, user):
+        deck = DeckRepository.get_deck_for_owner(deck_id, user)
+        if not deck:
+            raise LookupError("DECK_NOT_FOUND_OR_NOT_OWNER")
         return deck
 
     # =========================
@@ -58,6 +67,87 @@ class DeckService:
         }
 
     # =========================
+    # GET PUBLIC DECKS
+    # =========================
+    @staticmethod
+    def get_public_decks(user):
+        decks = DeckRepository.get_public_decks()
+        results = []
+        for deck in decks:
+            # Lấy tên của owner nếu cần
+            owner = deck.deck_users.filter(role="owner").first()
+            owner_name = owner.user.username if owner else "Unknown"
+            
+            results.append(
+                {
+                    "id": deck.id,
+                    "name": deck.name,
+                    "description": deck.description or "",
+                    "is_public": deck.is_public,
+                    "parent_id": deck.parent_id,
+                    "created_at": deck.created_at,
+                    "owner": owner_name,
+                }
+            )
+        return {
+            "count": decks.count(),
+            "results": results,
+        }
+
+    # =========================
+    # LEARN PUBLIC DECK
+    # =========================
+    @staticmethod
+    def learn_public_deck(deck_id, user):
+        
+        # Lấy deck công khai
+        deck = Deck.objects.filter(id=deck_id, is_public=True).first()
+        if not deck:
+            raise LookupError("DECK_NOT_FOUND_OR_NOT_PUBLIC")
+            
+        if UserDeck.objects.filter(user=user, deck=deck).exists():
+            return {"success": False, "message": "Already learning this deck"}
+
+        # Lấy tất cả subdecks (bỏ qua quyền user vì đây là public deck)
+        def get_all_public_descendants(node):
+            descendants = [node]
+            children = Deck.objects.filter(parent=node)
+            for child in children:
+                descendants.extend(get_all_public_descendants(child))
+            return descendants
+
+        all_decks_to_learn = get_all_public_descendants(deck)
+        
+        # Thêm role viewer cho user
+        user_decks = []
+        for d in all_decks_to_learn:
+            user_decks.append(UserDeck(user=user, deck=d, role="viewer"))
+        UserDeck.objects.bulk_create(user_decks, ignore_conflicts=True)
+
+        # Lấy tất cả cards trong deck và subdecks
+        deck_ids = [d.id for d in all_decks_to_learn]
+        cards = Card.objects.filter(note__deck_id__in=deck_ids)
+        
+        # Tạo bản ghi Progress
+        progresses_to_create = []
+        today = timezone.localdate()
+        for card in cards:
+            progresses_to_create.append(
+                Progress(
+                    user=user,
+                    card=card,
+                    status="new",
+                    repetition=0,
+                    interval=1,
+                    easiness=2.5,
+                    next_review=today,
+                )
+            )
+        Progress.objects.bulk_create(progresses_to_create, ignore_conflicts=True)
+        
+        return {"success": True}
+
+    # =========================
     # UPDATE
     # =========================
     @staticmethod
@@ -96,7 +186,7 @@ class DeckService:
     # =========================
     @staticmethod
     def delete_deck(deck_id, user):
-        deck = DeckService._get_deck_or_404(deck_id, user)
+        deck = DeckService._get_deck_for_owner_or_404(deck_id, user)
         DeckRepository.delete_deck(deck)
         return {"success": True}
 

@@ -117,3 +117,10 @@ class DeckDetailResponseSerializer(serializers.Serializer):
     is_public = serializers.BooleanField()
     counts = DeckDetailCountsSerializer()
     overall_stats = DeckDetailOverallStatsSerializer()
+
+class PublicDeckItemSerializer(DeckItemSerializer):
+    owner = serializers.CharField()
+
+class PublicDeckListResponseSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    results = PublicDeckItemSerializer(many=True)

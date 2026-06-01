@@ -43,6 +43,21 @@ class DeckRepository:
             return None
 
     @staticmethod
+    def get_deck_for_owner(deck_id, user):
+        try:
+            return Deck.objects.get(
+                id=deck_id,
+                deck_users__user=user,
+                deck_users__role="owner",
+            )
+        except Deck.DoesNotExist:
+            return None
+
+    @staticmethod
+    def get_public_decks():
+        return Deck.objects.filter(is_public=True).order_by("-created_at")
+
+    @staticmethod
     def get_parent_deck_for_user(parent_id, user):
         try:
             return Deck.objects.get(

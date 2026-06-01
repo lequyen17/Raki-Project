@@ -14,6 +14,7 @@ from deck.serializers import (
     DeckMoveSerializer,
     DeckSerializer,
     SuccessResponseSerializer,
+    PublicDeckListResponseSerializer,
 )
 from deck.services import DeckService
 
@@ -68,6 +69,11 @@ def move_user_deck(request):
     )
     if error_response:
         return error_response
+        
+    # Thêm check owner
+    deck = DeckRepository.get_deck_for_owner(validated["deck"].id, request.user)
+    if not deck:
+        return Response({"error": "DECK_NOT_FOUND_OR_NOT_OWNER"}, status=403)
 
     data = DeckService.move_deck(validated)
     return Response(data)
@@ -110,9 +116,9 @@ def user_deck_detail(request, deck_id):
             data = DeckService.get_deck_detail(deck_id, request.user)
             return Response(data)
         elif request.method == "PUT":
-            deck = DeckRepository.get_deck_for_user(deck_id, request.user)
+            deck = DeckRepository.get_deck_for_owner(deck_id, request.user)
             if not deck:
-                return Response({"error": "DECK_NOT_FOUND"}, status=404)
+                return Response({"error": "DECK_NOT_FOUND_OR_NOT_OWNER"}, status=403)
 
             validated, error_response = parse_request(
                 request, DeckSerializer, deck=deck
@@ -125,6 +131,42 @@ def user_deck_detail(request, deck_id):
         elif request.method == "DELETE":
             data = DeckService.delete_deck(deck_id, request.user)
             return Response(data)
+
+    except LookupError as e:
+        return Response({"error": str(e)}, status=404)
+
+@extend_schema(
+    methods=["GET"],
+    tags=["Decks"],
+    summary="Danh sách deck cộng đồng (public)",
+    responses={200: PublicDeckListResponseSerializer},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def public_decks(request):
+    data = DeckService.get_public_decks(request.user)
+    return Response(data)
+
+@extend_schema(
+    methods=["POST"],
+    tags=["Decks"],
+    summary="Học một deck công khai",
+    responses={
+        200: SuccessResponseSerializer,
+        404: ErrorResponseSerializer,
+    },
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def learn_public_deck(request, deck_id):
+    try:
+        data = DeckService.learn_public_deck(deck_id, request.user)
+
+
+        if isinstance(data, dict) and data.get("success") is False:
+            return Response(data, status=400) # Trả về 400 Bad Request cho lỗi trùng
+
+        return Response(data, status=200) # Trả về 200 nếu thành công
 
     except LookupError as e:
         return Response({"error": str(e)}, status=404)

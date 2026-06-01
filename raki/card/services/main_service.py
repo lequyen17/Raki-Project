@@ -158,9 +158,9 @@ class CardMainService:
 
     @staticmethod
     def update_card(card_id, user, field_values_list):
-        card = CardRepository.get_card_by_id(card_id, user)
+        card = CardRepository.get_card_for_owner(card_id, user)
         if not card:
-            raise LookupError("CARD_NOT_FOUND")
+            raise LookupError("CARD_NOT_FOUND_OR_NOT_OWNER")
 
         data_dict = {item["name"]: item["value"] for item in field_values_list}
 
