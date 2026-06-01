@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import api from "../../api/api";
 import "./Community.css";
 
 function Community() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const [decks, setDecks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -22,18 +26,6 @@ function Community() {
       setError("Failed to load community decks.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleLearn = async (deckId) => {
-    try {
-      await api.post(`/api/decks/${deckId}/learn/`);
-      alert("Successfully added to your learning decks!");
-      // Optionally remove from list or mark as learning
-      fetchPublicDecks();
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.message || "Failed to add deck.");
     }
   };
 
@@ -63,9 +55,9 @@ function Community() {
               </div>
               <button
                 className="learn-btn"
-                onClick={() => handleLearn(deck.id)}
+                onClick={() => navigate(`/community/${deck.id}`)}
               >
-                Learn Deck
+                {t("decks.view_deck") || "View Deck"}
               </button>
             </div>
           ))}

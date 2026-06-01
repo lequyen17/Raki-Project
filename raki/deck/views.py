@@ -171,3 +171,22 @@ def learn_public_deck(request, deck_id):
     except LookupError as e:
         return Response({"error": str(e)}, status=404)
 
+
+@extend_schema(
+    methods=["POST"],
+    tags=["Decks"],
+    summary="Bỏ học deck cộng đồng (xóa role viewer)",
+    responses={
+        200: SuccessResponseSerializer,
+        404: ErrorResponseSerializer,
+    },
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def unlearn_deck(request, deck_id):
+    try:
+        data = DeckService.unlearn_deck(deck_id, request.user)
+        return Response(data, status=200)
+    except LookupError as e:
+        return Response({"error": str(e)}, status=404)
+

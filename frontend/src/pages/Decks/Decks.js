@@ -50,6 +50,7 @@ const Decks = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [deletingDeck, setDeletingDeck] = useState(false);
   const [sharingDeck, setSharingDeck] = useState(false);
+  const [unlearningDeck, setUnlearningDeck] = useState(false);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -375,6 +376,38 @@ const Decks = () => {
     }
   };
 
+  const handleStopLearning = async () => {
+    if (!selectedDeckId || selectedDeckInfo?.role !== "viewer") {
+      return;
+    }
+    if (!window.confirm(t("decks.confirm_stop_learning"))) {
+      return;
+    }
+
+    try {
+      setUnlearningDeck(true);
+      setStatsError("");
+      await api.post(`/api/decks/${selectedDeckId}/unlearn/`);
+      const res = await api.get("/api/decks/");
+      setDecks(res.data?.results || []);
+      setSelectedDeckId(null);
+      setSelectedDeckInfo(null);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        localStorage.removeItem("access_token");
+        navigate("/login");
+        return;
+      }
+      setStatsError(
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "decks.error_stop_learning")
+          : t("decks.error_stop_learning"),
+      );
+    } finally {
+      setUnlearningDeck(false);
+    }
+  };
+
   const handleShareDeck = async () => {
     if (!selectedDeckId || !selectedDeckInfo) {
       return;
@@ -470,6 +503,8 @@ const Decks = () => {
           handleDeleteDeck={handleDeleteDeck}
           sharingDeck={sharingDeck}
           handleShareDeck={handleShareDeck}
+          unlearningDeck={unlearningDeck}
+          handleStopLearning={handleStopLearning}
         />
       </div>
 

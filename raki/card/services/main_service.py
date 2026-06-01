@@ -146,6 +146,9 @@ class CardMainService:
             for fv in card.note.values.all()
         ]
 
+        from deck.models import UserDeck
+        is_owner = UserDeck.objects.filter(user=user, deck=card.note.deck, role="owner").exists()
+
         return {
             "id": card.id,
             "cloze_index": card.cloze_index,
@@ -154,6 +157,7 @@ class CardMainService:
                 "back": card.template.back,
             },
             "field_values": field_values,
+            "is_owner": is_owner,
         }
 
     @staticmethod

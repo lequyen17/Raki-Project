@@ -158,7 +158,14 @@
         "shared": "Shared",
         "study_now": "Study Now",
         "view_cards": "View",
-        "unshare": "Unshare"
+        "unshare": "Unshare",
+        "view_deck": "View Deck",
+        "back_to_community": "Back to Community",
+        "learn_deck": "Learn Deck",
+        "already_learning": "You are already learning this deck.",
+        "stop_learning": "Stop Learning",
+        "confirm_stop_learning": "Remove this deck from your learning list?",
+        "error_stop_learning": "Could not stop learning this deck."
     },
     "cards": {
         "back_to_decks": "Back to Decks",
@@ -275,6 +282,7 @@
         "PROFILE_UPDATE_FAILED": "Failed to update profile.",
         "REGISTER_FAILED": "Registration failed.",
         "DECK_NOT_FOUND": "Deck not found.",
+        "DECK_NOT_FOUND_OR_NOT_VIEWER": "Deck not found or you are not learning it as a viewer.",
         "PARENT_DECK_NOT_FOUND": "Target parent deck not found.",
         "DECK_MOVE_SELF": "Cannot move a deck into itself.",
         "DECK_MOVE_SUBDECK": "Cannot move a deck into its own sub-deck.",

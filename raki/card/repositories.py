@@ -49,10 +49,10 @@ class CardRepository:
     @staticmethod
     def get_card_for_review(card_id, user):
         try:
-            return Card.objects.get(
+            return Card.objects.filter(
                 id=card_id,
                 note__deck__deck_users__user=user,
-            )
+            ).distinct().get()
         except Card.DoesNotExist:
             return None
 
@@ -73,21 +73,21 @@ class CardRepository:
     @staticmethod
     def get_card_by_id(card_id, user):
         try:
-            return Card.objects.select_related("note", "template").prefetch_related("note__values__definition").get(
-                id=card_id,
-                note__deck__deck_users__user=user,
-            )
+            from django.db.models import Q
+            return Card.objects.select_related("note", "template").prefetch_related("note__values__definition").filter(
+                Q(id=card_id) & (Q(note__deck__deck_users__user=user) | Q(note__deck__is_public=True))
+            ).distinct().get()
         except Card.DoesNotExist:
             return None
 
     @staticmethod
     def get_card_for_owner(card_id, user):
         try:
-            return Card.objects.select_related("note", "template").prefetch_related("note__values__definition").get(
+            return Card.objects.select_related("note", "template").prefetch_related("note__values__definition").filter(
                 id=card_id,
                 note__deck__deck_users__user=user,
                 note__deck__deck_users__role="owner",
-            )
+            ).distinct().get()
         except Card.DoesNotExist:
             return None
 

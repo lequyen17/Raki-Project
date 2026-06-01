@@ -13,6 +13,8 @@ const DeckRight = ({
   handleDeleteDeck,
   sharingDeck,
   handleShareDeck,
+  unlearningDeck,
+  handleStopLearning,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -49,20 +51,22 @@ const DeckRight = ({
                 <p className="deck-info-description">{selectedDeckInfo.description}</p>
               )}
             </div>
-            <div className="deck-share-toggle">
-              <span className="deck-share-label">
-                {selectedDeckInfo.is_public ? t("decks.shared") : t("decks.share")}
-              </span>
-              <button
-                type="button"
-                className={`toggle-switch ${selectedDeckInfo.is_public ? "active" : ""} ${sharingDeck ? "loading" : ""}`}
-                onClick={handleShareDeck}
-                disabled={sharingDeck}
-                aria-pressed={selectedDeckInfo.is_public}
-              >
-                <span className="toggle-slider"></span>
-              </button>
-            </div>
+            {selectedDeckInfo.role === "owner" && (
+              <div className="deck-share-toggle">
+                <span className="deck-share-label">
+                  {selectedDeckInfo.is_public ? t("decks.shared") : t("decks.share")}
+                </span>
+                <button
+                  type="button"
+                  className={`toggle-switch ${selectedDeckInfo.is_public ? "active" : ""} ${sharingDeck ? "loading" : ""}`}
+                  onClick={handleShareDeck}
+                  disabled={sharingDeck}
+                  aria-pressed={selectedDeckInfo.is_public}
+                >
+                  <span className="toggle-slider"></span>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="deck-stat-group">
@@ -158,13 +162,29 @@ const DeckRight = ({
               onClick={() => navigate(`/decks/${selectedDeckId}/study`)}>
               {t("decks.study_now")}
             </Button>
-            <Button type="button" variant="outline" color="blue" onClick={handleOpenEditModal}>
-              {t("common.edit")}
-            </Button>
-            <Button type="button" color="red" disabled={deletingDeck}
-              isLoading={deletingDeck} onClick={handleDeleteDeck}>
-              {t("common.delete")}
-            </Button>
+            {selectedDeckInfo.role === "owner" && (
+              <>
+                <Button type="button" variant="outline" color="blue" onClick={handleOpenEditModal}>
+                  {t("common.edit")}
+                </Button>
+                <Button type="button" color="red" disabled={deletingDeck}
+                  isLoading={deletingDeck} onClick={handleDeleteDeck}>
+                  {t("common.delete")}
+                </Button>
+              </>
+            )}
+            {selectedDeckInfo.role === "viewer" && (
+              <Button
+                type="button"
+                variant="outline"
+                color="gray"
+                disabled={unlearningDeck}
+                isLoading={unlearningDeck}
+                onClick={handleStopLearning}
+              >
+                {t("decks.stop_learning")}
+              </Button>
+            )}
             <Button type="button" color="green"
               onClick={() => navigate(`/decks/${selectedDeckId}/cards`)}>
               {t("decks.view_cards")}

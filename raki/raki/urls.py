@@ -100,6 +100,11 @@ urlpatterns = [
         deck_views.learn_public_deck,
         name="learn_public_deck",
     ),
+    path(
+        "api/decks/<int:deck_id>/unlearn/",
+        deck_views.unlearn_deck,
+        name="unlearn_deck",
+    ),
     path("api/decks/move/", deck_views.move_user_deck, name="move_user_deck"),
     path(
         "api/decks/<int:deck_id>/",

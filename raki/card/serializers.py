@@ -68,6 +68,7 @@ class CardDetailResponseSerializer(serializers.Serializer):
     cloze_index = serializers.IntegerField(allow_null=True)
     template = StudyCardTemplateSerializer()
     field_values = CardDetailValueSerializer(many=True)
+    is_owner = serializers.BooleanField(required=False)
 
 
 class CardUpdateSerializer(serializers.Serializer):

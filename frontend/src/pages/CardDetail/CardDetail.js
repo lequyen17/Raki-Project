@@ -149,7 +149,7 @@ const CardDetail = () => {
         </Button>
         <h1 className="card-detail-title">Card {card.id}</h1>
         <div className="card-detail-actions">
-          {!isEditing ? (
+          {card.is_owner && !isEditing ? (
             <>
               <Button color="blue" onClick={() => setIsEditing(true)}>
                 {t("common.edit")}
@@ -158,7 +158,7 @@ const CardDetail = () => {
                 {t("common.delete")}
               </Button>
             </>
-          ) : (
+          ) : card.is_owner && isEditing ? (
             <>
               <Button color="green" onClick={handleSave} disabled={loading}>
                 {t("common.save")}
@@ -167,7 +167,7 @@ const CardDetail = () => {
                 {t("common.cancel")}
               </Button>
             </>
-          )}
+          ) : null}
         </div>
       </div>
 

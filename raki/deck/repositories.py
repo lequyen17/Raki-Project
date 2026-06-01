@@ -35,10 +35,10 @@ class DeckRepository:
     @staticmethod
     def get_deck_for_user(deck_id, user):
         try:
-            return Deck.objects.get(
-                id=deck_id,
-                deck_users__user=user,
-            )
+            from django.db.models import Q
+            return Deck.objects.filter(
+                Q(deck_users__user=user) | Q(is_public=True)
+            ).distinct().get(id=deck_id)
         except Deck.DoesNotExist:
             return None
 
@@ -96,6 +96,8 @@ class DeckRepository:
 
     @staticmethod
     def has_subdecks(deck, user):
+        if deck.is_public:
+            return Deck.objects.filter(parent=deck).exists()
         return Deck.objects.filter(
             parent=deck,
             deck_users__user=user,
@@ -103,6 +105,8 @@ class DeckRepository:
 
     @staticmethod
     def get_child_decks(deck, user):
+        if deck.is_public:
+            return Deck.objects.filter(parent=deck)
         return Deck.objects.filter(
             parent=deck,
             deck_users__user=user,

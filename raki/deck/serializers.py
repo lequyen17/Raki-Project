@@ -70,6 +70,7 @@ class DeckItemSerializer(serializers.Serializer):
     parent_id = serializers.IntegerField(allow_null=True)
     created_at = serializers.DateTimeField(required=False)
     is_public = serializers.BooleanField()
+    role = serializers.CharField(required=False)
 
 
 class DeckListResponseSerializer(serializers.Serializer):
@@ -115,6 +116,7 @@ class DeckDetailResponseSerializer(serializers.Serializer):
     name = serializers.CharField()
     description = serializers.CharField(allow_blank=True, allow_null=True)
     is_public = serializers.BooleanField()
+    role = serializers.CharField(required=False)
     counts = DeckDetailCountsSerializer()
     overall_stats = DeckDetailOverallStatsSerializer()
 

@@ -14,7 +14,7 @@
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
+  background:  #095ce2;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -57,7 +57,7 @@
 
 .deck-owner {
   font-size: 0.875rem;
-  color: #a855f7;
+  color:  #1d4ed8;;
   margin-bottom: 1rem;
   font-weight: 500;
 }
@@ -78,7 +78,7 @@
   padding: 0.75rem;
   border-radius: 8px;
   border: none;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background:  #095ce2;
   color: white;
   font-weight: 600;
   font-size: 1rem;

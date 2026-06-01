@@ -48,6 +48,9 @@ class DeckService:
     @staticmethod
     def get_user_decks(user):
         decks = DeckRepository.get_user_decks(user)
+        user_decks = UserDeck.objects.filter(user=user)
+        role_map = {ud.deck_id: ud.role for ud in user_decks}
+        
         results = []
         for deck in decks:
             results.append(
@@ -59,6 +62,7 @@ class DeckService:
                     "total_cards": deck.total_cards,
                     "parent_id": deck.parent_id,
                     "created_at": deck.created_at,
+                    "role": role_map.get(deck.id, "viewer"),
                 }
             )
         return {
@@ -123,28 +127,33 @@ class DeckService:
         for d in all_decks_to_learn:
             user_decks.append(UserDeck(user=user, deck=d, role="viewer"))
         UserDeck.objects.bulk_create(user_decks, ignore_conflicts=True)
+        
+        return {"success": True}
 
-        # Lấy tất cả cards trong deck và subdecks
-        deck_ids = [d.id for d in all_decks_to_learn]
-        cards = Card.objects.filter(note__deck_id__in=deck_ids)
-        
-        # Tạo bản ghi Progress
-        progresses_to_create = []
-        today = timezone.localdate()
-        for card in cards:
-            progresses_to_create.append(
-                Progress(
-                    user=user,
-                    card=card,
-                    status="new",
-                    repetition=0,
-                    interval=1,
-                    easiness=2.5,
-                    next_review=today,
-                )
-            )
-        Progress.objects.bulk_create(progresses_to_create, ignore_conflicts=True)
-        
+    # =========================
+    # UNLEARN (remove viewer role)
+    # =========================
+    @staticmethod
+    def unlearn_deck(deck_id, user):
+        user_deck = UserDeck.objects.filter(
+            user=user, deck_id=deck_id, role="viewer"
+        ).first()
+        if not user_deck:
+            raise LookupError("DECK_NOT_FOUND_OR_NOT_VIEWER")
+
+        deck = user_deck.deck
+
+        def get_all_descendants(node):
+            descendants = [node]
+            for child in Deck.objects.filter(parent=node):
+                descendants.extend(get_all_descendants(child))
+            return descendants
+
+        deck_ids = [d.id for d in get_all_descendants(deck)]
+        UserDeck.objects.filter(
+            user=user, deck_id__in=deck_ids, role="viewer"
+        ).delete()
+
         return {"success": True}
 
     # =========================
@@ -213,6 +222,9 @@ class DeckService:
     @staticmethod
     def get_deck_detail(deck_id, user):
         deck = DeckService._get_deck_or_404(deck_id, user)
+        user_deck = UserDeck.objects.filter(user=user, deck=deck).first()
+        role = user_deck.role if user_deck else "none"
+        
         today = timezone.localdate()
 
         all_deck_ids = DeckService.get_descendant_ids(deck, user)
@@ -273,6 +285,7 @@ class DeckService:
             "name": deck.name,
             "description": deck.description,
             "is_public": deck.is_public,
+            "role": role,
             "counts": {
                 "new": session_new_count,
                 "learning": session_learning_count,

@@ -149,9 +149,14 @@ const Study = () => {
     );
   }
 
+  const displayFields = (currentCard.field_values || []).reduce((acc, curr) => {
+    acc[curr.name] = curr.value;
+    return acc;
+  }, {});
+
   const frontHTML = tokenizeTemplate(
     currentCard.template.front,
-    currentCard.field_values,
+    displayFields,
     currentCard.cloze_index || 0,
     false,
     {},
@@ -168,7 +173,7 @@ const Study = () => {
 
   let backHTML = tokenizeTemplate(
     rawBackTemplate,
-    currentCard.field_values,
+    displayFields,
     currentCard.cloze_index || 0,
     true,
     typedAnswers,

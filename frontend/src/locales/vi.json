@@ -158,7 +158,14 @@
         "shared": "Đã chia sẻ",
         "study_now": "Học ngay",
         "view_cards": "Xem",
-        "unshare": "Hủy chia sẻ"
+        "unshare": "Hủy chia sẻ",
+        "view_deck": "Xem bộ thẻ",
+        "back_to_community": "Quay lại Cộng đồng",
+        "learn_deck": "Học bộ thẻ",
+        "already_learning": "Bạn đã thêm bộ thẻ này vào danh sách học.",
+        "stop_learning": "Bỏ học",
+        "confirm_stop_learning": "Gỡ bộ thẻ này khỏi danh sách học?",
+        "error_stop_learning": "Không thể bỏ học bộ thẻ này."
     },
     "cards": {
         "back_to_decks": "Quay lại bộ thẻ",
@@ -275,6 +282,7 @@
         "PROFILE_UPDATE_FAILED": "Không thể cập nhật hồ sơ.",
         "REGISTER_FAILED": "Đăng ký thất bại.",
         "DECK_NOT_FOUND": "Không tìm thấy bộ thẻ.",
+        "DECK_NOT_FOUND_OR_NOT_VIEWER": "Không tìm thấy bộ thẻ hoặc bạn không đang học với quyền người xem.",
         "PARENT_DECK_NOT_FOUND": "Không tìm thấy bộ thẻ cha.",
         "DECK_MOVE_SELF": "Không thể di chuyển bộ thẻ vào chính nó.",
         "DECK_MOVE_SUBDECK": "Không thể di chuyển vào bộ thẻ con của chính nó.",
