@@ -28,6 +28,20 @@
         "MY_DECKS": "BỘ THẺ",
         "COMMUNITY": "CỘNG ĐỒNG"
     },
+    "community": {
+        "title": "Bộ thẻ cộng đồng",
+        "subtitle": "Khám phá và học từ các bộ thẻ do cộng đồng chia sẻ.",
+        "loading": "Đang tải bộ thẻ...",
+        "empty": "Chưa có bộ thẻ công khai nào.",
+        "no_description": "Chưa có mô tả.",
+        "by_owner": "Bởi {{owner}}",
+        "sidebar_shared_title": "Bộ thẻ đã chia sẻ",
+        "sidebar_learning_title": "Đang học (người xem)",
+        "sidebar_empty_shared": "Bạn chưa chia sẻ bộ thẻ nào.",
+        "sidebar_empty_learning": "Bạn chưa thêm bộ thẻ cộng đồng nào để học.",
+        "sidebar_loading": "Đang tải...",
+        "you_shared_deck": "Bạn đã chia sẻ bộ thẻ này với cộng đồng."
+    },
     "footer": {
         "description": "Raki là ứng dụng flashcard tương tác giúp bạn học tập hiệu quả.",
         "product": "Sản phẩm",
@@ -162,10 +176,13 @@
         "view_deck": "Xem bộ thẻ",
         "back_to_community": "Quay lại Cộng đồng",
         "learn_deck": "Học bộ thẻ",
+        "learn_deck_success": "Đã thêm vào danh sách học.",
         "already_learning": "Bạn đã thêm bộ thẻ này vào danh sách học.",
         "stop_learning": "Bỏ học",
+        "stop_learning_success": "Đã gỡ khỏi danh sách học.",
         "confirm_stop_learning": "Gỡ bộ thẻ này khỏi danh sách học?",
-        "error_stop_learning": "Không thể bỏ học bộ thẻ này."
+        "error_stop_learning": "Không thể bỏ học bộ thẻ này.",
+        "error_learn_deck": "Không thể thêm bộ thẻ vào danh sách học."
     },
     "cards": {
         "back_to_decks": "Quay lại bộ thẻ",

@@ -3,8 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import api from "../../api/api";
+import { mapApiError } from "../../utils/errorMapper";
 import Button from "../../components/Common/Button/Button";
 import Pagination, { usePagination } from "../../components/Common/Pagination/Pagination";
+import CommunitySidebar from "./components/CommunitySidebar";
 import "./CommunityDeckView.css";
 
 const CommunityDeckView = () => {
@@ -17,6 +19,8 @@ const CommunityDeckView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [learningLoading, setLearningLoading] = useState(false);
+  const [unlearningDeck, setUnlearningDeck] = useState(false);
+  const [sidebarRefresh, setSidebarRefresh] = useState(0);
 
   useEffect(() => {
     fetchDeckDetailsAndCards();
@@ -51,14 +55,40 @@ const CommunityDeckView = () => {
     try {
       setLearningLoading(true);
       await api.post(`/api/decks/${deckId}/learn/`);
-      toast.success(t("decks.already_learning") || "Successfully added to your decks!");
-      // Refresh details to update buttons/badges
+      toast.success(t("decks.learn_deck_success"));
       await fetchDeckDetailsAndCards();
+      setSidebarRefresh((n) => n + 1);
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || "Failed to learn deck.");
+      toast.error(err.response?.data?.message || t("decks.error_learn_deck"));
     } finally {
       setLearningLoading(false);
+    }
+  };
+
+  const handleStopLearning = async () => {
+    if (deck?.role !== "viewer") return;
+    if (!window.confirm(t("decks.confirm_stop_learning"))) return;
+
+    try {
+      setUnlearningDeck(true);
+      await api.post(`/api/decks/${deckId}/unlearn/`);
+      toast.success(t("decks.stop_learning_success"));
+      await fetchDeckDetailsAndCards();
+      setSidebarRefresh((n) => n + 1);
+    } catch (err) {
+      console.error(err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem("access_token");
+        navigate("/login");
+        return;
+      }
+      const message = err.response?.data?.error
+        ? mapApiError(err.response.data.error, t, "decks.error_stop_learning")
+        : t("decks.error_stop_learning");
+      toast.error(message);
+    } finally {
+      setUnlearningDeck(false);
     }
   };
 
@@ -91,11 +121,19 @@ const CommunityDeckView = () => {
 
   if (!deck) return null;
 
-  const isLearning = deck.role === "owner" || deck.role === "viewer";
+  const isViewer = deck.role === "viewer";
+  const isOwnerShared = deck.role === "owner" && deck.is_public;
+  const canStudy = isViewer || deck.role === "owner";
 
   return (
     <div className="community-deck-preview-page">
-      <div className="preview-container">
+      <div className="community-deck-layout">
+        <CommunitySidebar
+          activeDeckId={deckId}
+          refreshTrigger={sidebarRefresh}
+        />
+
+        <div className="preview-container">
         {/* Header Section */}
         <div className="preview-header">
           <Button color="gray" onClick={() => navigate("/community")}>
@@ -113,23 +151,42 @@ const CommunityDeckView = () => {
               <span className="meta-badge">
                 <strong>{cards.length}</strong> {t("common.cards")}
               </span>
-              {isLearning && (
+              {isOwnerShared && (
+                <span className="meta-badge badge-shared">
+                  {t("community.you_shared_deck")}
+                </span>
+              )}
+              {isViewer && (
                 <span className="meta-badge badge-learning">
-                  {t("decks.already_learning") || "Learning"}
+                  {t("decks.already_learning")}
                 </span>
               )}
             </div>
           </div>
 
           <div className="hero-actions">
-            {isLearning ? (
-              <Button
-                color="blue"
-                size="lg"
-                onClick={() => navigate(`/decks/${deckId}/study`)}
-              >
-                {t("decks.study_now") || "Study Now"}
-              </Button>
+            {canStudy ? (
+              <>
+                <Button
+                  color="blue"
+                  size="lg"
+                  onClick={() => navigate(`/decks/${deckId}/study`)}
+                >
+                  {t("decks.study_now")}
+                </Button>
+                {isViewer && (
+                  <Button
+                    variant="outline"
+                    color="gray"
+                    size="lg"
+                    isLoading={unlearningDeck}
+                    disabled={unlearningDeck}
+                    onClick={handleStopLearning}
+                  >
+                    {t("decks.stop_learning")}
+                  </Button>
+                )}
+              </>
             ) : (
               <Button
                 color="green"
@@ -138,7 +195,7 @@ const CommunityDeckView = () => {
                 disabled={learningLoading}
                 onClick={handleLearnDeck}
               >
-                {t("decks.learn_deck") || "Learn Deck"}
+                {t("decks.learn_deck")}
               </Button>
             )}
           </div>
@@ -189,6 +246,7 @@ const CommunityDeckView = () => {
               )}
             </>
           )}
+        </div>
         </div>
       </div>
     </div>

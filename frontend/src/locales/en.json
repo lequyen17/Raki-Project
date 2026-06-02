@@ -28,6 +28,20 @@
         "MY_DECKS": "MY DECKS",
         "COMMUNITY": "COMMUNITY"
     },
+    "community": {
+        "title": "Community Decks",
+        "subtitle": "Discover and learn from flashcard decks created by the community.",
+        "loading": "Loading decks...",
+        "empty": "No public decks found.",
+        "no_description": "No description provided.",
+        "by_owner": "By {{owner}}",
+        "sidebar_shared_title": "My shared decks",
+        "sidebar_learning_title": "Learning (viewer)",
+        "sidebar_empty_shared": "You have not shared any decks yet.",
+        "sidebar_empty_learning": "You have not added any community decks to learn.",
+        "sidebar_loading": "Loading...",
+        "you_shared_deck": "You have shared this deck with the community."
+    },
     "footer": {
         "description": "Raki is an interactive flashcard app to help you study effectively.",
         "product": "Product",
@@ -162,10 +176,13 @@
         "view_deck": "View Deck",
         "back_to_community": "Back to Community",
         "learn_deck": "Learn Deck",
+        "learn_deck_success": "Added to your learning list.",
         "already_learning": "You are already learning this deck.",
         "stop_learning": "Stop Learning",
+        "stop_learning_success": "Removed from your learning list.",
         "confirm_stop_learning": "Remove this deck from your learning list?",
-        "error_stop_learning": "Could not stop learning this deck."
+        "error_stop_learning": "Could not stop learning this deck.",
+        "error_learn_deck": "Could not add this deck to your learning list."
     },
     "cards": {
         "back_to_decks": "Back to Decks",

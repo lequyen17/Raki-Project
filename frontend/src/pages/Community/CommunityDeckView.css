@@ -6,9 +6,18 @@
   color: #141a2d;
 }
 
-.preview-container {
-  max-width: 1050px;
+.community-deck-layout {
+  display: flex;
+  gap: 1.5rem;
+  max-width: 1400px;
   margin: 0 auto;
+  align-items: flex-start;
+}
+
+.preview-container {
+  flex: 1;
+  min-width: 0;
+  max-width: 1050px;
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -87,10 +96,19 @@
   color: #047857;
 }
 
+.badge-shared {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #b45309;
+}
+
 .hero-actions {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
   flex-shrink: 0;
+  min-width: 160px;
 }
 
 .cards-preview-section {
@@ -202,6 +220,12 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 960px) {
+  .community-deck-layout {
+    flex-direction: column;
   }
 }
 

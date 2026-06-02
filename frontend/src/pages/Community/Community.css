@@ -1,8 +1,27 @@
 .community-container {
-  padding: 2rem 4rem;
+  padding: 2rem 1.5rem;
   min-height: 100vh;
   background-color: var(--bg-primary);
   color: var(--text-primary);
+}
+
+.community-layout {
+  display: flex;
+  gap: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+
+.community-main {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  .community-layout {
+    flex-direction: column;
+  }
 }
 
 .community-header {

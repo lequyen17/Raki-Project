@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../../api/api";
+import CommunitySidebar from "./components/CommunitySidebar";
 import "./Community.css";
 
 function Community() {
@@ -31,38 +32,48 @@ function Community() {
 
   return (
     <div className="community-container">
-      <div className="community-header">
-        <h1>Community Decks</h1>
-        <p>Discover and learn from flashcard decks created by the community.</p>
-      </div>
+      <div className="community-layout">
+        <CommunitySidebar />
 
-      {loading ? (
-        <div className="community-loading">Loading decks...</div>
-      ) : error ? (
-        <div className="community-error">{error}</div>
-      ) : decks.length === 0 ? (
-        <div className="community-empty">No public decks found.</div>
-      ) : (
-        <div className="deck-grid">
-          {decks.map((deck) => (
-            <div className="deck-card" key={deck.id}>
-              <div className="deck-card-content">
-                <h3 className="deck-title">{deck.name}</h3>
-                {deck.owner && <p className="deck-owner">By {deck.owner}</p>}
-                <p className="deck-desc">
-                  {deck.description || "No description provided."}
-                </p>
-              </div>
-              <button
-                className="learn-btn"
-                onClick={() => navigate(`/community/${deck.id}`)}
-              >
-                {t("decks.view_deck") || "View Deck"}
-              </button>
+        <main className="community-main">
+          <div className="community-header">
+            <h1>{t("community.title")}</h1>
+            <p>{t("community.subtitle")}</p>
+          </div>
+
+          {loading ? (
+            <div className="community-loading">{t("community.loading")}</div>
+          ) : error ? (
+            <div className="community-error">{error}</div>
+          ) : decks.length === 0 ? (
+            <div className="community-empty">{t("community.empty")}</div>
+          ) : (
+            <div className="deck-grid">
+              {decks.map((deck) => (
+                <div className="deck-card" key={deck.id}>
+                  <div className="deck-card-content">
+                    <h3 className="deck-title">{deck.name}</h3>
+                    {deck.owner && (
+                      <p className="deck-owner">
+                        {t("community.by_owner", { owner: deck.owner })}
+                      </p>
+                    )}
+                    <p className="deck-desc">
+                      {deck.description || t("community.no_description")}
+                    </p>
+                  </div>
+                  <button
+                    className="learn-btn"
+                    onClick={() => navigate(`/community/${deck.id}`)}
+                  >
+                    {t("decks.view_deck")}
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          )}
+        </main>
+      </div>
     </div>
   );
 }
