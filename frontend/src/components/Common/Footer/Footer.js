@@ -15,19 +15,11 @@ const Footer = () => {
           <div className="raki-footer__logo">
             <span className="raki-footer__logo-accent">ra</span>ki
           </div>
-          <p className="raki-footer__desc">
-            {t("footer.description")}
-          </p>
+          <p className="raki-footer__desc">{t("footer.description")}</p>
         </div>
 
         {/* RIGHT */}
         <div className="raki-footer__links">
-          <div className="raki-footer__col">
-            <h4>{t("footer.product")}</h4>
-            <Link to="/decks">{t("footer.my_decks")}</Link>
-            <Link to="/profile">{t("footer.profile")}</Link>
-          </div>
-
           <div className="raki-footer__col">
             <h4>{t("footer.contact")}</h4>
             <p>support@raki.com</p>
