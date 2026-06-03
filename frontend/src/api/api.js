@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8000",
+  baseURL: process.env.REACT_APP_API_URL,
 });
 
 // REQUEST: tự gắn token
@@ -43,7 +43,7 @@ api.interceptors.response.use(
 
       try {
         const res = await axios.post(
-          "http://127.0.0.1:8000/api/token/refresh/",
+          `${process.env.REACT_APP_API_URL}/api/token/refresh/`,
           { refresh },
         );
 
