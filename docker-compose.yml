@@ -1,0 +1,35 @@
+
+services:
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: my_database_name      # Khớp với "NAME" của bạn
+      POSTGRES_USER: my_user    # Khớp với "USER" của bạn
+      POSTGRES_PASSWORD: my_password   # Khớp với "PASSWORD" của bạn
+    ports:
+      - "5432:5432"
+
+  backend:
+    image: 103487/raki-backend:v1.0
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      # Docker sẽ tự động ghi đè HOST thành "db" thông qua chuỗi kết nối này
+      - DATABASE_URL=postgres://my_user:my_password@db:5432/my_database_name
+    command: >
+      sh -c "until python -c 'import socket; s = socket.socket(); s.connect((\"db\", 5432))' 2>/dev/null; do 
+               echo 'Đang chờ Database khởi động...'; 
+               sleep 1; 
+             done;
+             echo 'Database đã sẵn sàng! Bắt đầu migrate...';
+             python manage.py migrate && 
+             python manage.py runserver 0.0.0.0:8000"
+  frontend:
+    image: 103487/raki-frontend:v1.0
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
