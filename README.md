@@ -2,6 +2,7 @@ https://docs.google.com/document/d/1QYBWnMjmCe0R-vZNczuPcc1BFAK_vZkt/edit
 
 1. Cấu hình file .env
 📍 File .env (ở cùng cấp với docker-compose.yml)
+
 DB_NAME=my_database_name
 DB_USER=my_user
 DB_PASSWORD=my_password
