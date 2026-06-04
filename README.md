@@ -1,5 +1,7 @@
 https://docs.google.com/document/d/1QYBWnMjmCe0R-vZNczuPcc1BFAK_vZkt/edit
 
+https://docs.google.com/document/d/1vf2oc3JvmpRm42NVR8hYHMd2T5dQOhC3JWawVSzWjco/edit?tab=t.0#heading=h.mdm1c14nt76d
+
 1. Cấu hình file .env
 📍 File .env (ở cùng cấp với docker-compose.yml)
 
