@@ -7,19 +7,23 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    env_file:
+      - .env
 
   backend:
-    image: 103487/raki-backend:v1.0
+    image: 103487/raki-backend:v3.0
     ports:
       - "8000:8000"
     depends_on:
       - db
+    env_file:
+      - .env
     environment:
       DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER} 
+      DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT} 
+      DB_PORT: ${DB_PORT}
     command: >
       sh -c "until python -c 'import socket; s = socket.socket(); s.connect((\"db\", 5432))' 2>/dev/null; do 
                echo 'Đang chờ Database khởi động...'; 
@@ -29,7 +33,7 @@ services:
              python manage.py migrate && 
              python manage.py runserver 0.0.0.0:8000"
   frontend:
-    image: 103487/raki-frontend:v1.0
+    image: 103487/raki-frontend:v3.0
     ports:
       - "3000:3000"
     depends_on:
