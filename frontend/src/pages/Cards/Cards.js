@@ -80,7 +80,7 @@ const Cards = () => {
     setPage,
     totalPages,
     paginatedItems: paginatedCards,
-  } = usePagination(filteredCards);
+  } = usePagination(filteredCards, 5);
 
   const summary = useMemo(() => {
     return cards.reduce(

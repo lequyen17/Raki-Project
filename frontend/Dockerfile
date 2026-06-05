@@ -1,20 +1,22 @@
-# Sử dụng Node.js bản LTS ổn định
-FROM node:20-alpine
+# Build React
+FROM node:20-alpine AS build
 
-# Thiết lập thư mục làm việc trong container
 WORKDIR /app
 
-# Copy các file quản lý thư viện vào trước
 COPY package*.json ./
-
-# Cài đặt các thư viện
 RUN npm install
 
-# Copy toàn bộ code còn lại vào container
 COPY . .
 
-# Mở port 3000 (Port mặc định của Create React App)
+RUN npm run build
+
+# Serve bằng Nginx
+FROM nginx:alpine
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+COPY --from=build /app/build /usr/share/nginx/html
+
 EXPOSE 3000
 
-# Lệnh khởi chạy server development của CRA
-CMD ["npm", "start"]
+CMD ["nginx", "-g", "daemon off;"]
