@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import api from "../../api/api";
+import { tokenizeTemplate } from "../../utils/cardParser";
 import { mapApiError } from "../../utils/errorMapper";
 import "./Cards.css";
 import Pagination, {
@@ -20,6 +22,7 @@ const Cards = () => {
   const [error, setError] = useState("");
   const [searchText, setSearchText] = useState("");
   const [filter, setFilter] = useState("all");
+  const [deletingCardId, setDeletingCardId] = useState(null);
 
   const fetchCards = async () => {
     try {
@@ -53,6 +56,40 @@ const Cards = () => {
     fetchCards();
   }, [deckId, navigate]);
 
+  const renderCardSides = (card) => {
+    const displayFields = (card.field_values || []).reduce((acc, curr) => {
+      acc[curr.name] = curr.value;
+      return acc;
+    }, {});
+
+    const frontHTML = tokenizeTemplate(
+      card.template?.front,
+      displayFields,
+      card.cloze_index || 0,
+      false,
+      {},
+      card.template?.back,
+    );
+
+    let rawBackTemplate = card.template?.back || "";
+    if (rawBackTemplate.includes("{{FrontSide}}")) {
+      rawBackTemplate = rawBackTemplate.replace(
+        /\{\{FrontSide\}\}/g,
+        card.template?.front || "",
+      );
+    }
+
+    const backHTML = tokenizeTemplate(
+      rawBackTemplate,
+      displayFields,
+      card.cloze_index || 0,
+      true,
+      {},
+    );
+
+    return { frontHTML, backHTML };
+  };
+
   const getCardStatus = (card) => {
     const nextReview = card?.next_review ? new Date(card.next_review) : null;
     if (!nextReview || Number.isNaN(nextReview.getTime())) {
@@ -69,7 +106,14 @@ const Cards = () => {
     return cards.filter((card) => {
       const status = getCardStatus(card);
       const cardIdText = String(card.id || "");
-      const matchesSearch = !keyword || cardIdText.includes(keyword);
+      const fieldText = (card.field_values || [])
+        .map((field) => field.value || "")
+        .join(" ")
+        .toLowerCase();
+      const matchesSearch =
+        !keyword ||
+        cardIdText.includes(keyword) ||
+        fieldText.includes(keyword);
       const matchesFilter = filter === "all" || status === filter;
       return matchesSearch && matchesFilter;
     });
@@ -80,7 +124,7 @@ const Cards = () => {
     setPage,
     totalPages,
     paginatedItems: paginatedCards,
-  } = usePagination(filteredCards, 5);
+  } = usePagination(filteredCards, 3);
 
   const summary = useMemo(() => {
     return cards.reduce(
@@ -109,6 +153,32 @@ const Cards = () => {
 
   const handleView = (id) => {
     navigate(`/cards/${id}`);
+  };
+
+  const handleDelete = async (cardId) => {
+    if (!window.confirm(t("common.delete_confirm"))) {
+      return;
+    }
+
+    try {
+      setDeletingCardId(cardId);
+      await api.delete(`/api/cards/${cardId}/`);
+      setCards((prev) => prev.filter((card) => card.id !== cardId));
+      toast.success(t("common.delete_success"));
+    } catch (err) {
+      if (err.response?.status === 401) {
+        localStorage.removeItem("access_token");
+        navigate("/login");
+        return;
+      }
+      toast.error(
+        err.response?.data?.error
+          ? mapApiError(err.response.data.error, t, "common.error")
+          : t("common.error"),
+      );
+    } finally {
+      setDeletingCardId(null);
+    }
   };
 
   return (
@@ -215,6 +285,7 @@ const Cards = () => {
                 <div className="cards-list">
                   {paginatedCards.map((card) => {
                     const status = getCardStatus(card);
+                    const { frontHTML, backHTML } = renderCardSides(card);
                     return (
                       <div key={card.id} className="card-item">
                         <div className="card-item-main">
@@ -222,15 +293,25 @@ const Cards = () => {
                             <h3 className="card-item-title">
                               {t("cards.card_id", { id: card.id })}
                             </h3>
-
-                            {/* Nút View thêm vào ở đây */}
-                            <button
-                              className="btn-view"
-                              onClick={() => handleView(card.id)}
-                              title={t("common.view")}
-                            >
-                              {t("common.view")}
-                            </button>
+                            <div className="card-item-actions">
+                              <button
+                                className="btn-view"
+                                onClick={() => handleView(card.id)}
+                                title={t("common.view")}
+                              >
+                                {t("common.edit")}
+                              </button>
+                              {card.is_owner && (
+                                <button
+                                  className="btn-delete"
+                                  onClick={() => handleDelete(card.id)}
+                                  disabled={deletingCardId === card.id}
+                                  title={t("common.delete")}
+                                >
+                                  {t("common.delete")}
+                                </button>
+                              )}
+                            </div>
                           </div>
 
                           <span
@@ -243,6 +324,28 @@ const Cards = () => {
                                 : t("cards.status_scheduled")}
                           </span>
                         </div>
+
+                        <div className="card-item-preview">
+                          <div className="card-item-preview-side">
+                            <span className="card-item-preview-label">
+                              {t("cards.front")}
+                            </span>
+                            <div
+                              className="card-item-preview-content"
+                              dangerouslySetInnerHTML={{ __html: frontHTML }}
+                            />
+                          </div>
+                          <div className="card-item-preview-side">
+                            <span className="card-item-preview-label">
+                              {t("cards.back")}
+                            </span>
+                            <div
+                              className="card-item-preview-content"
+                              dangerouslySetInnerHTML={{ __html: backHTML }}
+                            />
+                          </div>
+                        </div>
+
                         <div className="card-item-meta">
                           <span className="card-meta-label">
                             {t("cards.next_review")}

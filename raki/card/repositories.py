@@ -19,7 +19,12 @@ class CardRepository:
 
     @staticmethod
     def get_cards_by_deck_ids_ordered(deck_ids):
-        return Card.objects.filter(note__deck_id__in=deck_ids).order_by("-id")
+        return (
+            Card.objects.filter(note__deck_id__in=deck_ids)
+            .select_related("note", "template")
+            .prefetch_related("note__values__definition")
+            .order_by("-id")
+        )
 
     @staticmethod
     def get_progress_by_cards_and_user(cards, user):

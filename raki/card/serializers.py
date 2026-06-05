@@ -18,6 +18,16 @@ class ReviewCardSerializer(serializers.Serializer):
 # --- OpenAPI response schemas ---
 
 
+class StudyCardTemplateSerializer(serializers.Serializer):
+    front = serializers.CharField()
+    back = serializers.CharField()
+
+
+class CardDetailValueSerializer(serializers.Serializer):
+    name = serializers.CharField(required=True, allow_blank=False)
+    value = serializers.CharField(allow_blank=False, required=True)
+
+
 class CardProgressItemSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     repetition = serializers.IntegerField()
@@ -25,6 +35,9 @@ class CardProgressItemSerializer(serializers.Serializer):
     easiness = serializers.FloatField()
     next_review = serializers.DateTimeField(allow_null=True)
     cloze_index = serializers.IntegerField(allow_null=True)
+    template = StudyCardTemplateSerializer()
+    field_values = CardDetailValueSerializer(many=True)
+    is_owner = serializers.BooleanField(required=False)
 
 
 class CardListResponseSerializer(serializers.Serializer):
@@ -38,16 +51,6 @@ class ReviewCardResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField()
     interval = serializers.IntegerField()
     status = serializers.CharField()
-
-
-class StudyCardTemplateSerializer(serializers.Serializer):
-    front = serializers.CharField()
-    back = serializers.CharField()
-
-
-class CardDetailValueSerializer(serializers.Serializer):
-    name = serializers.CharField(required=True, allow_blank=False)
-    value = serializers.CharField(allow_blank=False, required=True)
 
 
 class StudyCardItemSerializer(serializers.Serializer):

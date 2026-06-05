@@ -7,6 +7,19 @@ from card.services.review_service import ReviewService
 
 class CardMainService:
     @staticmethod
+    def _serialize_card_content(card):
+        return {
+            "template": {
+                "front": card.template.front,
+                "back": card.template.back,
+            },
+            "field_values": [
+                {"name": fv.definition.name, "value": fv.value}
+                for fv in card.note.values.all()
+            ],
+        }
+
+    @staticmethod
     def list_cards_by_deck(deck_id, user):
         deck = DeckRepository.get_deck_for_user(deck_id, user)
         if not deck:
@@ -23,9 +36,18 @@ class CardMainService:
         cards = CardRepository.get_cards_by_deck_ids_ordered(all_deck_ids)
         progress_dict = CardRepository.get_progress_dict(cards, user)
 
+        from deck.models import UserDeck
+
+        owner_deck_ids = set(
+            UserDeck.objects.filter(user=user, role="owner").values_list(
+                "deck_id", flat=True
+            )
+        )
+
         results = []
         for card in cards:
             p = progress_dict.get(card.id)
+            content = CardMainService._serialize_card_content(card)
             results.append(
                 {
                     "id": card.id,
@@ -34,6 +56,8 @@ class CardMainService:
                     "easiness": p.easiness if p else 2.5,
                     "next_review": p.next_review if p else None,
                     "cloze_index": card.cloze_index,
+                    "is_owner": card.note.deck_id in owner_deck_ids,
+                    **content,
                 }
             )
 
@@ -42,6 +66,26 @@ class CardMainService:
             "deck_name": deck.name,
             "count": cards.count(),
             "results": results,
+        }
+
+    @staticmethod
+    def get_card_detail(card_id, user):
+        card = CardRepository.get_card_by_id(card_id, user)
+        if not card:
+            raise LookupError("CARD_NOT_FOUND")
+
+        from deck.models import UserDeck
+
+        is_owner = UserDeck.objects.filter(
+            user=user, deck=card.note.deck, role="owner"
+        ).exists()
+
+        content = CardMainService._serialize_card_content(card)
+        return {
+            "id": card.id,
+            "cloze_index": card.cloze_index,
+            **content,
+            "is_owner": is_owner,
         }
 
     @staticmethod
@@ -94,21 +138,13 @@ class CardMainService:
             else:
                 continue
 
-            field_values = [
-                {"name": fv.definition.name, "value": fv.value}
-                for fv in card.note.values.all()
-            ]
-
+            content = CardMainService._serialize_card_content(card)
             results.append(
                 {
                     "id": card.id,
                     "status": status,
                     "cloze_index": card.cloze_index,
-                    "template": {
-                        "front": card.template.front,
-                        "back": card.template.back,
-                    },
-                    "field_values": field_values,
+                    **content,
                 }
             )
 
@@ -133,31 +169,6 @@ class CardMainService:
             "success": True,
             "interval": updated_progress.interval,
             "status": updated_progress.status,
-        }
-
-    @staticmethod
-    def get_card_detail(card_id, user):
-        card = CardRepository.get_card_by_id(card_id, user)
-        if not card:
-            raise LookupError("CARD_NOT_FOUND")
-
-        field_values = [
-            {"name": fv.definition.name, "value": fv.value}
-            for fv in card.note.values.all()
-        ]
-
-        from deck.models import UserDeck
-        is_owner = UserDeck.objects.filter(user=user, deck=card.note.deck, role="owner").exists()
-
-        return {
-            "id": card.id,
-            "cloze_index": card.cloze_index,
-            "template": {
-                "front": card.template.front,
-                "back": card.template.back,
-            },
-            "field_values": field_values,
-            "is_owner": is_owner,
         }
 
     @staticmethod
