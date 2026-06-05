@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "deck",
     "note",
     "card",
+    "payment",
     "drf_spectacular",
 ]
 

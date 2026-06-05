@@ -10,6 +10,7 @@ class Deck(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     is_public = models.BooleanField(default=False)
+    coin_price = models.IntegerField(default=0)
 
     def __str__(self):
         return self.name
@@ -20,6 +21,7 @@ class UserDeck(models.Model):
     ROLE_CHOICES = [
         ("owner", "Owner"),
         ("viewer", "Viewer"),
+        ("editor", "Editor"),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_decks")
