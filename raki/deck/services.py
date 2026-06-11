@@ -2,6 +2,8 @@ from django.utils import timezone
 
 from deck.repositories import DeckRepository
 from card.repositories import CardRepository
+from deck.models import Deck, UserDeck
+from card.models import Card, Progress
 
 
 class DeckService:
@@ -13,6 +15,13 @@ class DeckService:
             raise LookupError("DECK_NOT_FOUND")
         return deck
 
+    @staticmethod
+    def _get_deck_for_owner_or_404(deck_id, user):
+        deck = DeckRepository.get_deck_for_owner(deck_id, user)
+        if not deck:
+            raise LookupError("DECK_NOT_FOUND_OR_NOT_OWNER")
+        return deck
+
     # =========================
     # CREATE
     # =========================
@@ -22,11 +31,13 @@ class DeckService:
             user=user,
             name=validated_data["name"],
             description=validated_data["description"],
+            is_public=validated_data.get("is_public", False),
         )
         return {
             "id": deck.id,
             "name": deck.name,
             "description": deck.description or "",
+            "is_public": deck.is_public,
             "parent_id": deck.parent_id,
             "created_at": deck.created_at,
         }
@@ -37,6 +48,9 @@ class DeckService:
     @staticmethod
     def get_user_decks(user):
         decks = DeckRepository.get_user_decks(user)
+        user_decks = UserDeck.objects.filter(user=user)
+        role_map = {ud.deck_id: ud.role for ud in user_decks}
+        
         results = []
         for deck in decks:
             results.append(
@@ -44,15 +58,103 @@ class DeckService:
                     "id": deck.id,
                     "name": deck.name,
                     "description": deck.description or "",
+                    "is_public": deck.is_public,
                     "total_cards": deck.total_cards,
                     "parent_id": deck.parent_id,
                     "created_at": deck.created_at,
+                    "role": role_map.get(deck.id, "viewer"),
                 }
             )
         return {
             "count": decks.count(),
             "results": results,
         }
+
+    # =========================
+    # GET PUBLIC DECKS
+    # =========================
+    @staticmethod
+    def get_public_decks(user):
+        decks = DeckRepository.get_public_decks()
+        results = []
+        for deck in decks:
+            # Lấy tên của owner nếu cần
+            owner = deck.deck_users.filter(role="owner").first()
+            owner_name = owner.user.username if owner else "Unknown"
+            
+            results.append(
+                {
+                    "id": deck.id,
+                    "name": deck.name,
+                    "description": deck.description or "",
+                    "is_public": deck.is_public,
+                    "parent_id": deck.parent_id,
+                    "created_at": deck.created_at,
+                    "owner": owner_name,
+                }
+            )
+        return {
+            "count": decks.count(),
+            "results": results,
+        }
+
+    # =========================
+    # LEARN PUBLIC DECK
+    # =========================
+    @staticmethod
+    def learn_public_deck(deck_id, user):
+        
+        # Lấy deck công khai
+        deck = Deck.objects.filter(id=deck_id, is_public=True).first()
+        if not deck:
+            raise LookupError("DECK_NOT_FOUND_OR_NOT_PUBLIC")
+            
+        if UserDeck.objects.filter(user=user, deck=deck).exists():
+            return {"success": False, "message": "Already learning this deck"}
+
+        # Lấy tất cả subdecks (bỏ qua quyền user vì đây là public deck)
+        def get_all_public_descendants(node):
+            descendants = [node]
+            children = Deck.objects.filter(parent=node)
+            for child in children:
+                descendants.extend(get_all_public_descendants(child))
+            return descendants
+
+        all_decks_to_learn = get_all_public_descendants(deck)
+        
+        # Thêm role viewer cho user
+        user_decks = []
+        for d in all_decks_to_learn:
+            user_decks.append(UserDeck(user=user, deck=d, role="viewer"))
+        UserDeck.objects.bulk_create(user_decks, ignore_conflicts=True)
+        
+        return {"success": True}
+
+    # =========================
+    # UNLEARN (remove viewer role)
+    # =========================
+    @staticmethod
+    def unlearn_deck(deck_id, user):
+        user_deck = UserDeck.objects.filter(
+            user=user, deck_id=deck_id, role="viewer"
+        ).first()
+        if not user_deck:
+            raise LookupError("DECK_NOT_FOUND_OR_NOT_VIEWER")
+
+        deck = user_deck.deck
+
+        def get_all_descendants(node):
+            descendants = [node]
+            for child in Deck.objects.filter(parent=node):
+                descendants.extend(get_all_descendants(child))
+            return descendants
+
+        deck_ids = [d.id for d in get_all_descendants(deck)]
+        UserDeck.objects.filter(
+            user=user, deck_id__in=deck_ids, role="viewer"
+        ).delete()
+
+        return {"success": True}
 
     # =========================
     # UPDATE
@@ -63,11 +165,13 @@ class DeckService:
             deck=deck,
             name=validated_data["name"],
             description=validated_data["description"],
+            is_public=validated_data.get("is_public", deck.is_public),
         )
         return {
             "id": deck.id,
             "name": deck.name,
             "description": deck.description or "",
+            "is_public": deck.is_public,
             "parent_id": deck.parent_id,
             "created_at": deck.created_at,
         }
@@ -91,7 +195,7 @@ class DeckService:
     # =========================
     @staticmethod
     def delete_deck(deck_id, user):
-        deck = DeckService._get_deck_or_404(deck_id, user)
+        deck = DeckService._get_deck_for_owner_or_404(deck_id, user)
         DeckRepository.delete_deck(deck)
         return {"success": True}
 
@@ -118,6 +222,9 @@ class DeckService:
     @staticmethod
     def get_deck_detail(deck_id, user):
         deck = DeckService._get_deck_or_404(deck_id, user)
+        user_deck = UserDeck.objects.filter(user=user, deck=deck).first()
+        role = user_deck.role if user_deck else "none"
+        
         today = timezone.localdate()
 
         all_deck_ids = DeckService.get_descendant_ids(deck, user)
@@ -177,6 +284,8 @@ class DeckService:
             "deck_id": deck.id,
             "name": deck.name,
             "description": deck.description,
+            "is_public": deck.is_public,
+            "role": role,
             "counts": {
                 "new": session_new_count,
                 "learning": session_learning_count,

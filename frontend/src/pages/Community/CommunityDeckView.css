@@ -1,0 +1,254 @@
+.community-deck-preview-page {
+  min-height: calc(100vh - 64px);
+  background-color: #f4f7f6;
+  padding: 2rem 1.5rem;
+  font-family: 'Inter', 'Outfit', system-ui, sans-serif;
+  color: #141a2d;
+}
+
+.community-deck-layout {
+  display: flex;
+  gap: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+
+.preview-container {
+  flex: 1;
+  min-width: 0;
+  max-width: 1050px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.deck-preview-hero {
+  background: #ffffff;
+  border: 1px solid #dfe7f2;
+  border-radius: 16px;
+  padding: 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.deck-preview-hero:hover {
+  border-color: #c7d9f5;
+  box-shadow: 0 16px 32px rgba(9, 92, 226, 0.08);
+}
+
+.hero-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.hero-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0;
+  background: #095ce2;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.025em;
+}
+
+.hero-desc {
+  font-size: 1.05rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 700px;
+}
+
+.hero-meta {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.meta-badge {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.badge-learning {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+.badge-shared {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #b45309;
+}
+
+.hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  min-width: 160px;
+}
+
+.cards-preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: #141a2d;
+}
+
+.empty-cards-preview {
+  background: #ffffff;
+  border: 1px dashed #cfd8e3;
+  border-radius: 12px;
+  padding: 3rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.preview-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.preview-card-item {
+  background: #ffffff;
+  border: 1px solid #dfe7f2;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+}
+
+.preview-card-item:hover {
+  transform: translateY(-3px);
+  border-color: #095ce2;
+  box-shadow: 0 12px 20px rgba(9, 92, 226, 0.1);
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.item-info h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: #141a2d;
+}
+
+.item-status-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #eff6ff;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.preview-pagination {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.preview-loading,
+.preview-error {
+  min-height: calc(100vh - 64px);
+  background-color: #f4f7f6;
+  color: #141a2d;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.preview-loading p {
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.preview-error p {
+  color: #b91c1c;
+}
+
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid #e2e8f0;
+  border-left-color: #095ce2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 960px) {
+  .community-deck-layout {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .community-deck-preview-page {
+    padding: 1.5rem 1rem;
+  }
+
+  .deck-preview-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.75rem;
+  }
+
+  .hero-title {
+    font-size: 1.75rem;
+  }
+
+  .hero-actions {
+    width: 100%;
+  }
+
+  .hero-actions button {
+    width: 100%;
+  }
+}

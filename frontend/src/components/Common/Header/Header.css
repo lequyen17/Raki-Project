@@ -139,6 +139,50 @@
   border-top: 1px solid #334155;
 }
 
+.raki-header__inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.raki-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.raki-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+
+
+.raki-nav-item {
+  text-decoration: none;
+  color: #d1d5db;
+  height: 100%;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 6px;
+
+  transition: all 0.2s ease;
+}
+
+/* Hover */
+.raki-nav-item:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Khi đang ở trang hiện tại */
+.raki-nav-item.active {
+  color: white;
+  background: rgba(255, 255, 255, 0.12);
+}
+
 @keyframes dropdownFade {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }

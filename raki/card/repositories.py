@@ -19,7 +19,12 @@ class CardRepository:
 
     @staticmethod
     def get_cards_by_deck_ids_ordered(deck_ids):
-        return Card.objects.filter(note__deck_id__in=deck_ids).order_by("-id")
+        return (
+            Card.objects.filter(note__deck_id__in=deck_ids)
+            .select_related("note", "template")
+            .prefetch_related("note__values__definition")
+            .order_by("-id")
+        )
 
     @staticmethod
     def get_progress_by_cards_and_user(cards, user):
@@ -49,10 +54,10 @@ class CardRepository:
     @staticmethod
     def get_card_for_review(card_id, user):
         try:
-            return Card.objects.get(
+            return Card.objects.filter(
                 id=card_id,
                 note__deck__deck_users__user=user,
-            )
+            ).distinct().get()
         except Card.DoesNotExist:
             return None
 
@@ -73,16 +78,27 @@ class CardRepository:
     @staticmethod
     def get_card_by_id(card_id, user):
         try:
-            return Card.objects.select_related("note", "template").prefetch_related("note__values__definition").get(
+            from django.db.models import Q
+            return Card.objects.select_related("note", "template").prefetch_related("note__values__definition").filter(
+                Q(id=card_id) & (Q(note__deck__deck_users__user=user) | Q(note__deck__is_public=True))
+            ).distinct().get()
+        except Card.DoesNotExist:
+            return None
+
+    @staticmethod
+    def get_card_for_owner(card_id, user):
+        try:
+            return Card.objects.select_related("note", "template").prefetch_related("note__values__definition").filter(
                 id=card_id,
                 note__deck__deck_users__user=user,
-            )
+                note__deck__deck_users__role="owner",
+            ).distinct().get()
         except Card.DoesNotExist:
             return None
 
     @staticmethod
     def delete_card(card_id, user):
-        card = CardRepository.get_card_by_id(card_id, user)
+        card = CardRepository.get_card_for_owner(card_id, user)
         if card:
             # Delete the note, which will cascade and delete all associated cards
             card.note.delete()

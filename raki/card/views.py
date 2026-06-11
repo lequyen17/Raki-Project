@@ -116,12 +116,19 @@ def card_detail(request, card_id):
             return Response({"error": str(e)}, status=404)
 
     elif request.method == "PUT":
-        validated, error_response = parse_request(request, CardUpdateSerializer)
+        validated, error_response = parse_request(
+            request, 
+            CardUpdateSerializer,
+            card_id=card_id,
+            user=request.user
+        )
         if error_response:
             return error_response
 
         try:
-            data = CardMainService.update_card(card_id, request.user, validated["field_values"])
+            data = CardMainService.update_card(
+                card_id, request.user, validated["field_values"]
+            )
             return Response(data)
         except LookupError as e:
             return Response({"error": str(e)}, status=404)

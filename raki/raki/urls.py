@@ -94,6 +94,17 @@ urlpatterns = [
     path("api/profile/", accounts_views.user_profile, name="user_profile"),
     # Các route của deck
     path("api/decks/", deck_views.user_decks, name="user_decks"),
+    path("api/decks/public/", deck_views.public_decks, name="public_decks"),
+    path(
+        "api/decks/<int:deck_id>/learn/",
+        deck_views.learn_public_deck,
+        name="learn_public_deck",
+    ),
+    path(
+        "api/decks/<int:deck_id>/unlearn/",
+        deck_views.unlearn_deck,
+        name="unlearn_deck",
+    ),
     path("api/decks/move/", deck_views.move_user_deck, name="move_user_deck"),
     path(
         "api/decks/<int:deck_id>/",

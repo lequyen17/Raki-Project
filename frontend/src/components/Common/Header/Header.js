@@ -43,12 +43,32 @@ const Header = () => {
   return (
     <header className="raki-header">
       <div className="container raki-header__inner">
-        <div className="raki-brand">
-          <Link to="/decks" className="raki-logo">
-            <span className="raki-logo__text">
-              <span className="raki-logo__accent">ra</span>ki
-            </span>
-          </Link>
+        {/* LEFT SIDE */}
+        <div
+          className="raki-left"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "24px",
+          }}
+        >
+          <div className="raki-brand">
+            <Link to="/decks" className="raki-logo">
+              <span className="raki-logo__text">
+                <span className="raki-logo__accent">ra</span>ki
+              </span>
+            </Link>
+          </div>
+
+          <nav className="raki-nav-links">
+            <Link to="/decks" className="raki-nav-item">
+              {t("header.MY_DECKS")}
+            </Link>
+
+            <Link to="/community" className="raki-nav-item">
+              {t("header.COMMUNITY")}
+            </Link>
+          </nav>
         </div>
 
         <div className="raki-actions">

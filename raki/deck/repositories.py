@@ -16,10 +16,11 @@ class DeckRepository:
         )
 
     @staticmethod
-    def create_user_deck(user, name, description=""):
+    def create_user_deck(user, name, description="", is_public=False):
         deck = Deck.objects.create(
             name=name,
             description=description,
+            is_public=is_public,
             parent=None,
         )
 
@@ -34,12 +35,27 @@ class DeckRepository:
     @staticmethod
     def get_deck_for_user(deck_id, user):
         try:
+            from django.db.models import Q
+            return Deck.objects.filter(
+                Q(deck_users__user=user) | Q(is_public=True)
+            ).distinct().get(id=deck_id)
+        except Deck.DoesNotExist:
+            return None
+
+    @staticmethod
+    def get_deck_for_owner(deck_id, user):
+        try:
             return Deck.objects.get(
                 id=deck_id,
                 deck_users__user=user,
+                deck_users__role="owner",
             )
         except Deck.DoesNotExist:
             return None
+
+    @staticmethod
+    def get_public_decks():
+        return Deck.objects.filter(is_public=True).order_by("-created_at")
 
     @staticmethod
     def get_parent_deck_for_user(parent_id, user):
@@ -52,14 +68,16 @@ class DeckRepository:
             return None
 
     @staticmethod
-    def update_deck(deck, name, description):
+    def update_deck(deck, name, description, is_public=False):
         deck.name = name
         deck.description = description
+        deck.is_public = is_public
 
         deck.save(
             update_fields=[
                 "name",
                 "description",
+                "is_public",
             ]
         )
 
@@ -78,6 +96,8 @@ class DeckRepository:
 
     @staticmethod
     def has_subdecks(deck, user):
+        if deck.is_public:
+            return Deck.objects.filter(parent=deck).exists()
         return Deck.objects.filter(
             parent=deck,
             deck_users__user=user,
@@ -85,6 +105,8 @@ class DeckRepository:
 
     @staticmethod
     def get_child_decks(deck, user):
+        if deck.is_public:
+            return Deck.objects.filter(parent=deck)
         return Deck.objects.filter(
             parent=deck,
             deck_users__user=user,

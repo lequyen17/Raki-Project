@@ -112,6 +112,23 @@ const Study = () => {
     console.log(backHTML);
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const tagName = e.target.tagName;
+      if (e.key !== "Enter" || e.shiftKey) return;
+
+      // Avoid triggering if we're already showing the answer or submitting
+      if (showAnswer || submitting) return;
+
+      // Prevent default behavior (like form submit) and show answer
+      e.preventDefault();
+      handleShowAnswer();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showAnswer, submitting]);
+
   if (loading) {
     return <div className="study-loading">{t("study.preparing")}</div>;
   }
@@ -149,9 +166,14 @@ const Study = () => {
     );
   }
 
+  const displayFields = (currentCard.field_values || []).reduce((acc, curr) => {
+    acc[curr.name] = curr.value;
+    return acc;
+  }, {});
+
   const frontHTML = tokenizeTemplate(
     currentCard.template.front,
-    currentCard.field_values,
+    displayFields,
     currentCard.cloze_index || 0,
     false,
     {},
@@ -168,7 +190,7 @@ const Study = () => {
 
   let backHTML = tokenizeTemplate(
     rawBackTemplate,
-    currentCard.field_values,
+    displayFields,
     currentCard.cloze_index || 0,
     true,
     typedAnswers,

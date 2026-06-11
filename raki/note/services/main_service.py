@@ -54,9 +54,9 @@ class NoteMainService:
 
     @staticmethod
     def create_note(deck_id, user, validated_data):
-        deck = DeckRepository.get_deck_for_user(deck_id, user)
+        deck = DeckRepository.get_deck_for_owner(deck_id, user)
         if not deck:
-            raise LookupError("DECK_NOT_FOUND")
+            raise LookupError("DECK_NOT_FOUND_OR_NOT_OWNER")
 
         note_type = validated_data["note_type"]
         values_data = validated_data["values_data"]
