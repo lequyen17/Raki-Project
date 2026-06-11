@@ -68,6 +68,8 @@ const Header = () => {
             <Link to="/community" className="raki-nav-item">
               {t("header.COMMUNITY")}
             </Link>
+
+            <Link to="/intro" className="raki-nav-item">{t("header.INTRO")}</Link>
           </nav>
         </div>
 

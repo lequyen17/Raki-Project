@@ -38,6 +38,17 @@ services:
              echo 'Database đã sẵn sàng! Bắt đầu migrate...';
              python manage.py migrate && 
              python manage.py runserver 0.0.0.0:8000"
+
+
+  # Giữ nguyên db, web, frontend ở trên...
+  
+  # Thêm service này vào dưới cùng của file:
+  raki-page:
+    build:
+      context: ./raki-page  # Trỏ ra ngoài folder Next.js độc lập của bạn
+      dockerfile: Dockerfile
+    # Không cần ghi mục ports ở đây, vì ta sẽ cho Nginx ở bên frontend gọi nó nội bộ
+
   frontend:
     image: 103487/raki-frontend:v4.0
     build: ./frontend
@@ -50,3 +61,4 @@ services:
       - .env
 volumes:
   postgres_data:
+

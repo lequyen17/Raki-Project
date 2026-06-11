@@ -21,12 +21,13 @@
     "header": {
         "register": "Đăng ký",
         "login": "Đăng nhập",
-        "my_decks": "Bộ thẻ của tôi",
         "my_profile": "Hồ sơ của tôi",
         "settings": "Cài đặt",
         "logout": "Đăng xuất",
+        "my_decks": "Thẻ của tôi",
         "MY_DECKS": "BỘ THẺ",
-        "COMMUNITY": "CỘNG ĐỒNG"
+        "COMMUNITY": "CỘNG ĐỒNG",
+        "INTRO": "GIỚI THIỆU"
     },
     "community": {
         "title": "Bộ thẻ cộng đồng",

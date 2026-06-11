@@ -7,6 +7,7 @@ import Decks from "./pages/Decks/Decks";
 import Cards from "./pages/Cards/Cards";
 import AddCard from "./pages/AddCard/AddCard";
 import Study from "./pages/Study/Study";
+import Intro from "./pages/Intro.tsx";
 import Community from "./pages/Community/Community";
 import CommunityDeckView from "./pages/Community/CommunityDeckView";
 import CardDetail from "./pages/CardDetail/CardDetail";
@@ -37,6 +38,7 @@ function App() {
           <Route path="/cards/:cardId" element={<CardDetail />} />
           <Route path="/community" element={<Community />} />
           <Route path="/community/:deckId" element={<CommunityDeckView />} />
+          <Route path="/intro" element={<Intro />} />
         </Routes>
         <Footer />
       </AuthProvider>
