@@ -1,11 +1,18 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../../api/api";
 import Button from "../../components/Common/Button/Button";
 import "./Wallet.css";
 
-const FILTERS = ["all", "deposit", "spent"];
+const FILTERS = ["all", "topup", "buy_deck", "sell_deck"];
+
+const FILTER_REASONS = {
+  all: null,
+  topup: ["TOPUP"],
+  buy_deck: ["BUY_DECK"],
+  sell_deck: ["SELL_DECK"],
+};
 
 const formatCoin = (value) =>
   new Intl.NumberFormat().format(Math.abs(Number(value) || 0));
@@ -24,8 +31,7 @@ const Wallet = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [coinBalance, setCoinBalance] = useState(0);
-  const [transactions, setTransactions] = useState([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [allTransactions, setAllTransactions] = useState([]);
   const [activeFilter, setActiveFilter] = useState("all");
 
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
@@ -38,13 +44,16 @@ const Wallet = () => {
   const formatDate = useCallback(
     (dateString) => {
       if (!dateString) return "";
-      return new Date(dateString).toLocaleString(i18n.language === "vi" ? "vi-VN" : "en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      return new Date(dateString).toLocaleString(
+        i18n.language === "vi" ? "vi-VN" : "en-US",
+        {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        },
+      );
     },
     [i18n.language],
   );
@@ -54,32 +63,43 @@ const Wallet = () => {
     [t],
   );
 
-  const fetchWalletSummary = useCallback(async () => {
-    const res = await api.get("/api/wallet/");
-    setCoinBalance(res.data.coin_balance ?? 0);
-  }, []);
+  const filteredTransactions = useMemo(() => {
+    const reasons = FILTER_REASONS[activeFilter];
+    if (!reasons) return allTransactions;
+    return allTransactions.filter((item) => reasons.includes(item.reason));
+  }, [allTransactions, activeFilter]);
 
-  const fetchCoinHistory = useCallback(
-    async (filter) => {
-      setHistoryLoading(true);
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    const loadWallet = async () => {
+      setLoading(true);
+      setError("");
       try {
-        const res = await api.get("/api/wallet/coin-history/", {
-          params: { filter },
-        });
-        setTransactions(res.data.results || []);
+        const [walletRes, historyRes] = await Promise.all([
+          api.get("/api/wallet/"),
+          api.get("/api/wallet/coin-history/"),
+        ]);
+        setCoinBalance(walletRes.data.coin_balance ?? 0);
+        setAllTransactions(historyRes.data.results || []);
       } catch (err) {
         if (err.response?.status === 401) {
           localStorage.removeItem("access_token");
           navigate("/login");
           return;
         }
-        setError(t("wallet.error_load_history"));
+        setError(t("wallet.error_load"));
       } finally {
-        setHistoryLoading(false);
+        setLoading(false);
       }
-    },
-    [navigate, t],
-  );
+    };
+
+    loadWallet();
+  }, [navigate, t]);
 
   const fetchPaymentHistory = useCallback(async () => {
     setPaymentLoading(true);
@@ -98,41 +118,6 @@ const Wallet = () => {
       setPaymentLoading(false);
     }
   }, [navigate, t]);
-
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
-    const loadWallet = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        await fetchWalletSummary();
-        await fetchCoinHistory("all");
-      } catch (err) {
-        if (err.response?.status === 401) {
-          localStorage.removeItem("access_token");
-          navigate("/login");
-          return;
-        }
-        setError(t("wallet.error_load"));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadWallet();
-  }, [fetchWalletSummary, fetchCoinHistory, navigate, t]);
-
-  const handleFilterChange = async (filter) => {
-    if (filter === activeFilter) return;
-    setActiveFilter(filter);
-    setError("");
-    await fetchCoinHistory(filter);
-  };
 
   const handleOpenPaymentHistory = async () => {
     setShowPaymentHistory(true);
@@ -195,20 +180,18 @@ const Wallet = () => {
                 role="tab"
                 aria-selected={activeFilter === filter}
                 className={`wallet-filter-tab${activeFilter === filter ? " active" : ""}`}
-                onClick={() => handleFilterChange(filter)}
+                onClick={() => setActiveFilter(filter)}
               >
                 {t(`wallet.filter_${filter}`)}
               </button>
             ))}
           </div>
 
-          {historyLoading ? (
-            <div className="wallet-loading">{t("wallet.loading_history")}</div>
-          ) : transactions.length === 0 ? (
+          {filteredTransactions.length === 0 ? (
             <div className="wallet-empty">{t("wallet.empty_history")}</div>
           ) : (
             <ul className="wallet-transaction-list">
-              {transactions.map((item) => {
+              {filteredTransactions.map((item) => {
                 const isCredit = item.amount >= 0;
                 const sign = isCredit ? "+" : "-";
 
@@ -311,9 +294,7 @@ const Wallet = () => {
                       <div className="wallet-payment-amount">
                         {formatVnd(item.amount_vnd)}
                       </div>
-                      <span
-                        className={`wallet-status-badge ${item.status}`}
-                      >
+                      <span className={`wallet-status-badge ${item.status}`}>
                         {t(`wallet.payment_status.${item.status}`, {
                           defaultValue: item.status,
                         })}

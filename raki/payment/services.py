@@ -10,8 +10,8 @@ class WalletService:
         }
 
     @staticmethod
-    def get_coin_histories(user, filter_type="all"):
-        histories = WalletRepository.get_coin_histories(user, filter_type)
+    def get_coin_histories(user):
+        histories = WalletRepository.get_coin_histories(user)
         return {
             "results": [
                 {
