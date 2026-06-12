@@ -45,7 +45,13 @@
         "sidebar_empty_learning": "You have not added any community decks to learn.",
         "sidebar_empty_editable": "No decks have been shared with you for editing.",
         "sidebar_loading": "Loading...",
-        "you_shared_deck": "You have shared this deck with the community."
+        "you_shared_deck": "You have shared this deck with the community.",
+        "free": "Free",
+        "deck_price": "Learning price",
+        "price_to_learn": "to learn",
+        "coin_to_learn": "to start learning",
+        "free_to_learn": "Free to learn",
+        "coin_deduct_hint": "Coins will be deducted when you start learning this deck."
     },
   "footer": {
     "description": "Raki is an interactive flashcard app to help you study effectively.",

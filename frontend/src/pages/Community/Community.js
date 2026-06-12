@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../../api/api";
+import CoinPrice from "../../components/Common/CoinPrice/CoinPrice";
 import CommunitySidebar from "./components/CommunitySidebar";
 import "./Community.css";
 
@@ -49,27 +50,46 @@ function Community() {
             <div className="community-empty">{t("community.empty")}</div>
           ) : (
             <div className="deck-grid">
-              {decks.map((deck) => (
-                <div className="deck-card" key={deck.id}>
-                  <div className="deck-card-content">
-                    <h3 className="deck-title">{deck.name}</h3>
-                    {deck.owner && (
-                      <p className="deck-owner">
-                        {t("community.by_owner", { owner: deck.owner })}
-                      </p>
+              {decks.map((deck) => {
+                const isLearning =
+                  deck.role === "viewer" ||
+                  deck.role === "editor" ||
+                  deck.role === "owner";
+
+                return (
+                  <div className="deck-card" key={deck.id}>
+                    {isLearning ? (
+                      <span className="deck-corner-badge deck-corner-learning">
+                        {t("decks.already_learning")}
+                      </span>
+                    ) : (
+                      <div className="deck-corner-badge">
+                        <CoinPrice
+                          amount={deck.coin_price}
+                          variant="floating"
+                        />
+                      </div>
                     )}
-                    <p className="deck-desc">
-                      {deck.description || t("community.no_description")}
-                    </p>
+                    <div className="deck-card-content">
+                      <h3 className="deck-title">{deck.name}</h3>
+                      {deck.owner && (
+                        <p className="deck-owner">
+                          {t("community.by_owner", { owner: deck.owner })}
+                        </p>
+                      )}
+                      <p className="deck-desc">
+                        {deck.description || t("community.no_description")}
+                      </p>
+                    </div>
+                    <button
+                      className="learn-btn"
+                      onClick={() => navigate(`/community/${deck.id}`)}
+                    >
+                      {t("decks.view_deck")}
+                    </button>
                   </div>
-                  <button
-                    className="learn-btn"
-                    onClick={() => navigate(`/community/${deck.id}`)}
-                  >
-                    {t("decks.view_deck")}
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </main>

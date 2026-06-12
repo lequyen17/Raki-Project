@@ -148,7 +148,7 @@ def user_deck_detail(request, deck_id):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def public_decks(request):
-    data = DeckService.get_public_decks()
+    data = DeckService.get_public_decks(request.user)
     return Response(data)
 
 

@@ -44,7 +44,13 @@
         "sidebar_empty_learning": "Bạn chưa thêm bộ thẻ cộng đồng nào để học.",
         "sidebar_empty_editable": "Bạn chưa được chia sẻ quyền biên tập deck nào.",
         "sidebar_loading": "Đang tải...",
-        "you_shared_deck": "Bạn đã chia sẻ bộ thẻ này với cộng đồng."
+        "you_shared_deck": "Bạn đã chia sẻ bộ thẻ này với cộng đồng.",
+        "free": "Miễn phí",
+        "deck_price": "Giá học",
+        "price_to_learn": "để học",
+        "coin_to_learn": "để bắt đầu học",
+        "free_to_learn": "Học miễn phí",
+        "coin_deduct_hint": "Coin sẽ bị trừ khi bạn bắt đầu học bộ thẻ này."
     },
     "footer": {
         "description": "Raki là ứng dụng flashcard tương tác giúp bạn học tập hiệu quả.",

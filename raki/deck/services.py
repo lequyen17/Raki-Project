@@ -102,11 +102,13 @@ class DeckService:
     # GET PUBLIC DECKS
     # =========================
     @staticmethod
-    def get_public_decks():
+    def get_public_decks(user):
         decks = DeckRepository.get_public_decks()
+        user_decks = UserDeck.objects.filter(user=user, deck__in=decks)
+        role_map = {ud.deck_id: ud.role for ud in user_decks}
+
         results = []
         for deck in decks:
-            # Lấy tên của owner nếu cần
             owner = deck.deck_users.filter(role="owner").first()
             owner_name = owner.user.username if owner else "Unknown"
 
@@ -120,6 +122,7 @@ class DeckService:
                     "parent_id": deck.parent_id,
                     "created_at": deck.created_at,
                     "owner": owner_name,
+                    "role": role_map.get(deck.id, "none"),
                 }
             )
         return {
@@ -155,27 +158,30 @@ class DeckService:
             if not owner_ud:
                 raise LookupError("DECK_OWNER_NOT_FOUND")
 
+            net_coin = coin_price * 90 // 100
+            commission_coin = coin_price - net_coin
+
             with transaction.atomic():
                 buyer_profile = user.profile
                 buyer_profile.coin_balance -= coin_price
                 buyer_profile.save(update_fields=["coin_balance"])
 
                 owner_profile = owner_ud.user.profile
-                owner_profile.coin_balance += coin_price
+                owner_profile.coin_balance += net_coin
                 owner_profile.save(update_fields=["coin_balance"])
 
                 CoinHistory.objects.create(
                     user=user, amount=-coin_price, reason="BUY_DECK"
                 )
                 CoinHistory.objects.create(
-                    user=owner_ud.user, amount=coin_price, reason="SELL_DECK"
+                    user=owner_ud.user, amount=net_coin, reason="SELL_DECK"
                 )
                 CoinTransaction.objects.create(
                     deck=deck,
                     buyer=user,
                     gross_coin=coin_price,
-                    commission_coin=0,
-                    net_coin=coin_price,
+                    commission_coin=commission_coin,
+                    net_coin=net_coin,
                 )
 
         user_decks = []

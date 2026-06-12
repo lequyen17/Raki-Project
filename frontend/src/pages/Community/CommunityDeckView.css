@@ -102,6 +102,33 @@
   color: #b45309;
 }
 
+.hero-learn-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 200px;
+}
+
+.hero-learn-btn-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.hero-learn-btn-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.hero-learn-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #64748b;
+  text-align: center;
+}
+
 .hero-actions {
   display: flex;
   flex-direction: column;

@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import api from "../../api/api";
 import { mapApiError } from "../../utils/errorMapper";
 import Button from "../../components/Common/Button/Button";
+import CoinPrice from "../../components/Common/CoinPrice/CoinPrice";
 import Pagination, { usePagination } from "../../components/Common/Pagination/Pagination";
 import CommunitySidebar from "./components/CommunitySidebar";
 import "./CommunityDeckView.css";
@@ -60,7 +61,9 @@ const CommunityDeckView = () => {
       setSidebarRefresh((n) => n + 1);
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || t("decks.error_learn_deck"));
+      const apiError =
+        err.response?.data?.error || err.response?.data?.message;
+      toast.error(mapApiError(apiError, t, "decks.error_learn_deck"));
     } finally {
       setLearningLoading(false);
     }
@@ -125,6 +128,8 @@ const CommunityDeckView = () => {
   const isEditor = deck.role === "editor";
   const isOwnerShared = deck.role === "owner" && deck.share_mode === "public";
   const canStudy = isViewer || isEditor || deck.role === "owner";
+  const coinPrice = deck.coin_price || 0;
+  const isPremium = coinPrice > 0;
 
   return (
     <div className="community-deck-preview-page">
@@ -194,15 +199,34 @@ const CommunityDeckView = () => {
                 )}
               </>
             ) : (
-              <Button
-                color="green"
-                size="lg"
-                isLoading={learningLoading}
-                disabled={learningLoading}
-                onClick={handleLearnDeck}
-              >
-                {t("decks.learn_deck")}
-              </Button>
+              <div className="hero-learn-block">
+                <Button
+                  color={isPremium ? "orange" : "green"}
+                  size="lg"
+                  fullWidth
+                  isLoading={learningLoading}
+                  disabled={learningLoading}
+                  onClick={handleLearnDeck}
+                >
+                  <span className="hero-learn-btn-inner">
+                    <span className="hero-learn-btn-title">
+                      {t("decks.learn_deck")}
+                    </span>
+                    <CoinPrice
+                      amount={coinPrice}
+                      variant="on-btn"
+                      showUnit={isPremium}
+                      freeLabel={t("community.free_to_learn")}
+                      label={isPremium ? t("community.coin_to_learn") : undefined}
+                    />
+                  </span>
+                </Button>
+                {isPremium && (
+                  <p className="hero-learn-hint">
+                    {t("community.coin_deduct_hint")}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>
