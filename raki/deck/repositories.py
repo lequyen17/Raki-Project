@@ -1,8 +1,10 @@
-from django.db.models import Count
-from django.utils import timezone
+from django.contrib.auth import get_user_model
+from django.db.models import Count, Q
 
 from deck.models import Deck, UserDeck
 from card.models import Card, Progress
+
+User = get_user_model()
 
 
 class DeckRepository:
@@ -16,11 +18,10 @@ class DeckRepository:
         )
 
     @staticmethod
-    def create_user_deck(user, name, description="", is_public=False):
+    def create_user_deck(user, name, description=""):
         deck = Deck.objects.create(
             name=name,
             description=description,
-            is_public=is_public,
             parent=None,
         )
 
@@ -35,9 +36,8 @@ class DeckRepository:
     @staticmethod
     def get_deck_for_user(deck_id, user):
         try:
-            from django.db.models import Q
             return Deck.objects.filter(
-                Q(deck_users__user=user) | Q(is_public=True)
+                Q(deck_users__user=user) | Q(share_mode="public")
             ).distinct().get(id=deck_id)
         except Deck.DoesNotExist:
             return None
@@ -55,7 +55,7 @@ class DeckRepository:
 
     @staticmethod
     def get_public_decks():
-        return Deck.objects.filter(is_public=True).order_by("-created_at")
+        return Deck.objects.filter(share_mode="public").order_by("-created_at")
 
     @staticmethod
     def get_parent_deck_for_user(parent_id, user):
@@ -68,20 +68,51 @@ class DeckRepository:
             return None
 
     @staticmethod
-    def update_deck(deck, name, description, is_public=False):
+    def update_deck(deck, name, description, coin_price=None):
         deck.name = name
         deck.description = description
-        deck.is_public = is_public
+        if coin_price is not None:
+            deck.coin_price = coin_price
 
-        deck.save(
-            update_fields=[
-                "name",
-                "description",
-                "is_public",
-            ]
-        )
+        update_fields = ["name", "description"]
+        if coin_price is not None:
+            update_fields.append("coin_price")
+
+        deck.save(update_fields=update_fields)
 
         return deck
+
+    @staticmethod
+    def update_deck_share(deck, share_mode, coin_price):
+        deck.share_mode = share_mode
+        deck.coin_price = coin_price
+        deck.save(update_fields=["share_mode", "coin_price"])
+        return deck
+
+    @staticmethod
+    def get_collaborators(deck):
+        return UserDeck.objects.filter(deck=deck).exclude(role="owner").select_related(
+            "user"
+        )
+
+    @staticmethod
+    def remove_non_owner_members(deck):
+        UserDeck.objects.filter(deck=deck).exclude(role="owner").delete()
+
+    @staticmethod
+    def get_all_descendants(deck):
+        descendants = [deck]
+        for child in Deck.objects.filter(parent=deck):
+            descendants.extend(DeckRepository.get_all_descendants(child))
+        return descendants
+
+    @staticmethod
+    def search_users(query, exclude_user, limit=8):
+        return (
+            User.objects.filter(username__icontains=query)
+            .exclude(id=exclude_user.id)
+            .order_by("username")[:limit]
+        )
 
     @staticmethod
     def move_deck(deck, parent):
@@ -96,7 +127,7 @@ class DeckRepository:
 
     @staticmethod
     def has_subdecks(deck, user):
-        if deck.is_public:
+        if deck.share_mode == "public":
             return Deck.objects.filter(parent=deck).exists()
         return Deck.objects.filter(
             parent=deck,
@@ -105,7 +136,7 @@ class DeckRepository:
 
     @staticmethod
     def get_child_decks(deck, user):
-        if deck.is_public:
+        if deck.share_mode == "public":
             return Deck.objects.filter(parent=deck)
         return Deck.objects.filter(
             parent=deck,

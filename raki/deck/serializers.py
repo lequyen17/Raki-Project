@@ -8,7 +8,6 @@ class DeckSerializer(serializers.Serializer):
     description = serializers.CharField(
         required=False, allow_blank=True, allow_null=True
     )
-    is_public = serializers.BooleanField(required=False)
 
     def validate(self, attrs):
         deck = self.context.get("deck")
@@ -16,13 +15,11 @@ class DeckSerializer(serializers.Serializer):
         if deck:
             name = str(attrs.get("name", deck.name)).strip()
             description = str(attrs.get("description", deck.description or "")).strip()
-            is_public = attrs.get("is_public", deck.is_public)
         else:
             name = str(attrs.get("name", "")).strip()
             description = str(attrs.get("description", "")).strip()
-            is_public = attrs.get("is_public", False)
 
-        return {"name": name, "description": description, "is_public": is_public}
+        return {"name": name, "description": description}
 
 
 class DeckMoveSerializer(serializers.Serializer):
@@ -69,7 +66,8 @@ class DeckItemSerializer(serializers.Serializer):
     description = serializers.CharField()
     parent_id = serializers.IntegerField(allow_null=True)
     created_at = serializers.DateTimeField(required=False)
-    is_public = serializers.BooleanField()
+    share_mode = serializers.CharField(required=False)
+    coin_price = serializers.IntegerField(required=False)
     role = serializers.CharField(required=False)
 
 
@@ -115,7 +113,8 @@ class DeckDetailResponseSerializer(serializers.Serializer):
     deck_id = serializers.IntegerField()
     name = serializers.CharField()
     description = serializers.CharField(allow_blank=True, allow_null=True)
-    is_public = serializers.BooleanField()
+    coin_price = serializers.IntegerField(required=False)
+    share_mode = serializers.CharField(required=False)
     role = serializers.CharField(required=False)
     counts = DeckDetailCountsSerializer()
     overall_stats = DeckDetailOverallStatsSerializer()
@@ -126,3 +125,53 @@ class PublicDeckItemSerializer(DeckItemSerializer):
 class PublicDeckListResponseSerializer(serializers.Serializer):
     count = serializers.IntegerField()
     results = PublicDeckItemSerializer(many=True)
+
+
+class DeckCollaboratorSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    username = serializers.CharField()
+    role = serializers.CharField()
+
+
+class DeckShareSettingsSerializer(serializers.Serializer):
+    share_mode = serializers.ChoiceField(choices=["private", "public", "restricted"])
+    coin_price = serializers.IntegerField(min_value=0, required=False, default=0)
+
+    def validate(self, attrs):
+        share_mode = attrs["share_mode"]
+        coin_price = attrs.get("coin_price", 0)
+
+        if share_mode == "public" and coin_price < 0:
+            raise serializers.ValidationError("INVALID_COIN_PRICE")
+
+        if share_mode != "public":
+            attrs["coin_price"] = 0
+
+        return attrs
+
+
+class DeckCollaboratorAddSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    role = serializers.ChoiceField(choices=["viewer", "editor"])
+
+    def validate_username(self, value):
+        username = value.strip()
+        if not username:
+            raise serializers.ValidationError("USERNAME_REQUIRED")
+        return username
+
+
+class DeckShareSettingsResponseSerializer(serializers.Serializer):
+    share_mode = serializers.CharField()
+    coin_price = serializers.IntegerField()
+    access_type = serializers.CharField()
+    collaborators = DeckCollaboratorSerializer(many=True)
+
+
+class UserSearchResultSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+
+
+class UserSearchResponseSerializer(serializers.Serializer):
+    results = UserSearchResultSerializer(many=True)

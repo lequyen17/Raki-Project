@@ -7,6 +7,7 @@ import DeckLeft from "./components/DeckLeft";
 import DeckRight from "./components/DeckRight";
 import CreateDeck from "./components/CreateDeck";
 import EditDeck from "./components/EditDeck";
+import ShareDeckModal from "./components/ShareDeckModal";
 import "./Decks.css";
 
 const buildDeckTree = (items) => {
@@ -49,7 +50,7 @@ const Decks = () => {
   const [editError, setEditError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [deletingDeck, setDeletingDeck] = useState(false);
-  const [sharingDeck, setSharingDeck] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [unlearningDeck, setUnlearningDeck] = useState(false);
 
   const [error, setError] = useState("");
@@ -408,46 +409,42 @@ const Decks = () => {
     }
   };
 
-  const handleShareDeck = async () => {
-    if (!selectedDeckId || !selectedDeckInfo) {
+  const handleOpenShareModal = () => {
+    if (!selectedDeckId) {
       return;
     }
-    
-    try {
-      setSharingDeck(true);
-      setStatsError("");
-      const payload = {
-        name: selectedDeckInfo.name,
-        description: selectedDeckInfo.description,
-        is_public: !selectedDeckInfo.is_public,
-      };
-      const res = await api.put(`/api/decks/${selectedDeckId}/`, payload);
-      const updatedDeck = res.data;
+    setShowShareModal(true);
+  };
 
-      setDecks((prev) =>
-        prev.map((deck) =>
-          deck.id === selectedDeckId
-            ? { ...deck, is_public: updatedDeck.is_public }
-            : deck,
-        ),
-      );
-      setSelectedDeckInfo((prev) =>
-        prev ? { ...prev, is_public: updatedDeck.is_public } : prev,
-      );
-    } catch (err) {
-      if (err.response?.status === 401) {
-        localStorage.removeItem("access_token");
-        navigate("/login");
-        return;
-      }
-      setStatsError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "decks.error_update")
-          : t("decks.error_update"),
-      );
-    } finally {
-      setSharingDeck(false);
+  const handleCloseShareModal = () => {
+    setShowShareModal(false);
+  };
+
+  const handleShareSettingsSaved = (shareData) => {
+    if (!selectedDeckId || !shareData) {
+      return;
     }
+
+    setDecks((prev) =>
+      prev.map((deck) =>
+        deck.id === selectedDeckId
+          ? {
+              ...deck,
+              coin_price: shareData.coin_price || 0,
+              share_mode: shareData.share_mode,
+            }
+          : deck,
+      ),
+    );
+    setSelectedDeckInfo((prev) =>
+      prev
+        ? {
+            ...prev,
+            coin_price: shareData.coin_price || 0,
+            share_mode: shareData.share_mode,
+          }
+        : prev,
+    );
   };
 
   return (
@@ -501,8 +498,7 @@ const Decks = () => {
           handleOpenEditModal={handleOpenEditModal}
           deletingDeck={deletingDeck}
           handleDeleteDeck={handleDeleteDeck}
-          sharingDeck={sharingDeck}
-          handleShareDeck={handleShareDeck}
+          onOpenShareModal={handleOpenShareModal}
           unlearningDeck={unlearningDeck}
           handleStopLearning={handleStopLearning}
         />
@@ -526,6 +522,14 @@ const Decks = () => {
           setEditDeck={setEditDeck}
           editError={editError}
           isEditing={isEditing}
+        />
+      )}
+      {showShareModal && selectedDeckId && selectedDeckInfo && (
+        <ShareDeckModal
+          deckId={selectedDeckId}
+          deckName={selectedDeckInfo.name}
+          onClose={handleCloseShareModal}
+          onSaved={handleShareSettingsSaved}
         />
       )}
     </div>

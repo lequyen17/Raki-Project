@@ -11,8 +11,7 @@ const DeckRight = ({
   handleOpenEditModal,
   deletingDeck,
   handleDeleteDeck,
-  sharingDeck,
-  handleShareDeck,
+  onOpenShareModal,
   unlearningDeck,
   handleStopLearning,
 }) => {
@@ -52,20 +51,16 @@ const DeckRight = ({
               )}
             </div>
             {selectedDeckInfo.role === "owner" && (
-              <div className="deck-share-toggle">
+              <button
+                type="button"
+                className="deck-share-trigger"
+                onClick={onOpenShareModal}
+              >
                 <span className="deck-share-label">
-                  {selectedDeckInfo.is_public ? t("decks.shared") : t("decks.share")}
+                  {t(`decks.share.mode_${selectedDeckInfo.share_mode || "private"}`)}
                 </span>
-                <button
-                  type="button"
-                  className={`toggle-switch ${selectedDeckInfo.is_public ? "active" : ""} ${sharingDeck ? "loading" : ""}`}
-                  onClick={handleShareDeck}
-                  disabled={sharingDeck}
-                  aria-pressed={selectedDeckInfo.is_public}
-                >
-                  <span className="toggle-slider"></span>
-                </button>
-              </div>
+                <span className="deck-share-settings-icon" aria-hidden="true">⚙</span>
+              </button>
             )}
           </div>
 

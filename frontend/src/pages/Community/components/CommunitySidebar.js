@@ -19,7 +19,7 @@ function CommunitySidebar({ activeDeckId, refreshTrigger = 0 }) {
       const deckById = new Map(all.map((deck) => [deck.id, deck]));
 
       setSharedDecks(
-        all.filter((deck) => deck.role === "owner" && deck.is_public)
+        all.filter((deck) => deck.role === "owner" && deck.share_mode === "public")
       );
       setLearningDecks(
         all.filter((deck) => {

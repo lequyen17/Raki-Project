@@ -7,14 +7,18 @@ from raki.api_validation import parse_request
 from raki.openapi_common import ErrorResponseSerializer
 from deck.repositories import DeckRepository
 from deck.serializers import (
+    DeckCollaboratorAddSerializer,
     DeckDetailResponseSerializer,
     DeckItemSerializer,
     DeckListResponseSerializer,
     DeckMoveResponseSerializer,
     DeckMoveSerializer,
     DeckSerializer,
+    DeckShareSettingsResponseSerializer,
+    DeckShareSettingsSerializer,
     SuccessResponseSerializer,
     PublicDeckListResponseSerializer,
+    UserSearchResponseSerializer,
 )
 from deck.services import DeckService
 
@@ -165,9 +169,10 @@ def learn_public_deck(request, deck_id):
         data = DeckService.learn_public_deck(deck_id, request.user)
 
         if isinstance(data, dict) and data.get("success") is False:
-            return Response(data, status=400)  # Trả về 400 Bad Request cho lỗi trùng
+            status = 402 if data.get("error") == "INSUFFICIENT_COINS" else 400
+            return Response(data, status=status)
 
-        return Response(data, status=200)  # Trả về 200 nếu thành công
+        return Response(data, status=200)
 
     except LookupError as e:
         return Response({"error": str(e)}, status=404)
@@ -190,3 +195,107 @@ def unlearn_deck(request, deck_id):
         return Response(data, status=200)
     except LookupError as e:
         return Response({"error": str(e)}, status=404)
+
+
+@extend_schema(
+    methods=["GET"],
+    tags=["Decks"],
+    summary="Lấy cài đặt chia sẻ deck",
+    responses={
+        200: DeckShareSettingsResponseSerializer,
+        403: ErrorResponseSerializer,
+    },
+)
+@extend_schema(
+    methods=["PUT"],
+    tags=["Decks"],
+    summary="Cập nhật cài đặt chia sẻ deck",
+    request=DeckShareSettingsSerializer,
+    responses={
+        200: DeckShareSettingsResponseSerializer,
+        400: ErrorResponseSerializer,
+        403: ErrorResponseSerializer,
+    },
+)
+@api_view(["GET", "PUT"])
+@permission_classes([IsAuthenticated])
+def deck_share_settings(request, deck_id):
+    try:
+        if request.method == "GET":
+            data = DeckService.get_share_settings(deck_id, request.user)
+            return Response(data)
+
+        validated, error_response = parse_request(request, DeckShareSettingsSerializer)
+        if error_response:
+            return error_response
+
+        data = DeckService.update_share_settings(deck_id, request.user, validated)
+        return Response(data)
+    except LookupError as e:
+        return Response({"error": str(e)}, status=403)
+    except ValueError as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@extend_schema(
+    methods=["POST"],
+    tags=["Decks"],
+    summary="Thêm người được chia sẻ deck",
+    request=DeckCollaboratorAddSerializer,
+    responses={
+        200: DeckShareSettingsResponseSerializer,
+        400: ErrorResponseSerializer,
+        403: ErrorResponseSerializer,
+        404: ErrorResponseSerializer,
+    },
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def deck_add_collaborator(request, deck_id):
+    try:
+        validated, error_response = parse_request(
+            request, DeckCollaboratorAddSerializer
+        )
+        if error_response:
+            return error_response
+
+        data = DeckService.add_collaborator(deck_id, request.user, validated)
+        return Response(data)
+    except LookupError as e:
+        return Response({"error": str(e)}, status=404)
+    except ValueError as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@extend_schema(
+    methods=["DELETE"],
+    tags=["Decks"],
+    summary="Xóa người được chia sẻ deck",
+    responses={
+        200: DeckShareSettingsResponseSerializer,
+        403: ErrorResponseSerializer,
+        404: ErrorResponseSerializer,
+    },
+)
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def deck_remove_collaborator(request, deck_id, user_id):
+    try:
+        data = DeckService.remove_collaborator(deck_id, request.user, user_id)
+        return Response(data)
+    except LookupError as e:
+        return Response({"error": str(e)}, status=404)
+
+
+@extend_schema(
+    methods=["GET"],
+    tags=["Decks"],
+    summary="Tìm kiếm user theo username",
+    responses={200: UserSearchResponseSerializer},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def search_users(request):
+    query = request.query_params.get("q", "")
+    data = DeckService.search_users(query, request.user)
+    return Response(data)

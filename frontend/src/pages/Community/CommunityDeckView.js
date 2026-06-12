@@ -122,7 +122,7 @@ const CommunityDeckView = () => {
   if (!deck) return null;
 
   const isViewer = deck.role === "viewer";
-  const isOwnerShared = deck.role === "owner" && deck.is_public;
+  const isOwnerShared = deck.role === "owner" && deck.share_mode === "public";
   const canStudy = isViewer || deck.role === "owner";
 
   return (

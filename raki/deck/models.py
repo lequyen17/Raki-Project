@@ -3,13 +3,21 @@ from django.contrib.auth.models import User
 
 
 class Deck(models.Model):
+    SHARE_MODE_CHOICES = [
+        ("private", "Private"),
+        ("public", "Public"),
+        ("restricted", "Restricted"),
+    ]
+
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     parent = models.ForeignKey(
         "self", on_delete=models.CASCADE, null=True, blank=True, related_name="subdecks"
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    is_public = models.BooleanField(default=False)
+    share_mode = models.CharField(
+        max_length=20, choices=SHARE_MODE_CHOICES, default="private"
+    )
     coin_price = models.IntegerField(default=0)
 
     def __str__(self):

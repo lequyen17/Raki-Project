@@ -80,7 +80,7 @@ class CardRepository:
         try:
             from django.db.models import Q
             return Card.objects.select_related("note", "template").prefetch_related("note__values__definition").filter(
-                Q(id=card_id) & (Q(note__deck__deck_users__user=user) | Q(note__deck__is_public=True))
+                Q(id=card_id) & (Q(note__deck__deck_users__user=user) | Q(note__deck__share_mode="public"))
             ).distinct().get()
         except Card.DoesNotExist:
             return None

@@ -451,52 +451,250 @@
     -webkit-user-select: none; /* Safari */
 }
 
-/* Toggle Switch */
-.deck-share-toggle {
-  display: flex;
+.deck-share-trigger {
+  display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.45rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.deck-share-trigger:hover {
+  background: #eef2f7;
+  border-color: #94a3b8;
 }
 
 .deck-share-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #475569;
 }
 
-.toggle-switch {
-  position: relative;
-  width: 44px;
-  height: 24px;
-  background: #cbd5e1;
-  border-radius: 99px;
+.deck-share-settings-icon {
+  font-size: 0.95rem;
+  color: #64748b;
+  line-height: 1;
+}
+
+.deck-share-modal {
+  max-width: 560px;
+}
+
+.deck-share-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.deck-share-deck-name {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.deck-share-close-btn {
   border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #64748b;
   cursor: pointer;
   padding: 0;
-  transition: background-color 0.3s;
 }
 
-.toggle-switch.active {
-  background: #10b981;
+.deck-share-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin: 1rem 0 0.75rem;
+  padding: 0.25rem;
+  background: #f1f5f9;
+  border-radius: 10px;
 }
 
-.toggle-switch.loading {
+.deck-share-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  padding: 0.55rem 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.deck-share-tab.active {
+  background: #fff;
+  color: #1e40af;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.deck-share-mode-desc {
+  margin: 0 0 1rem;
+  font-size: 0.86rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.deck-share-section {
+  margin-bottom: 1rem;
+}
+
+.deck-share-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.deck-share-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #334155;
+  cursor: pointer;
+}
+
+.deck-share-coin-field .deck-modal-input {
+  margin-bottom: 0;
+}
+
+.deck-share-invite-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.5rem;
+  align-items: start;
+  margin-bottom: 0.75rem;
+}
+
+.deck-share-search {
+  position: relative;
+}
+
+.deck-share-search .deck-modal-input {
+  margin-bottom: 0;
+}
+
+.deck-share-search-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.deck-share-search-item {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.88rem;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.deck-share-search-item:hover {
+  background: #f1f5f9;
+}
+
+.deck-share-search-item.muted {
+  color: #94a3b8;
+  cursor: default;
+}
+
+.deck-share-role-select {
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  padding: 0.65rem 0.6rem;
+  font-size: 0.88rem;
+  background: #fff;
+  color: #334155;
+}
+
+.deck-share-member-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.deck-share-member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.deck-share-member-item:last-child {
+  border-bottom: none;
+}
+
+.deck-share-member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.deck-share-member-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.deck-share-member-role {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.deck-share-remove-btn {
+  border: none;
+  background: #fee2e2;
+  color: #b91c1c;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.deck-share-remove-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.toggle-slider {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  background: #fff;
-  border-radius: 50%;
-  transition: transform 0.3s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+.deck-share-empty-members {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #94a3b8;
+  font-style: italic;
 }
 
-.toggle-switch.active .toggle-slider {
-  transform: translateX(20px);
+@media (max-width: 600px) {
+  .deck-share-invite-row {
+    grid-template-columns: 1fr;
+  }
 }

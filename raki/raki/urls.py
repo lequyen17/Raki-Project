@@ -124,6 +124,22 @@ urlpatterns = [
         name="user_deck_detail",
     ),
     path(
+        "api/decks/<int:deck_id>/share/",
+        deck_views.deck_share_settings,
+        name="deck_share_settings",
+    ),
+    path(
+        "api/decks/<int:deck_id>/collaborators/",
+        deck_views.deck_add_collaborator,
+        name="deck_add_collaborator",
+    ),
+    path(
+        "api/decks/<int:deck_id>/collaborators/<int:user_id>/",
+        deck_views.deck_remove_collaborator,
+        name="deck_remove_collaborator",
+    ),
+    path("api/users/search/", deck_views.search_users, name="search_users"),
+    path(
         "api/decks/<int:deck_id>/cards/",
         card_views.list_cards_by_deck,
         name="list_cards_by_deck",

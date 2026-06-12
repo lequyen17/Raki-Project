@@ -1,9 +1,15 @@
+from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.utils import timezone
 
 from deck.repositories import DeckRepository
 from card.repositories import CardRepository
 from deck.models import Deck, UserDeck
 from card.models import Card, Progress
+from payment.models import CoinHistory, CoinTransaction
+from payment.repositories import WalletRepository
+
+User = get_user_model()
 
 
 class DeckService:
@@ -22,6 +28,27 @@ class DeckService:
             raise LookupError("DECK_NOT_FOUND_OR_NOT_OWNER")
         return deck
 
+    @staticmethod
+    def _serialize_collaborators(deck):
+        return [
+            {
+                "user_id": ud.user_id,
+                "username": ud.user.username,
+                "role": ud.role,
+            }
+            for ud in DeckRepository.get_collaborators(deck)
+        ]
+
+    @staticmethod
+    def _build_share_settings(deck):
+        coin_price = deck.coin_price or 0
+        return {
+            "share_mode": deck.share_mode or "private",
+            "coin_price": coin_price,
+            "access_type": "premium" if coin_price > 0 else "free",
+            "collaborators": DeckService._serialize_collaborators(deck),
+        }
+
     # =========================
     # CREATE
     # =========================
@@ -31,13 +58,13 @@ class DeckService:
             user=user,
             name=validated_data["name"],
             description=validated_data["description"],
-            is_public=validated_data.get("is_public", False),
         )
         return {
             "id": deck.id,
             "name": deck.name,
             "description": deck.description or "",
-            "is_public": deck.is_public,
+            "share_mode": deck.share_mode or "private",
+            "coin_price": deck.coin_price or 0,
             "parent_id": deck.parent_id,
             "created_at": deck.created_at,
         }
@@ -58,7 +85,8 @@ class DeckService:
                     "id": deck.id,
                     "name": deck.name,
                     "description": deck.description or "",
-                    "is_public": deck.is_public,
+                    "coin_price": deck.coin_price or 0,
+                    "share_mode": deck.share_mode or "private",
                     "total_cards": deck.total_cards,
                     "parent_id": deck.parent_id,
                     "created_at": deck.created_at,
@@ -87,7 +115,8 @@ class DeckService:
                     "id": deck.id,
                     "name": deck.name,
                     "description": deck.description or "",
-                    "is_public": deck.is_public,
+                    "coin_price": deck.coin_price or 0,
+                    "share_mode": deck.share_mode or "public",
                     "parent_id": deck.parent_id,
                     "created_at": deck.created_at,
                     "owner": owner_name,
@@ -105,24 +134,50 @@ class DeckService:
     def learn_public_deck(deck_id, user):
 
         # Lấy deck công khai
-        deck = Deck.objects.filter(id=deck_id, is_public=True).first()
+        deck = Deck.objects.filter(id=deck_id, share_mode="public").first()
         if not deck:
             raise LookupError("DECK_NOT_FOUND_OR_NOT_PUBLIC")
 
         if UserDeck.objects.filter(user=user, deck=deck).exists():
             return {"success": False, "message": "Already learning this deck"}
 
-        # Lấy tất cả subdecks (bỏ qua quyền user vì đây là public deck)
-        def get_all_public_descendants(node):
-            descendants = [node]
-            children = Deck.objects.filter(parent=node)
-            for child in children:
-                descendants.extend(get_all_public_descendants(child))
-            return descendants
+        all_decks_to_learn = DeckRepository.get_all_descendants(deck)
 
-        all_decks_to_learn = get_all_public_descendants(deck)
+        coin_price = deck.coin_price or 0
+        if coin_price > 0 and not CoinTransaction.objects.filter(
+            deck=deck, buyer=user
+        ).exists():
+            balance = WalletRepository.get_coin_balance(user)
+            if balance < coin_price:
+                return {"success": False, "error": "INSUFFICIENT_COINS"}
 
-        # Thêm role viewer cho user
+            owner_ud = deck.deck_users.filter(role="owner").select_related("user").first()
+            if not owner_ud:
+                raise LookupError("DECK_OWNER_NOT_FOUND")
+
+            with transaction.atomic():
+                buyer_profile = user.profile
+                buyer_profile.coin_balance -= coin_price
+                buyer_profile.save(update_fields=["coin_balance"])
+
+                owner_profile = owner_ud.user.profile
+                owner_profile.coin_balance += coin_price
+                owner_profile.save(update_fields=["coin_balance"])
+
+                CoinHistory.objects.create(
+                    user=user, amount=-coin_price, reason="BUY_DECK"
+                )
+                CoinHistory.objects.create(
+                    user=owner_ud.user, amount=coin_price, reason="SELL_DECK"
+                )
+                CoinTransaction.objects.create(
+                    deck=deck,
+                    buyer=user,
+                    gross_coin=coin_price,
+                    commission_coin=0,
+                    net_coin=coin_price,
+                )
+
         user_decks = []
         for d in all_decks_to_learn:
             user_decks.append(UserDeck(user=user, deck=d, role="viewer"))
@@ -163,13 +218,13 @@ class DeckService:
             deck=deck,
             name=validated_data["name"],
             description=validated_data["description"],
-            is_public=validated_data.get("is_public", deck.is_public),
         )
         return {
             "id": deck.id,
             "name": deck.name,
             "description": deck.description or "",
-            "is_public": deck.is_public,
+            "share_mode": deck.share_mode or "private",
+            "coin_price": deck.coin_price or 0,
             "parent_id": deck.parent_id,
             "created_at": deck.created_at,
         }
@@ -282,7 +337,8 @@ class DeckService:
             "deck_id": deck.id,
             "name": deck.name,
             "description": deck.description,
-            "is_public": deck.is_public,
+            "coin_price": deck.coin_price or 0,
+            "share_mode": deck.share_mode or "private",
             "role": role,
             "counts": {
                 "new": session_new_count,
@@ -299,4 +355,99 @@ class DeckService:
                 "review": overall_review,
                 "average_ease": avg_ease,
             },
+        }
+
+    # =========================
+    # SHARE SETTINGS
+    # =========================
+    @staticmethod
+    def get_share_settings(deck_id, user):
+        deck = DeckService._get_deck_for_owner_or_404(deck_id, user)
+        return DeckService._build_share_settings(deck)
+
+    @staticmethod
+    def update_share_settings(deck_id, user, validated_data):
+        deck = DeckService._get_deck_for_owner_or_404(deck_id, user)
+        share_mode = validated_data["share_mode"]
+        coin_price = validated_data.get("coin_price", 0)
+
+        if share_mode == "private":
+            DeckRepository.update_deck_share(
+                deck, share_mode="private", coin_price=0
+            )
+            DeckRepository.remove_non_owner_members(deck)
+        elif share_mode == "public":
+            if coin_price < 0:
+                raise ValueError("INVALID_COIN_PRICE")
+            DeckRepository.update_deck_share(
+                deck, share_mode="public", coin_price=coin_price
+            )
+        elif share_mode == "restricted":
+            DeckRepository.update_deck_share(
+                deck, share_mode="restricted", coin_price=0
+            )
+
+        return DeckService._build_share_settings(deck)
+
+    @staticmethod
+    def add_collaborator(deck_id, user, validated_data):
+        deck = DeckService._get_deck_for_owner_or_404(deck_id, user)
+        username = validated_data["username"]
+        role = validated_data["role"]
+
+        target_user = User.objects.filter(username=username).first()
+        if not target_user:
+            raise LookupError("USER_NOT_FOUND")
+        if target_user.id == user.id:
+            raise ValueError("CANNOT_SHARE_WITH_SELF")
+
+        if deck.share_mode != "restricted":
+            DeckRepository.update_deck_share(
+                deck, share_mode="restricted", coin_price=0
+            )
+
+        all_decks = DeckRepository.get_all_descendants(deck)
+        for d in all_decks:
+            existing = UserDeck.objects.filter(user=target_user, deck=d).first()
+            if existing:
+                if existing.role == "owner":
+                    raise ValueError("USER_ALREADY_OWNER")
+                existing.role = role
+                existing.save(update_fields=["role"])
+            else:
+                UserDeck.objects.create(user=target_user, deck=d, role=role)
+
+        return DeckService._build_share_settings(deck)
+
+    @staticmethod
+    def remove_collaborator(deck_id, user, target_user_id):
+        deck = DeckService._get_deck_for_owner_or_404(deck_id, user)
+        target_user = User.objects.filter(id=target_user_id).first()
+        if not target_user:
+            raise LookupError("USER_NOT_FOUND")
+
+        all_decks = DeckRepository.get_all_descendants(deck)
+        deck_ids = [d.id for d in all_decks]
+        deleted, _ = UserDeck.objects.filter(
+            user=target_user,
+            deck_id__in=deck_ids,
+        ).exclude(role="owner").delete()
+
+        if deleted == 0:
+            raise LookupError("COLLABORATOR_NOT_FOUND")
+
+        return DeckService._build_share_settings(deck)
+
+    @staticmethod
+    def search_users(query, user):
+        keyword = (query or "").strip()
+        if len(keyword) < 2:
+            return {"results": []}
+
+        users = DeckRepository.search_users(keyword, user)
+        return {
+            "results": [
+                {"id": u.id, "username": u.username}
+                for u in users
+            ]
         }
