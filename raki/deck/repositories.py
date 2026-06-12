@@ -6,6 +6,8 @@ from card.models import Card, Progress
 
 User = get_user_model()
 
+EDIT_ROLES = ("owner", "editor")
+
 
 class DeckRepository:
 
@@ -49,6 +51,17 @@ class DeckRepository:
                 id=deck_id,
                 deck_users__user=user,
                 deck_users__role="owner",
+            )
+        except Deck.DoesNotExist:
+            return None
+
+    @staticmethod
+    def get_deck_for_edit(deck_id, user):
+        try:
+            return Deck.objects.get(
+                id=deck_id,
+                deck_users__user=user,
+                deck_users__role__in=EDIT_ROLES,
             )
         except Deck.DoesNotExist:
             return None

@@ -1,6 +1,7 @@
 from django.utils import timezone
 
 from deck.models import Deck
+from deck.repositories import EDIT_ROLES
 from card.models import Card, Progress
 
 
@@ -97,8 +98,19 @@ class CardRepository:
             return None
 
     @staticmethod
+    def get_card_for_edit(card_id, user):
+        try:
+            return Card.objects.select_related("note", "template").prefetch_related("note__values__definition").filter(
+                id=card_id,
+                note__deck__deck_users__user=user,
+                note__deck__deck_users__role__in=EDIT_ROLES,
+            ).distinct().get()
+        except Card.DoesNotExist:
+            return None
+
+    @staticmethod
     def delete_card(card_id, user):
-        card = CardRepository.get_card_for_owner(card_id, user)
+        card = CardRepository.get_card_for_edit(card_id, user)
         if card:
             # Delete the note, which will cascade and delete all associated cards
             card.note.delete()

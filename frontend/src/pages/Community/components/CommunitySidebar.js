@@ -9,6 +9,7 @@ function CommunitySidebar({ activeDeckId, refreshTrigger = 0 }) {
   const navigate = useNavigate();
   const [sharedDecks, setSharedDecks] = useState([]);
   const [learningDecks, setLearningDecks] = useState([]);
+  const [editableDecks, setEditableDecks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchMyDecks = useCallback(async () => {
@@ -18,17 +19,19 @@ function CommunitySidebar({ activeDeckId, refreshTrigger = 0 }) {
       const all = res.data?.results || [];
       const deckById = new Map(all.map((deck) => [deck.id, deck]));
 
+      const filterRootDecks = (decks, role) =>
+        decks.filter((deck) => {
+          if (deck.role !== role) return false;
+          if (!deck.parent_id) return true;
+          const parent = deckById.get(deck.parent_id);
+          return !parent || parent.role !== role;
+        });
+
       setSharedDecks(
         all.filter((deck) => deck.role === "owner" && deck.share_mode === "public")
       );
-      setLearningDecks(
-        all.filter((deck) => {
-          if (deck.role !== "viewer") return false;
-          if (!deck.parent_id) return true;
-          const parent = deckById.get(deck.parent_id);
-          return !parent || parent.role !== "viewer";
-        })
-      );
+      setLearningDecks(filterRootDecks(all, "viewer"));
+      setEditableDecks(filterRootDecks(all, "editor"));
     } catch (err) {
       console.error(err);
       if (err.response?.status === 401) {
@@ -96,6 +99,13 @@ function CommunitySidebar({ activeDeckId, refreshTrigger = 0 }) {
           {t("community.sidebar_learning_title")}
         </h2>
         {renderDeckList(learningDecks, "community.sidebar_empty_learning")}
+      </section>
+
+      <section className="community-sidebar-section">
+        <h2 className="community-sidebar-title">
+          {t("community.sidebar_editable_title")}
+        </h2>
+        {renderDeckList(editableDecks, "community.sidebar_empty_editable")}
       </section>
     </aside>
   );

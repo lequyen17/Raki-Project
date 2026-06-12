@@ -39,8 +39,10 @@
         "by_owner": "Bởi {{owner}}",
         "sidebar_shared_title": "Bộ thẻ đã chia sẻ",
         "sidebar_learning_title": "Đang học (người xem)",
+        "sidebar_editable_title": "Có thể chỉnh sửa (biên tập viên)",
         "sidebar_empty_shared": "Bạn chưa chia sẻ bộ thẻ nào.",
         "sidebar_empty_learning": "Bạn chưa thêm bộ thẻ cộng đồng nào để học.",
+        "sidebar_empty_editable": "Bạn chưa được chia sẻ quyền biên tập deck nào.",
         "sidebar_loading": "Đang tải...",
         "you_shared_deck": "Bạn đã chia sẻ bộ thẻ này với cộng đồng."
     },

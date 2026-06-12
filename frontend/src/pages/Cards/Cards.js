@@ -17,6 +17,7 @@ const Cards = () => {
   const navigate = useNavigate();
   const { deckId } = useParams();
   const [deckName, setDeckName] = useState("");
+  const [canEditCards, setCanEditCards] = useState(false);
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,9 +29,14 @@ const Cards = () => {
     try {
       setLoading(true);
       setError("");
-      const res = await api.get(`/api/decks/${deckId}/cards/`);
-      setDeckName(res.data?.deck_name || "");
-      setCards(res.data?.results || []);
+      const [cardsRes, deckRes] = await Promise.all([
+        api.get(`/api/decks/${deckId}/cards/`),
+        api.get(`/api/decks/${deckId}/`),
+      ]);
+      const role = deckRes.data?.role;
+      setCanEditCards(role === "owner" || role === "editor");
+      setDeckName(cardsRes.data?.deck_name || deckRes.data?.name || "");
+      setCards(cardsRes.data?.results || []);
     } catch (err) {
       if (err.response?.status === 401) {
         localStorage.removeItem("access_token");
@@ -193,14 +199,16 @@ const Cards = () => {
           >
             {t("cards.back_to_decks")}
           </Button>
-          <Button
-            type="button"
-            color="green"
-            size="md"
-            onClick={() => navigate(`/decks/${deckId}/add-card`)}
-          >
-            {t("cards.add_card")}
-          </Button>
+          {canEditCards && (
+            <Button
+              type="button"
+              color="green"
+              size="md"
+              onClick={() => navigate(`/decks/${deckId}/add-card`)}
+            >
+              {t("cards.add_card")}
+            </Button>
+          )}
           <Button
             type="button"
             color="blue"
@@ -294,21 +302,31 @@ const Cards = () => {
                               {t("cards.card_id", { id: card.id })}
                             </h3>
                             <div className="card-item-actions">
-                              <button
-                                className="btn-view"
-                                onClick={() => handleView(card.id)}
-                                title={t("common.view")}
-                              >
-                                {t("common.edit")}
-                              </button>
-                              {card.is_owner && (
+                              {canEditCards ? (
+                                <>
+                                  <button
+                                    className="btn-view"
+                                    onClick={() => handleView(card.id)}
+                                    title={t("common.edit")}
+                                  >
+                                    {t("common.edit")}
+                                  </button>
+                                  <button
+                                    className="btn-delete"
+                                    onClick={() => handleDelete(card.id)}
+                                    disabled={deletingCardId === card.id}
+                                    title={t("common.delete")}
+                                  >
+                                    {t("common.delete")}
+                                  </button>
+                                </>
+                              ) : (
                                 <button
-                                  className="btn-delete"
-                                  onClick={() => handleDelete(card.id)}
-                                  disabled={deletingCardId === card.id}
-                                  title={t("common.delete")}
+                                  className="btn-view"
+                                  onClick={() => handleView(card.id)}
+                                  title={t("common.view")}
                                 >
-                                  {t("common.delete")}
+                                  {t("common.view")}
                                 </button>
                               )}
                             </div>

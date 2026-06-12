@@ -40,8 +40,10 @@
         "by_owner": "By {{owner}}",
         "sidebar_shared_title": "My shared decks",
         "sidebar_learning_title": "Learning (viewer)",
+        "sidebar_editable_title": "Editable (editor)",
         "sidebar_empty_shared": "You have not shared any decks yet.",
         "sidebar_empty_learning": "You have not added any community decks to learn.",
+        "sidebar_empty_editable": "No decks have been shared with you for editing.",
         "sidebar_loading": "Loading...",
         "you_shared_deck": "You have shared this deck with the community."
     },

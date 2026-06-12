@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("deck", "0003_deck_coin_price"),
+        ("deck", "0002_alter_userdeck_role"),
     ]
 
     operations = [

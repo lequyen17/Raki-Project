@@ -38,10 +38,10 @@ class CardMainService:
 
         from deck.models import UserDeck
 
-        owner_deck_ids = set(
-            UserDeck.objects.filter(user=user, role="owner").values_list(
-                "deck_id", flat=True
-            )
+        editable_deck_ids = set(
+            UserDeck.objects.filter(
+                user=user, role__in=["owner", "editor"]
+            ).values_list("deck_id", flat=True)
         )
 
         results = []
@@ -56,7 +56,7 @@ class CardMainService:
                     "easiness": p.easiness if p else 2.5,
                     "next_review": p.next_review if p else None,
                     "cloze_index": card.cloze_index,
-                    "is_owner": card.note.deck_id in owner_deck_ids,
+                    "is_owner": card.note.deck_id in editable_deck_ids,
                     **content,
                 }
             )
@@ -77,7 +77,7 @@ class CardMainService:
         from deck.models import UserDeck
 
         is_owner = UserDeck.objects.filter(
-            user=user, deck=card.note.deck, role="owner"
+            user=user, deck=card.note.deck, role__in=["owner", "editor"]
         ).exists()
 
         content = CardMainService._serialize_card_content(card)
@@ -173,9 +173,9 @@ class CardMainService:
 
     @staticmethod
     def update_card(card_id, user, field_values_list):
-        card = CardRepository.get_card_for_owner(card_id, user)
+        card = CardRepository.get_card_for_edit(card_id, user)
         if not card:
-            raise LookupError("CARD_NOT_FOUND_OR_NOT_OWNER")
+            raise LookupError("CARD_NOT_FOUND_OR_NOT_EDITOR")
 
         data_dict = {item["name"]: item["value"] for item in field_values_list}
 

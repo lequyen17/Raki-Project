@@ -122,8 +122,9 @@ const CommunityDeckView = () => {
   if (!deck) return null;
 
   const isViewer = deck.role === "viewer";
+  const isEditor = deck.role === "editor";
   const isOwnerShared = deck.role === "owner" && deck.share_mode === "public";
-  const canStudy = isViewer || deck.role === "owner";
+  const canStudy = isViewer || isEditor || deck.role === "owner";
 
   return (
     <div className="community-deck-preview-page">
@@ -159,6 +160,11 @@ const CommunityDeckView = () => {
               {isViewer && (
                 <span className="meta-badge badge-learning">
                   {t("decks.already_learning")}
+                </span>
+              )}
+              {isEditor && (
+                <span className="meta-badge badge-editor">
+                  {t("decks.share.role_editor")}
                 </span>
               )}
             </div>

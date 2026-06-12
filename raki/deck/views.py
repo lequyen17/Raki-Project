@@ -74,7 +74,6 @@ def move_user_deck(request):
     if error_response:
         return error_response
 
-    # Thêm check owner
     deck = DeckRepository.get_deck_for_owner(validated["deck"].id, request.user)
     if not deck:
         return Response({"error": "DECK_NOT_FOUND_OR_NOT_OWNER"}, status=403)
