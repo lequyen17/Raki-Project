@@ -78,6 +78,18 @@
   background: #1e7e34;
 }
 
+.btn-solid.btn-orange {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
+}
+
+.btn-solid.btn-orange:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ea580c, #c2410c);
+  box-shadow: 0 6px 18px rgba(249, 115, 22, 0.45);
+}
+
 /* ===== OUTLINE ===== */
 
 .btn-outline.btn-blue {

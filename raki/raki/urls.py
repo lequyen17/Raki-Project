@@ -45,6 +45,7 @@ from accounts import views as accounts_views
 from deck import views as deck_views
 from card import views as card_views
 from note import views as note_views
+from payment import views as payment_views
 from raki.openapi_common import (
     TokenObtainPairRequestSerializer,
     TokenPairResponseSerializer,
@@ -92,6 +93,17 @@ urlpatterns = [
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/register/", accounts_views.register_view, name="register"),
     path("api/profile/", accounts_views.user_profile, name="user_profile"),
+    path("api/wallet/", payment_views.wallet_summary, name="wallet_summary"),
+    path(
+        "api/wallet/coin-history/",
+        payment_views.coin_histories,
+        name="coin_histories",
+    ),
+    path(
+        "api/wallet/payment-history/",
+        payment_views.payment_histories,
+        name="payment_histories",
+    ),
     # Các route của deck
     path("api/decks/", deck_views.user_decks, name="user_decks"),
     path("api/decks/public/", deck_views.public_decks, name="public_decks"),

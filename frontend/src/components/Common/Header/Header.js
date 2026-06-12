@@ -31,6 +31,10 @@ const Header = () => {
     setMenuOpen(false);
     navigate("/settings");
   };
+  const handleWalletClick = () => {
+    setMenuOpen(false);
+    navigate("/wallet");
+  };
   const handleDecksClick = () => {
     setMenuOpen(false);
     navigate("/decks");
@@ -68,10 +72,6 @@ const Header = () => {
             <Link to="/community" className="raki-nav-item">
               {t("header.COMMUNITY")}
             </Link>
-
-            {/* <a href="/" className="raki-nav-item">
-              {t("header.INTRO")}
-            </a> */}
           </nav>
         </div>
 
@@ -112,6 +112,13 @@ const Header = () => {
                     onClick={handleProfileClick}
                   >
                     {t("header.my_profile")}
+                  </button>
+
+                  <button
+                    className="raki-profile__item"
+                    onClick={handleWalletClick}
+                  >
+                    {t("header.wallet")}
                   </button>
 
                   <button

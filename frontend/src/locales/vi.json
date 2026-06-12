@@ -27,7 +27,8 @@
         "my_decks": "Thẻ của tôi",
         "MY_DECKS": "BỘ THẺ",
         "COMMUNITY": "CỘNG ĐỒNG",
-        "INTRO": "GIỚI THIỆU"
+        "INTRO": "GIỚI THIỆU",
+        "wallet": "Ví của tôi"
     },
     "community": {
         "title": "Bộ thẻ cộng đồng",
@@ -126,6 +127,41 @@
         "description": "Đây là trang cài đặt hệ thống.",
         "select_language": "Chọn ngôn ngữ",
         "current_lang_is": "Ngôn ngữ hiện tại"
+    },
+    "wallet": {
+        "title": "Ví của tôi",
+        "current_balance": "Số dư hiện tại",
+        "coin_unit": "Coin",
+        "top_up": "Nạp thêm Coin",
+        "top_up_coming_soon": "Tính năng nạp Coin qua MoMo, VNPay và các cổng thanh toán khác sẽ sớm ra mắt. Hãy theo dõi nhé!",
+        "transaction_history": "Lịch sử biến động số dư",
+        "payment_history": "Lịch sử nạp tiền",
+        "filters": "Bộ lọc giao dịch",
+        "filter_all": "Tất cả",
+        "filter_deposit": "Nạp tiền",
+        "filter_spent": "Tiêu dùng",
+        "loading": "Đang tải ví...",
+        "loading_history": "Đang tải lịch sử giao dịch...",
+        "loading_payment": "Đang tải lịch sử nạp tiền...",
+        "empty_history": "Chưa có giao dịch nào.",
+        "empty_payment": "Chưa có lịch sử nạp tiền.",
+        "error_load": "Không thể tải dữ liệu ví.",
+        "error_load_history": "Không thể tải lịch sử giao dịch.",
+        "error_load_payment": "Không thể tải lịch sử nạp tiền.",
+        "reasons": {
+            "TOPUP": "Nạp tiền qua cổng thanh toán",
+            "BUY_DECK": "Mở khóa / mua bộ thẻ",
+            "SELL_DECK": "Thu nhập bán bộ thẻ",
+            "DAILY_LOGIN": "Thưởng đăng nhập hàng ngày",
+            "EVENT_REWARD": "Thưởng sự kiện",
+            "REFUND": "Hoàn coin"
+        },
+        "payment_status": {
+            "pending": "Đang chờ",
+            "completed": "Thành công",
+            "failed": "Thất bại",
+            "canceled": "Đã hủy"
+        }
     },
     "decks": {
         "title": "Bộ thẻ của tôi",

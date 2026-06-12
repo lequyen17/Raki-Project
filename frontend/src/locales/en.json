@@ -27,7 +27,8 @@
     "logout": "Log Out",
     "MY_DECKS": "MY DECKS",
     "INTRO": "INTRODUCE",
-    "COMMUNITY": "COMMUNITY"
+    "COMMUNITY": "COMMUNITY",
+    "wallet": "My Wallet"
       
     },
     "community": {
@@ -128,6 +129,41 @@
     "description": "This is the settings page.",
     "select_language": "Select Language",
     "current_lang_is": "Current language"
+  },
+  "wallet": {
+    "title": "My Wallet",
+    "current_balance": "Current Balance",
+    "coin_unit": "Coin",
+    "top_up": "Top Up Coin",
+    "top_up_coming_soon": "Coin top-up via MoMo, VNPay and other payment methods will be available soon. Stay tuned!",
+    "transaction_history": "Transaction History",
+    "payment_history": "Payment History",
+    "filters": "Transaction filters",
+    "filter_all": "All",
+    "filter_deposit": "Top Up",
+    "filter_spent": "Spent",
+    "loading": "Loading wallet...",
+    "loading_history": "Loading transactions...",
+    "loading_payment": "Loading payment history...",
+    "empty_history": "No transactions yet.",
+    "empty_payment": "No payment records yet.",
+    "error_load": "Cannot load wallet data.",
+    "error_load_history": "Cannot load transaction history.",
+    "error_load_payment": "Cannot load payment history.",
+    "reasons": {
+      "TOPUP": "Top up via payment gateway",
+      "BUY_DECK": "Unlock deck / purchase",
+      "SELL_DECK": "Deck sale earnings",
+      "DAILY_LOGIN": "Daily login reward",
+      "EVENT_REWARD": "Event reward",
+      "REFUND": "Coin refund"
+    },
+    "payment_status": {
+      "pending": "Pending",
+      "completed": "Completed",
+      "failed": "Failed",
+      "canceled": "Canceled"
+    }
   },
   "decks": {
     "title": "My Decks",

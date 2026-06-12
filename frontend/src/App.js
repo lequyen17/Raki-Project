@@ -7,6 +7,7 @@ import Decks from "./pages/Decks/Decks";
 import Cards from "./pages/Cards/Cards";
 import AddCard from "./pages/AddCard/AddCard";
 import Study from "./pages/Study/Study";
+import Wallet from "./pages/Wallet/Wallet";
 import Community from "./pages/Community/Community";
 import CommunityDeckView from "./pages/Community/CommunityDeckView";
 import CardDetail from "./pages/CardDetail/CardDetail";
@@ -28,6 +29,7 @@ function App() {
           <Route path="/decks" element={<Decks />} />
           <Route path="/decks/:deckId/cards" element={<Cards />} />
           <Route path="/decks/:deckId/add-card" element={<AddCard />} />
+          <Route path="/wallet" element={<Wallet />} />
           <Route path="/decks/:deckId/study" element={<Study />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

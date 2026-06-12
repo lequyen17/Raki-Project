@@ -108,8 +108,6 @@ const Study = () => {
 
     console.log(inputs);
     console.log(newAnswers);
-    console.log(currentCard.template.back);
-    console.log(backHTML);
   };
 
   useEffect(() => {
