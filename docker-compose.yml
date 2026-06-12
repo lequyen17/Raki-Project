@@ -1,25 +1,24 @@
-
 services:
-
   db:
     image: postgres:15-alpine
+    container_name: rakiproject-db-1
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     env_file:
       - .env
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    
 
   backend:
     image: 103487/raki-backend:v3.0
+    container_name: rakiproject-backend-1
     build: ./raki
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     depends_on:
       - db
     env_file:
@@ -39,26 +38,36 @@ services:
              python manage.py migrate && 
              python manage.py runserver 0.0.0.0:8000"
 
-
-  # Giữ nguyên db, web, frontend ở trên...
-  
-  # Thêm service này vào dưới cùng của file:
   raki-page:
+    image: 103487/raki-page:v1.0
+    container_name: rakiproject-raki-page-1
     build:
-      context: ./raki-page  # Trỏ ra ngoài folder Next.js độc lập của bạn
-      dockerfile: Dockerfile
-    # Không cần ghi mục ports ở đây, vì ta sẽ cho Nginx ở bên frontend gọi nó nội bộ
+      context: ./raki-page
+    expose:
+      - "3000"
 
   frontend:
     image: 103487/raki-frontend:v4.0
+    container_name: rakiproject-frontend-1
     build: ./frontend
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     depends_on:
       - backend
-
     env_file:
       - .env
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+      - raki-page
+
 volumes:
   postgres_data:
-

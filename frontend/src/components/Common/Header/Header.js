@@ -53,11 +53,11 @@ const Header = () => {
           }}
         >
           <div className="raki-brand">
-            <Link to="/decks" className="raki-logo">
+            <a href="/" className="raki-logo">
               <span className="raki-logo__text">
                 <span className="raki-logo__accent">ra</span>ki
               </span>
-            </Link>
+            </a>
           </div>
 
           <nav className="raki-nav-links">
@@ -69,7 +69,9 @@ const Header = () => {
               {t("header.COMMUNITY")}
             </Link>
 
-            <Link to="/intro" className="raki-nav-item">{t("header.INTRO")}</Link>
+            {/* <a href="/" className="raki-nav-item">
+              {t("header.INTRO")}
+            </a> */}
           </nav>
         </div>
 

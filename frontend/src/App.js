@@ -1,5 +1,5 @@
 import "./App.css";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login/Login";
 import Register from "./pages/Register/Register";
 import Profile from "./pages/Profile/Profile";
@@ -7,7 +7,6 @@ import Decks from "./pages/Decks/Decks";
 import Cards from "./pages/Cards/Cards";
 import AddCard from "./pages/AddCard/AddCard";
 import Study from "./pages/Study/Study";
-import Intro from "./pages/Intro.tsx";
 import Community from "./pages/Community/Community";
 import CommunityDeckView from "./pages/Community/CommunityDeckView";
 import CardDetail from "./pages/CardDetail/CardDetail";
@@ -19,14 +18,13 @@ import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
-    <Router>
+    <BrowserRouter basename="/app">
       <AuthProvider>
         {" "}
         {/* Bọc ngoài cùng để "phủ sóng" dữ liệu cho toàn App */}
         <Toaster position="top-center" reverseOrder={false} />
         <Header />
         <Routes>
-          <Route path="/" element={<Login />} />
           <Route path="/decks" element={<Decks />} />
           <Route path="/decks/:deckId/cards" element={<Cards />} />
           <Route path="/decks/:deckId/add-card" element={<AddCard />} />
@@ -38,11 +36,10 @@ function App() {
           <Route path="/cards/:cardId" element={<CardDetail />} />
           <Route path="/community" element={<Community />} />
           <Route path="/community/:deckId" element={<CommunityDeckView />} />
-          <Route path="/intro" element={<Intro />} />
         </Routes>
         <Footer />
       </AuthProvider>
-    </Router>
+    </BrowserRouter>
   );
 }
 

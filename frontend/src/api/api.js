@@ -1,7 +1,10 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
+  // Không để baseURL ở đây
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 // REQUEST: tự gắn token
@@ -37,7 +40,7 @@ api.interceptors.response.use(
 
       if (!refresh) {
         localStorage.clear();
-        window.location.href = "/login";
+        window.location.href = "/";
         return Promise.reject(error);
       }
 
@@ -60,7 +63,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (err) {
         localStorage.clear();
-        window.location.href = "/login";
+        window.location.href = "/";
         return Promise.reject(err);
       }
     }

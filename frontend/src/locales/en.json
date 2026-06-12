@@ -21,12 +21,14 @@
   "header": {
     "register": "Register",
     "login": "Login",
-        "my_decks": "My Decks",
+    "my_decks": "My Decks",
     "my_profile": "My Profile",
     "settings": "Settings",
     "logout": "Log Out",
     "MY_DECKS": "MY DECKS",
-        "COMMUNITY": "COMMUNITY"
+    "INTRO": "INTRODUCE",
+    "COMMUNITY": "COMMUNITY"
+      
     },
     "community": {
         "title": "Community Decks",

@@ -50,7 +50,7 @@ class DeckService:
         decks = DeckRepository.get_user_decks(user)
         user_decks = UserDeck.objects.filter(user=user)
         role_map = {ud.deck_id: ud.role for ud in user_decks}
-        
+
         results = []
         for deck in decks:
             results.append(
@@ -74,14 +74,14 @@ class DeckService:
     # GET PUBLIC DECKS
     # =========================
     @staticmethod
-    def get_public_decks(user):
+    def get_public_decks():
         decks = DeckRepository.get_public_decks()
         results = []
         for deck in decks:
             # Lấy tên của owner nếu cần
             owner = deck.deck_users.filter(role="owner").first()
             owner_name = owner.user.username if owner else "Unknown"
-            
+
             results.append(
                 {
                     "id": deck.id,
@@ -103,12 +103,12 @@ class DeckService:
     # =========================
     @staticmethod
     def learn_public_deck(deck_id, user):
-        
+
         # Lấy deck công khai
         deck = Deck.objects.filter(id=deck_id, is_public=True).first()
         if not deck:
             raise LookupError("DECK_NOT_FOUND_OR_NOT_PUBLIC")
-            
+
         if UserDeck.objects.filter(user=user, deck=deck).exists():
             return {"success": False, "message": "Already learning this deck"}
 
@@ -121,13 +121,13 @@ class DeckService:
             return descendants
 
         all_decks_to_learn = get_all_public_descendants(deck)
-        
+
         # Thêm role viewer cho user
         user_decks = []
         for d in all_decks_to_learn:
             user_decks.append(UserDeck(user=user, deck=d, role="viewer"))
         UserDeck.objects.bulk_create(user_decks, ignore_conflicts=True)
-        
+
         return {"success": True}
 
     # =========================
@@ -150,9 +150,7 @@ class DeckService:
             return descendants
 
         deck_ids = [d.id for d in get_all_descendants(deck)]
-        UserDeck.objects.filter(
-            user=user, deck_id__in=deck_ids, role="viewer"
-        ).delete()
+        UserDeck.objects.filter(user=user, deck_id__in=deck_ids, role="viewer").delete()
 
         return {"success": True}
 
@@ -224,7 +222,7 @@ class DeckService:
         deck = DeckService._get_deck_or_404(deck_id, user)
         user_deck = UserDeck.objects.filter(user=user, deck=deck).first()
         role = user_deck.role if user_deck else "none"
-        
+
         today = timezone.localdate()
 
         all_deck_ids = DeckService.get_descendant_ids(deck, user)

@@ -69,7 +69,7 @@ def move_user_deck(request):
     )
     if error_response:
         return error_response
-        
+
     # Thêm check owner
     deck = DeckRepository.get_deck_for_owner(validated["deck"].id, request.user)
     if not deck:
@@ -135,6 +135,7 @@ def user_deck_detail(request, deck_id):
     except LookupError as e:
         return Response({"error": str(e)}, status=404)
 
+
 @extend_schema(
     methods=["GET"],
     tags=["Decks"],
@@ -144,8 +145,9 @@ def user_deck_detail(request, deck_id):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def public_decks(request):
-    data = DeckService.get_public_decks(request.user)
+    data = DeckService.get_public_decks()
     return Response(data)
+
 
 @extend_schema(
     methods=["POST"],
@@ -162,11 +164,10 @@ def learn_public_deck(request, deck_id):
     try:
         data = DeckService.learn_public_deck(deck_id, request.user)
 
-
         if isinstance(data, dict) and data.get("success") is False:
-            return Response(data, status=400) # Trả về 400 Bad Request cho lỗi trùng
+            return Response(data, status=400)  # Trả về 400 Bad Request cho lỗi trùng
 
-        return Response(data, status=200) # Trả về 200 nếu thành công
+        return Response(data, status=200)  # Trả về 200 nếu thành công
 
     except LookupError as e:
         return Response({"error": str(e)}, status=404)
@@ -189,4 +190,3 @@ def unlearn_deck(request, deck_id):
         return Response(data, status=200)
     except LookupError as e:
         return Response({"error": str(e)}, status=404)
-
