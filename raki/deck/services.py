@@ -158,30 +158,25 @@ class DeckService:
             if not owner_ud:
                 raise LookupError("DECK_OWNER_NOT_FOUND")
 
-            net_coin = coin_price * 90 // 100
-            commission_coin = coin_price - net_coin
-
             with transaction.atomic():
                 buyer_profile = user.profile
                 buyer_profile.coin_balance -= coin_price
                 buyer_profile.save(update_fields=["coin_balance"])
 
                 owner_profile = owner_ud.user.profile
-                owner_profile.coin_balance += net_coin
+                owner_profile.coin_balance += coin_price
                 owner_profile.save(update_fields=["coin_balance"])
 
                 CoinHistory.objects.create(
                     user=user, amount=-coin_price, reason="BUY_DECK"
                 )
                 CoinHistory.objects.create(
-                    user=owner_ud.user, amount=net_coin, reason="SELL_DECK"
+                    user=owner_ud.user, amount=coin_price, reason="SELL_DECK"
                 )
                 CoinTransaction.objects.create(
                     deck=deck,
                     buyer=user,
-                    gross_coin=coin_price,
-                    commission_coin=commission_coin,
-                    net_coin=net_coin,
+                    coin=coin_price,
                 )
 
         user_decks = []

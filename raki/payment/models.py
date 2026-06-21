@@ -19,13 +19,7 @@ class CoinTransaction(models.Model):
     )
 
     # Tổng số xu người mua phải trả (Giá gốc của Deck)
-    gross_coin = models.PositiveIntegerField()
-
-    # Số xu hoa hồng hệ thống thu giữ (nếu có)
-    commission_coin = models.PositiveIntegerField(default=0)
-
-    # Số xu thực tế mà người tạo Deck nhận được (net_coin = gross_coin - commission_coin)
-    net_coin = models.PositiveIntegerField()
+    coin = models.PositiveIntegerField()
 
     # Thời gian diễn ra giao dịch
     created_at = models.DateTimeField(auto_now_add=True)
@@ -34,7 +28,7 @@ class CoinTransaction(models.Model):
         ordering = ["-created_at"]  # Sắp xếp giao dịch mới nhất lên đầu
 
     def __str__(self):
-        return f"Tx #{self.id}: {self.buyer.username} bought {self.deck.name} for {self.gross_coin} coins"
+        return f"Tx #{self.id}: {self.buyer.username} bought {self.deck.name} for {self.coin} coins"
 
 
 class PaymentHistory(models.Model):

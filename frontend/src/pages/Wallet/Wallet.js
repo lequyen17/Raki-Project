@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../../api/api";
 import Button from "../../components/Common/Button/Button";
+import toast from "react-hot-toast";
 import "./Wallet.css";
 
 const FILTERS = ["all", "topup", "buy_deck", "sell_deck"];
@@ -27,6 +28,7 @@ const formatVnd = (value) =>
 const Wallet = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -40,6 +42,8 @@ const Wallet = () => {
   const [paymentError, setPaymentError] = useState("");
 
   const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState("");
+  const [topUpSubmitting, setTopUpSubmitting] = useState(false);
 
   const formatDate = useCallback(
     (dateString) => {
@@ -68,6 +72,24 @@ const Wallet = () => {
     if (!reasons) return allTransactions;
     return allTransactions.filter((item) => reasons.includes(item.reason));
   }, [allTransactions, activeFilter]);
+
+  const fetchPaymentHistory = useCallback(async () => {
+    setPaymentLoading(true);
+    setPaymentError("");
+    try {
+      const res = await api.get("/api/wallet/payment-history/");
+      setPaymentHistory(res.data.results || []);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        localStorage.removeItem("access_token");
+        navigate("/login");
+        return;
+      }
+      setPaymentError(t("wallet.error_load_payment"));
+    } finally {
+      setPaymentLoading(false);
+    }
+  }, [navigate, t]);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -101,27 +123,68 @@ const Wallet = () => {
     loadWallet();
   }, [navigate, t]);
 
-  const fetchPaymentHistory = useCallback(async () => {
-    setPaymentLoading(true);
-    setPaymentError("");
-    try {
-      const res = await api.get("/api/wallet/payment-history/");
-      setPaymentHistory(res.data.results || []);
-    } catch (err) {
-      if (err.response?.status === 401) {
-        localStorage.removeItem("access_token");
-        navigate("/login");
-        return;
+  useEffect(() => {
+    const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");
+    const vnp_TxnRef = searchParams.get("vnp_TxnRef");
+    const vnp_SecureHash = searchParams.get("vnp_SecureHash");
+
+    if (vnp_ResponseCode && vnp_TxnRef && vnp_SecureHash) {
+      if (vnp_ResponseCode === "00") {
+        const vnp_Amount = searchParams.get("vnp_Amount");
+        const coinsReceived = vnp_Amount ? parseInt(vnp_Amount, 10) / 100 : 0;
+        toast.success(t("wallet.top_up_success", { coins: formatCoin(coinsReceived) }));
+        // Refresh wallet data after successful top‑up
+        (async () => {
+          try {
+            const [walletRes, historyRes] = await Promise.all([
+              api.get("/api/wallet/"),
+              api.get("/api/wallet/coin-history/"),
+            ]);
+            setCoinBalance(walletRes.data.coin_balance ?? 0);
+            setAllTransactions(historyRes.data.results || []);
+          } catch (err) {
+            console.error("Failed to refresh wallet after VNPay", err);
+          }
+        })();
+      } else {
+        toast.error(t("wallet.top_up_failed"));
       }
-      setPaymentError(t("wallet.error_load_payment"));
-    } finally {
-      setPaymentLoading(false);
+      // Clean query params to avoid duplicate toasts on refresh
+      navigate("/wallet", { replace: true });
     }
-  }, [navigate, t]);
+  }, [searchParams, navigate]);
 
   const handleOpenPaymentHistory = async () => {
     setShowPaymentHistory(true);
     await fetchPaymentHistory();
+  };
+
+  const handleTopUpSubmit = async (e) => {
+    e.preventDefault();
+    const amountVal = parseInt(topUpAmount, 10);
+    if (isNaN(amountVal) || amountVal < 10000) {
+      toast.error(t("wallet.top_up_amount_invalid"));
+      return;
+    }
+
+    setTopUpSubmitting(true);
+    try {
+      const redirectUrl = window.location.origin + "/app/wallet";
+      const res = await api.post("/api/wallet/topup/vnpay/", {
+        amount: amountVal,
+        redirectUrl: redirectUrl
+      });
+      if (res.data.payUrl) {
+        window.location.href = res.data.payUrl;
+      } else {
+        toast.error(t("wallet.top_up_error"));
+      }
+    } catch (err) {
+      const errMsg = err.response?.data?.error || t("wallet.top_up_error");
+      toast.error(errMsg);
+    } finally {
+      setTopUpSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -222,7 +285,12 @@ const Wallet = () => {
         <div
           className="wallet-modal-overlay"
           role="presentation"
-          onClick={() => setShowTopUpModal(false)}
+          onClick={() => {
+            if (!topUpSubmitting) {
+              setShowTopUpModal(false);
+              setTopUpAmount("");
+            }
+          }}
         >
           <div
             className="wallet-modal"
@@ -239,17 +307,63 @@ const Wallet = () => {
                 type="button"
                 className="wallet-modal-close"
                 aria-label={t("common.cancel")}
-                onClick={() => setShowTopUpModal(false)}
+                disabled={topUpSubmitting}
+                onClick={() => {
+                  setShowTopUpModal(false);
+                  setTopUpAmount("");
+                }}
               >
                 ×
               </button>
             </div>
-            <div className="wallet-modal-body">
-              <p className="wallet-topup-note">{t("wallet.top_up_coming_soon")}</p>
-              <Button color="gray" onClick={() => setShowTopUpModal(false)}>
-                {t("common.cancel")}
-              </Button>
-            </div>
+            <form onSubmit={handleTopUpSubmit} className="wallet-modal-body">
+              <div className="wallet-topup-form-group">
+                <label htmlFor="topUpAmount" className="wallet-topup-label">
+                  {t("wallet.top_up_amount")}
+                </label>
+                <input
+                  type="number"
+                  id="topUpAmount"
+                  className="wallet-topup-input"
+                  placeholder={t("wallet.top_up_amount_placeholder")}
+                  value={topUpAmount}
+                  onChange={(e) => setTopUpAmount(e.target.value)}
+                  min="10000"
+                  required
+                  disabled={topUpSubmitting}
+                />
+              </div>
+              
+              <div className="wallet-topup-preview-card">
+                <p className="wallet-topup-rate">{t("wallet.top_up_rate_info")}</p>
+                <p className="wallet-topup-receive">
+                  🪙 {t("wallet.top_up_coins_receive", {
+                    coins: formatCoin(topUpAmount || 0),
+                  })}
+                </p>
+              </div>
+
+              <div className="wallet-modal-actions">
+                <Button
+                  color="gray"
+                  type="button"
+                  disabled={topUpSubmitting}
+                  onClick={() => {
+                    setShowTopUpModal(false);
+                    setTopUpAmount("");
+                  }}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  color="orange"
+                  type="submit"
+                  disabled={topUpSubmitting}
+                >
+                  {topUpSubmitting ? t("common.loading") : t("wallet.top_up_submit")}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

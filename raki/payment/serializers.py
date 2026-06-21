@@ -26,3 +26,18 @@ class PaymentHistoryItemSerializer(serializers.Serializer):
 
 class PaymentHistoryListResponseSerializer(serializers.Serializer):
     results = PaymentHistoryItemSerializer(many=True)
+
+
+class VnpayTopupRequestSerializer(serializers.Serializer):
+    amount = serializers.IntegerField(min_value=10000, help_text="Amount in VND, minimum 10,000")
+
+
+class VnpayTopupResponseSerializer(serializers.Serializer):
+    payUrl = serializers.CharField()
+    paymentId = serializers.IntegerField()
+    orderId = serializers.CharField()
+
+
+class VnpayIpnResponseSerializer(serializers.Serializer):
+    RspCode = serializers.CharField()
+    Message = serializers.CharField()

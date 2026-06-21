@@ -349,3 +349,92 @@
     white-space: normal;
   }
 }
+
+/* MoMo Top Up Form Styling */
+.wallet-topup-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.wallet-topup-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.wallet-topup-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 2px solid #cbd5e1;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wallet-topup-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+.wallet-topup-preview-card {
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 24px;
+}
+
+.wallet-topup-rate {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 6px 0;
+  font-weight: 500;
+}
+
+.wallet-topup-receive {
+  font-size: 18px;
+  color: #f97316;
+  margin: 0;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wallet-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 20px;
+  margin-top: 20px;
+}
+
+/* Verifying overlay loading spinner */
+.wallet-verifying-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: wallet-spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+.wallet-verifying-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #334155;
+  margin: 0;
+}
+
+@keyframes wallet-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

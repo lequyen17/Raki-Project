@@ -9,6 +9,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+VNPAY_RETURN_URL = 'https://navigate-backward-sage.ngrok-free.dev/api/wallet/topup/vnpay/result/'  # get from config
+VNPAY_PAYMENT_URL = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'  # get from config
+VNPAY_API_URL = 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction'
+VNPAY_TMN_CODE = 'VNPAY202'  # Website ID in VNPAY System, get from config
+VNPAY_HASH_SECRET_KEY = '9U0RE0VREK9L3K159B5O32UXR24X79OF'  # Secret key for create checksum,get from config
 SECRET_KEY = "django-insecure-th-%d0roim2x$t-+inu!(v_eav@635=c30k*-=igvm$-uq_8jy"
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -154,3 +159,4 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "COMPONENT_SPLIT_REQUEST": True,
 }
+

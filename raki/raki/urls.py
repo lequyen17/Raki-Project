@@ -104,6 +104,21 @@ urlpatterns = [
         payment_views.payment_histories,
         name="payment_histories",
     ),
+    path(
+        "api/wallet/topup/vnpay/",
+        payment_views.vnpay_topup,
+        name="vnpay_topup",
+    ),
+    path(
+        "api/wallet/topup/vnpay/ipn/",
+        payment_views.vnpay_ipn,
+        name="vnpay_ipn",
+    ),
+    path(
+        "api/wallet/topup/vnpay/result/",
+        payment_views.vnpay_result,
+        name="vnpay_result",
+    ),
     # Các route của deck
     path("api/decks/", deck_views.user_decks, name="user_decks"),
     path("api/decks/public/", deck_views.public_decks, name="public_decks"),
