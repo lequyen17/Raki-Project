@@ -187,6 +187,34 @@ const Wallet = () => {
     }
   };
 
+  // New MoMo top‑up handler
+  const handleMoMoTopUpSubmit = async (e) => {
+    e.preventDefault();
+    const amountVal = parseInt(topUpAmount, 10);
+    if (isNaN(amountVal) || amountVal < 10000) {
+      toast.error(t("wallet.top_up_amount_invalid"));
+      return;
+    }
+    setTopUpSubmitting(true);
+    try {
+      const redirectUrl = window.location.origin + "/app/wallet";
+      const res = await api.post("/api/wallet/topup/momo/", {
+        amount: amountVal,
+        redirectUrl: redirectUrl,
+      });
+      if (res.data.payUrl) {
+        window.location.href = res.data.payUrl;
+      } else {
+        toast.error(t("wallet.top_up_error"));
+      }
+    } catch (err) {
+      const errMsg = err.response?.data?.error || t("wallet.top_up_error");
+      toast.error(errMsg);
+    } finally {
+      setTopUpSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="wallet-page">
@@ -355,14 +383,22 @@ const Wallet = () => {
                 >
                   {t("common.cancel")}
                 </Button>
-                <Button
-                  color="orange"
-                  type="submit"
-                  disabled={topUpSubmitting}
-                >
-                  {topUpSubmitting ? t("common.loading") : t("wallet.top_up_submit")}
-                </Button>
-              </div>
+                  <Button
+                    color="orange"
+                    type="submit"
+                    disabled={topUpSubmitting}
+                  >
+                    {topUpSubmitting ? t("common.loading") : t("wallet.top_up_submit")}
+                  </Button>
+                  <Button
+                    color="green"
+                    type="button"
+                    disabled={topUpSubmitting}
+                    onClick={handleMoMoTopUpSubmit}
+                  >
+                    {topUpSubmitting ? t("common.loading") : t("wallet.top_up_momo")}
+                  </Button>
+                </div>
             </form>
           </div>
         </div>

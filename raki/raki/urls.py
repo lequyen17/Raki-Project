@@ -46,6 +46,15 @@ from deck import views as deck_views
 from card import views as card_views
 from note import views as note_views
 from payment import views as payment_views
+from payment.serializers import (
+    WalletSummarySerializer,
+    CoinHistoryListResponseSerializer,
+    PaymentHistoryListResponseSerializer,
+    VnpayTopupRequestSerializer,
+    VnpayTopupResponseSerializer,
+    VnpayIpnResponseSerializer,
+    # MoMo uses same response serializer
+)
 from raki.openapi_common import (
     TokenObtainPairRequestSerializer,
     TokenPairResponseSerializer,
@@ -118,6 +127,17 @@ urlpatterns = [
         "api/wallet/topup/vnpay/result/",
         payment_views.vnpay_result,
         name="vnpay_result",
+    ),
+    # MoMo endpoints
+    path(
+        "api/wallet/topup/momo/",
+        payment_views.momo_topup,
+        name="momo_topup",
+    ),
+    path(
+        "api/wallet/topup/momo/result/",
+        payment_views.momo_result,
+        name="momo_result",
     ),
     # Các route của deck
     path("api/decks/", deck_views.user_decks, name="user_decks"),

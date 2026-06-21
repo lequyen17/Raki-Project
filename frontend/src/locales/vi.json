@@ -152,6 +152,7 @@
         "top_up_failed": "Thanh toán thất bại hoặc đã bị hủy.",
         "top_up_error": "Lỗi khi xử lý nạp tiền.",
         "top_up_coming_soon": "Tính năng nạp Coin qua MoMo, VNPay và các cổng thanh toán khác sẽ sớm ra mắt. Hãy theo dõi nhé!",
+        "top_up_momo": "Nạp tiền qua MoMo",
         "transaction_history": "Lịch sử biến động số dư",
         "payment_history": "Lịch sử nạp tiền",
         "filters": "Bộ lọc giao dịch",
