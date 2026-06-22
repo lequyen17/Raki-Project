@@ -149,6 +149,7 @@
     "top_up_rate_info": "Exchange rate: 1,000 VND = 1,000 Coin (1 VND = 1 Coin)",
     "top_up_coins_receive": "Coins you will receive: {{coins}} Coin",
     "top_up_submit": "Top Up via VNPay",
+    "top_up_momo": "Top Up via MoMo",
     "top_up_verifying": "Verifying payment transaction...",
     "top_up_success": "Top up successful! Added {{coins}} Coin to your wallet.",
     "top_up_failed": "Payment failed or cancelled.",
