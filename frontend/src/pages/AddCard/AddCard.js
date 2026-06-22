@@ -12,6 +12,7 @@ import {
   hasClozeDeletion,
 } from "../../utils/cloze.js";
 import CreateNoteType from "./components/CreateNoteType";
+import DictionaryModal from "../../components/Common/DictionaryModal/DictionaryModal";
 
 const AddCard = () => {
   const { t } = useTranslation();
@@ -25,6 +26,11 @@ const AddCard = () => {
   const [selectedNoteTypeId, setSelectedNoteTypeId] = useState("");
   const [noteValues, setNoteValues] = useState({});
   const [showCreateNoteType, setShowCreateNoteType] = useState(false);
+
+  // Dictionary modal states
+  const [dictModalOpen, setDictModalOpen] = useState(false);
+  const [dictTargetFieldId, setDictTargetFieldId] = useState(null);
+  const [dictWord, setDictWord] = useState("");
 
   // CREATE NOTETYPE logic states
   const [newNoteTypeName, setNewNoteTypeName] = useState("");
@@ -75,6 +81,29 @@ const AddCard = () => {
   const selectedNoteType = noteTypes.find(
     (nt) => String(nt.id) === String(selectedNoteTypeId),
   );
+
+  const handleOpenDictionary = (targetFieldId) => {
+    if (!selectedNoteType || !selectedNoteType.definitions || selectedNoteType.definitions.length === 0) return;
+    const firstDefId = selectedNoteType.definitions[0].id;
+    const word = noteValues[firstDefId] || "";
+    if (!word.trim()) {
+      toast.error(t("addCard.error_first_field_empty") || "Please enter a word in the first field.");
+      return;
+    }
+    setDictWord(word.trim());
+    setDictTargetFieldId(targetFieldId);
+    setDictModalOpen(true);
+  };
+
+  const handleSelectDictionaryResult = (text) => {
+    if (dictTargetFieldId) {
+      setNoteValues((prev) => ({
+        ...prev,
+        [dictTargetFieldId]: prev[dictTargetFieldId] ? prev[dictTargetFieldId] + "\n" + text : text
+      }));
+    }
+    setDictModalOpen(false);
+  };
 
   const submitAddNote = async () => {
     if (!selectedNoteTypeId) {
@@ -316,9 +345,21 @@ const AddCard = () => {
               <hr className="divider" />
 
               <div className="fields-grid">
-                {selectedNoteType?.definitions.map((def) => (
+                {selectedNoteType?.definitions.map((def, index) => (
                   <div key={def.id} className="form-group">
-                    <label className="form-label">{def.name}</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <label className="form-label" style={{ marginBottom: 0 }}>{def.name}</label>
+                      {index > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDictionary(def.id)}
+                          title={t("dictionary.suggest_tooltip")}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 4px' }}
+                        >
+                          🪄
+                        </button>
+                      )}
+                    </div>
                     <textarea
                       className="form-textarea design-area"
                       value={noteValues[def.id] || ""}
@@ -364,6 +405,13 @@ const AddCard = () => {
           )}
         </main>
       </div>
+
+      <DictionaryModal
+        isOpen={dictModalOpen}
+        word={dictWord}
+        onClose={() => setDictModalOpen(false)}
+        onSelect={handleSelectDictionaryResult}
+      />
     </div>
   );
 };

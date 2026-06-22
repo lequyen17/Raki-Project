@@ -414,5 +414,15 @@
     "CLOZE_INVALID_NUMBERS": "Invalid cloze numbers in template.",
     "NOTETYPE_NOT_FOUND": "Note type not found.",
     "NOTE_FIELD_REQUIRED": "All note fields are required."
+  },
+  "dictionary": {
+    "title": "Dictionary Suggestion:",
+    "not_found": "No definitions found for this word.",
+    "error_fetch": "Error fetching dictionary data.",
+    "no_results": "No results found.",
+    "example": "Example",
+    "apply_definition": "Apply Definition",
+    "apply_example": "Apply Example",
+    "suggest_tooltip": "Suggest meaning"
   }
 }

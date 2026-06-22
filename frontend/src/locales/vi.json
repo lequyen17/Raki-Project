@@ -409,5 +409,15 @@
         "CLOZE_INVALID_NUMBERS": "Số cloze không hợp lệ trong mẫu thẻ.",
         "NOTETYPE_NOT_FOUND": "Không tìm thấy loại ghi chú.",
         "NOTE_FIELD_REQUIRED": "Tất cả các trường ghi chú đều bắt buộc."
+    },
+    "dictionary": {
+        "title": "Gợi ý từ điển:",
+        "not_found": "Không tìm thấy định nghĩa cho từ này.",
+        "error_fetch": "Lỗi khi tải dữ liệu từ điển.",
+        "no_results": "Không có kết quả.",
+        "example": "Ví dụ",
+        "apply_definition": "Dùng định nghĩa",
+        "apply_example": "Dùng ví dụ",
+        "suggest_tooltip": "Gợi ý nghĩa"
     }
 }

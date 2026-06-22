@@ -6,6 +6,7 @@ import api from "../../api/api";
 import { tokenizeTemplate } from "../../utils/cardParser";
 import { mapApiError } from "../../utils/errorMapper";
 import Button from "../../components/Common/Button/Button";
+import DictionaryModal from "../../components/Common/DictionaryModal/DictionaryModal";
 import "./CardDetail.css";
 
 const CardDetail = () => {
@@ -18,6 +19,11 @@ const CardDetail = () => {
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editFields, setEditFields] = useState([]);
+
+  // Dictionary modal states
+  const [dictModalOpen, setDictModalOpen] = useState(false);
+  const [dictTargetFieldId, setDictTargetFieldId] = useState(null);
+  const [dictWord, setDictWord] = useState("");
 
   useEffect(() => {
     fetchCardDetail();
@@ -52,6 +58,33 @@ const CardDetail = () => {
         field.name === fieldName ? { ...field, value } : field,
       ),
     );
+  };
+
+  const handleOpenDictionary = (targetFieldName) => {
+    if (editFields.length === 0) return;
+    const firstField = editFields[0];
+    const word = firstField.value || "";
+    if (!word.trim()) {
+      toast.error(t("addCard.error_first_field_empty") || "Please enter a word in the first field.");
+      return;
+    }
+    setDictWord(word.trim());
+    setDictTargetFieldId(targetFieldName);
+    setDictModalOpen(true);
+  };
+
+  const handleSelectDictionaryResult = (text) => {
+    if (dictTargetFieldId) {
+      setEditFields((prev) =>
+        prev.map((field) => {
+          if (field.name === dictTargetFieldId) {
+            return { ...field, value: field.value ? field.value + "\n" + text : text };
+          }
+          return field;
+        })
+      );
+    }
+    setDictModalOpen(false);
   };
 
   const handleSave = async () => {
@@ -175,9 +208,21 @@ const CardDetail = () => {
         {isEditing && (
           <div className="card-edit-fields">
             <h3>{t("common.edit")}</h3>
-            {(editFields || []).map((field) => (
+            {(editFields || []).map((field, index) => (
               <div key={field.name} className="card-edit-field-group">
-                <label className="card-edit-field-label">{field.name}</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label className="card-edit-field-label" style={{ marginBottom: 0 }}>{field.name}</label>
+                  {index > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenDictionary(field.name)}
+                      title={t("dictionary.suggest_tooltip")}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 4px' }}
+                    >
+                      🪄
+                    </button>
+                  )}
+                </div>
                 <textarea
                   className="card-edit-field-input"
                   value={field.value}
@@ -210,6 +255,13 @@ const CardDetail = () => {
           </div>
         </div>
       </div>
+
+      <DictionaryModal
+        isOpen={dictModalOpen}
+        word={dictWord}
+        onClose={() => setDictModalOpen(false)}
+        onSelect={handleSelectDictionaryResult}
+      />
     </div>
   );
 };
