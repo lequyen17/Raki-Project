@@ -53,6 +53,7 @@ from payment.serializers import (
     VnpayTopupRequestSerializer,
     VnpayTopupResponseSerializer,
     VnpayIpnResponseSerializer,
+    StripeTopupResponseSerializer,
     # MoMo uses same response serializer
 )
 from raki.openapi_common import (
@@ -138,6 +139,17 @@ urlpatterns = [
         "api/wallet/topup/momo/result/",
         payment_views.momo_result,
         name="momo_result",
+    ),
+    # Stripe endpoints
+    path(
+        "api/wallet/topup/stripe/",
+        payment_views.stripe_topup,
+        name="stripe_topup",
+    ),
+    path(
+        "api/wallet/topup/stripe/webhook/",
+        payment_views.stripe_webhook,
+        name="stripe_webhook",
     ),
     # Các route của deck
     path("api/decks/", deck_views.user_decks, name="user_decks"),

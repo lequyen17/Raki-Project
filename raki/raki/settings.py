@@ -14,6 +14,12 @@ VNPAY_PAYMENT_URL = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'  # get 
 VNPAY_API_URL = 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction'
 VNPAY_TMN_CODE = 'VNPAY202'  # Website ID in VNPAY System, get from config
 VNPAY_HASH_SECRET_KEY = '9U0RE0VREK9L3K159B5O32UXR24X79OF'  # Secret key for create checksum,get from config
+
+# Stripe configuration
+STRIPE_PUBLISHABLE_KEY = 'pk_test_51TkpnARuDgugaDReYpp9OI45GWrJ6Ceq8UGaJibhmHd9QZ00uNWgoPXXNfIA1iIjwCwX4UVzsbdWsGlq8k69VGaj00q9ueOXwm'
+STRIPE_SECRET_KEY = 'sk_test_51TkpnARuDgugaDRen1N64IetOEcfhioMyHcbIZfVHjmHbP64mhkriEApk1bMiBWn1RvCNlF43Z4KiZmWl5qBxT0Z00gRqfMhIe'
+STRIPE_WEBHOOK_SECRET = 'whsec_jeYVUSC8RMR865OWOiWmqSKTVF6UZWnU'  # Set this when you configure Stripe webhooks in the dashboard
+
 SECRET_KEY = "django-insecure-th-%d0roim2x$t-+inu!(v_eav@635=c30k*-=igvm$-uq_8jy"
 
 # SECURITY WARNING: don't run with debug turned on in production!

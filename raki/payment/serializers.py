@@ -41,3 +41,10 @@ class VnpayTopupResponseSerializer(serializers.Serializer):
 class VnpayIpnResponseSerializer(serializers.Serializer):
     RspCode = serializers.CharField()
     Message = serializers.CharField()
+
+
+class StripeTopupResponseSerializer(serializers.Serializer):
+    sessionId = serializers.CharField()
+    paymentId = serializers.IntegerField()
+    orderId = serializers.CharField()
+    payUrl = serializers.CharField()

@@ -21,6 +21,7 @@ from payment.serializers import (
     VnpayTopupRequestSerializer,
     VnpayTopupResponseSerializer,
     VnpayIpnResponseSerializer,
+    StripeTopupResponseSerializer,
     # MoMo serializer will be added later (reuse VnpayTopupResponseSerializer)
 )
 
@@ -403,3 +404,154 @@ def vnpay_result(request):
         else:
             context["message"] = "Thanh toán không thành công. Vui lòng thử lại."
     return render(request, "payment/result.html", context)
+
+
+# ---------------------------------------------------------------------------
+# Stripe top‑up endpoint (POST)
+@extend_schema(
+    tags=["Payment"],
+    summary="Create Stripe Checkout Session for top‑up",
+    request=VnpayTopupRequestSerializer,  # reuse – only needs `amount`
+    responses={200: StripeTopupResponseSerializer},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def stripe_topup(request):
+    amount_val = request.data.get("amount")
+    if not amount_val:
+        return Response({"error": "Amount is required"}, status=400)
+    try:
+        amount = int(amount_val)
+        if amount < 10000:
+            return Response(
+                {"error": "Minimum top up amount is 10,000 VND"}, status=400
+            )
+    except (ValueError, TypeError):
+        return Response({"error": "Invalid amount format"}, status=400)
+
+    payment_history = PaymentHistory.objects.create(
+        user=request.user,
+        amount_vnd=amount,
+        coin_received=amount,
+        status="pending",
+    )
+
+    order_id = f"{payment_history.id}_{uuid.uuid4().hex[:8]}"
+
+    # Build absolute URLs for Stripe redirect
+    redirect_url = request.data.get(
+        "redirectUrl",
+        request.build_absolute_uri("/app/wallet"),
+    )
+    success_url = f"{redirect_url}?stripe=success&session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{redirect_url}?stripe=cancel"
+
+    from .stripe_utils import create_stripe_checkout_session
+
+    try:
+        session = create_stripe_checkout_session(
+            amount=amount,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            order_id=order_id,
+            user_email=request.user.email or None,
+        )
+    except Exception as e:
+        logger.error("Stripe session creation failed: %s", str(e))
+        return Response({"error": str(e)}, status=500)
+
+    # Persist Stripe session id alongside our order_id for later reconciliation
+    serializer = StripeTopupResponseSerializer(
+        data={
+            "sessionId": session.id,
+            "paymentId": payment_history.id,
+            "orderId": order_id,
+            "payUrl": session.url,
+        }
+    )
+    if serializer.is_valid():
+        return Response(serializer.data)
+    return Response(serializer.errors, status=400)
+
+
+# ---------------------------------------------------------------------------
+# Stripe Webhook endpoint (POST) – called by Stripe servers
+import stripe as stripe_lib
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+
+
+@csrf_exempt
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def stripe_webhook(request):
+    """Handle Stripe webhook events.
+
+    Stripe sends a POST with the event payload. We verify the signature
+    (when STRIPE_WEBHOOK_SECRET is configured) and process
+    `checkout.session.completed` events to credit the user's coin balance.
+    """
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
+    webhook_secret = settings.STRIPE_WEBHOOK_SECRET
+
+    if webhook_secret:
+        try:
+            # Verify the signature (raises exception if invalid)
+            stripe_lib.Webhook.construct_event(
+                payload, sig_header, webhook_secret
+            )
+        except ValueError:
+            logger.error("Stripe webhook: invalid payload")
+            return HttpResponse(status=400)
+        except stripe_lib.error.SignatureVerificationError:
+            logger.error("Stripe webhook: invalid signature")
+            return HttpResponse(status=400)
+            
+    # Safely parse the raw payload as a standard Python dictionary to avoid StripeObject AttributeError
+    import json
+    try:
+        event_dict = json.loads(payload)
+    except Exception:
+        logger.error("Stripe webhook: failed to parse JSON payload")
+        return HttpResponse(status=400)
+
+    event_type = event_dict.get("type")
+
+    if event_type == "checkout.session.completed":
+        session_data = event_dict.get("data", {}).get("object", {})
+        order_id = session_data.get("metadata", {}).get("order_id")
+
+        if not order_id:
+            logger.warning("Stripe webhook: missing order_id in metadata")
+            return HttpResponse(status=200)
+
+        try:
+            payment_id = int(order_id.split("_")[0])
+        except (ValueError, IndexError):
+            logger.error("Stripe webhook: could not parse payment_id from %s", order_id)
+            return HttpResponse(status=200)
+
+        with transaction.atomic():
+            try:
+                payment = PaymentHistory.objects.select_for_update().get(id=payment_id)
+            except PaymentHistory.DoesNotExist:
+                logger.error("Stripe webhook: PaymentHistory %s not found", payment_id)
+                return HttpResponse(status=200)
+
+            if payment.status == "pending":
+                payment.status = "completed"
+                payment.save(update_fields=["status"])
+
+                profile = payment.user.profile
+                profile.coin_balance += payment.coin_received
+                profile.save(update_fields=["coin_balance"])
+
+                CoinHistory.objects.create(
+                    user=payment.user,
+                    amount=payment.coin_received,
+                    reason="TOPUP",
+                )
+                logger.info("Stripe webhook: credited %s coins for order %s", payment.coin_received, order_id)
+
+    return HttpResponse(status=200)

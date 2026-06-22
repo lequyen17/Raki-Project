@@ -132,7 +132,9 @@ const Wallet = () => {
       if (vnp_ResponseCode === "00") {
         const vnp_Amount = searchParams.get("vnp_Amount");
         const coinsReceived = vnp_Amount ? parseInt(vnp_Amount, 10) / 100 : 0;
-        toast.success(t("wallet.top_up_success", { coins: formatCoin(coinsReceived) }));
+        toast.success(
+          t("wallet.top_up_success", { coins: formatCoin(coinsReceived) }),
+        );
         // Refresh wallet data after successful top‑up
         (async () => {
           try {
@@ -172,7 +174,7 @@ const Wallet = () => {
       const redirectUrl = window.location.origin + "/app/wallet";
       const res = await api.post("/api/wallet/topup/vnpay/", {
         amount: amountVal,
-        redirectUrl: redirectUrl
+        redirectUrl: redirectUrl,
       });
       if (res.data.payUrl) {
         window.location.href = res.data.payUrl;
@@ -187,7 +189,42 @@ const Wallet = () => {
     }
   };
 
-  // New MoMo top‑up handler
+  // New Stripe top‑up handler
+  const handleStripeTopUpSubmit = async (e) => {
+    e.preventDefault();
+    const amountVal = parseInt(topUpAmount, 10);
+    if (isNaN(amountVal) || amountVal < 10000) {
+      toast.error(t("wallet.top_up_amount_invalid"));
+      return;
+    }
+    setTopUpSubmitting(true);
+    try {
+      const redirectUrl = window.location.origin + "/app/wallet";
+      const res = await api.post("/api/wallet/topup/stripe/", {
+        amount: amountVal,
+        redirectUrl: redirectUrl,
+      });
+
+      // Log này sẽ chạy nếu API trả về status 200 OK
+      console.log("API Thành Công - Dữ liệu res:", res);
+
+      if (res.data && res.data.payUrl) {
+        window.location.href = res.data.payUrl;
+      } else {
+        toast.error(t("wallet.top_up_error"));
+      }
+    } catch (err) {
+      // ĐÃ SỬA: Thay 'res' bằng 'err' để log đúng lỗi lỗi từ Axios
+      console.error("API Thất Bại - Chi tiết lỗi:", err.response || err);
+
+      const errMsg = err.response?.data?.error || t("wallet.top_up_error");
+      toast.error(errMsg);
+    } finally {
+      setTopUpSubmitting(false);
+    }
+  };
+
+  // MoMo top‑up handler
   const handleMoMoTopUpSubmit = async (e) => {
     e.preventDefault();
     const amountVal = parseInt(topUpAmount, 10);
@@ -218,7 +255,9 @@ const Wallet = () => {
   if (loading) {
     return (
       <div className="wallet-page">
-        <div className="wallet-container wallet-loading">{t("wallet.loading")}</div>
+        <div className="wallet-container wallet-loading">
+          {t("wallet.loading")}
+        </div>
       </div>
     );
   }
@@ -230,9 +269,14 @@ const Wallet = () => {
 
         {error && <div className="wallet-error">{error}</div>}
 
-        <section className="wallet-balance-card" aria-label={t("wallet.current_balance")}>
+        <section
+          className="wallet-balance-card"
+          aria-label={t("wallet.current_balance")}
+        >
           <div>
-            <p className="wallet-balance-label">{t("wallet.current_balance")}</p>
+            <p className="wallet-balance-label">
+              {t("wallet.current_balance")}
+            </p>
             <p className="wallet-balance-amount">
               <span className="wallet-balance-icon" aria-hidden="true">
                 🪙
@@ -244,7 +288,11 @@ const Wallet = () => {
           </div>
 
           <div className="wallet-balance-actions">
-            <Button color="orange" size="lg" onClick={() => setShowTopUpModal(true)}>
+            <Button
+              color="orange"
+              size="lg"
+              onClick={() => setShowTopUpModal(true)}
+            >
               {t("wallet.top_up")}
             </Button>
           </div>
@@ -252,7 +300,9 @@ const Wallet = () => {
 
         <section className="wallet-history-section">
           <div className="wallet-history-header">
-            <h2 className="wallet-history-title">{t("wallet.transaction_history")}</h2>
+            <h2 className="wallet-history-title">
+              {t("wallet.transaction_history")}
+            </h2>
             <Button
               color="blue"
               variant="outline"
@@ -263,7 +313,11 @@ const Wallet = () => {
             </Button>
           </div>
 
-          <div className="wallet-filter-tabs" role="tablist" aria-label={t("wallet.filters")}>
+          <div
+            className="wallet-filter-tabs"
+            role="tablist"
+            aria-label={t("wallet.filters")}
+          >
             {FILTERS.map((filter) => (
               <button
                 key={filter}
@@ -298,7 +352,10 @@ const Wallet = () => {
                         {getReasonLabel(item.reason)}
                       </p>
                     </div>
-                    <time className="wallet-transaction-date" dateTime={item.created_at}>
+                    <time
+                      className="wallet-transaction-date"
+                      dateTime={item.created_at}
+                    >
                       {formatDate(item.created_at)}
                     </time>
                   </li>
@@ -361,11 +418,14 @@ const Wallet = () => {
                   disabled={topUpSubmitting}
                 />
               </div>
-              
+
               <div className="wallet-topup-preview-card">
-                <p className="wallet-topup-rate">{t("wallet.top_up_rate_info")}</p>
+                <p className="wallet-topup-rate">
+                  {t("wallet.top_up_rate_info")}
+                </p>
                 <p className="wallet-topup-receive">
-                  🪙 {t("wallet.top_up_coins_receive", {
+                  🪙{" "}
+                  {t("wallet.top_up_coins_receive", {
                     coins: formatCoin(topUpAmount || 0),
                   })}
                 </p>
@@ -383,22 +443,32 @@ const Wallet = () => {
                 >
                   {t("common.cancel")}
                 </Button>
-                  <Button
-                    color="orange"
-                    type="submit"
-                    disabled={topUpSubmitting}
-                  >
-                    {topUpSubmitting ? t("common.loading") : t("wallet.top_up_submit")}
-                  </Button>
-                  <Button
-                    color="green"
-                    type="button"
-                    disabled={topUpSubmitting}
-                    onClick={handleMoMoTopUpSubmit}
-                  >
-                    {topUpSubmitting ? t("common.loading") : t("wallet.top_up_momo")}
-                  </Button>
-                </div>
+                <Button color="orange" type="submit" disabled={topUpSubmitting}>
+                  {topUpSubmitting
+                    ? t("common.loading")
+                    : t("wallet.top_up_submit")}
+                </Button>
+                <Button
+                  color="green"
+                  type="button"
+                  disabled={topUpSubmitting}
+                  onClick={handleMoMoTopUpSubmit}
+                >
+                  {topUpSubmitting
+                    ? t("common.loading")
+                    : t("wallet.top_up_momo")}
+                </Button>
+                <Button
+                  color="purple"
+                  type="button"
+                  disabled={topUpSubmitting}
+                  onClick={handleStripeTopUpSubmit}
+                >
+                  {topUpSubmitting
+                    ? t("common.loading")
+                    : t("wallet.top_up_stripe")}
+                </Button>
+              </div>
             </form>
           </div>
         </div>
@@ -432,7 +502,9 @@ const Wallet = () => {
             </div>
             <div className="wallet-modal-body">
               {paymentLoading ? (
-                <div className="wallet-loading">{t("wallet.loading_payment")}</div>
+                <div className="wallet-loading">
+                  {t("wallet.loading_payment")}
+                </div>
               ) : paymentError ? (
                 <div className="wallet-error">{paymentError}</div>
               ) : paymentHistory.length === 0 ? (
@@ -450,9 +522,13 @@ const Wallet = () => {
                         })}
                       </span>
                       <div className="wallet-payment-coin">
-                        + {formatCoin(item.coin_received)} {t("wallet.coin_unit")}
+                        + {formatCoin(item.coin_received)}{" "}
+                        {t("wallet.coin_unit")}
                       </div>
-                      <time className="wallet-payment-date" dateTime={item.created_at}>
+                      <time
+                        className="wallet-payment-date"
+                        dateTime={item.created_at}
+                      >
                         {formatDate(item.created_at)}
                       </time>
                     </li>
