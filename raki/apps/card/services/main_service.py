@@ -36,7 +36,7 @@ class CardMainService:
         cards = CardRepository.get_cards_by_deck_ids_ordered(all_deck_ids)
         progress_dict = CardRepository.get_progress_dict(cards, user)
 
-        from raki.apps.deck.models import UserDeck
+        from apps.deck.models import UserDeck
 
         editable_deck_ids = set(
             UserDeck.objects.filter(
@@ -74,7 +74,7 @@ class CardMainService:
         if not card:
             raise LookupError("CARD_NOT_FOUND")
 
-        from raki.apps.deck.models import UserDeck
+        from apps.deck.models import UserDeck
 
         is_owner = UserDeck.objects.filter(
             user=user, deck=card.note.deck, role__in=["owner", "editor"]
