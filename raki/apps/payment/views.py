@@ -68,7 +68,6 @@ def payment_histories(request):
 
 # Helper to get client IP (kept for future use)
 from datetime import datetime
-from apps.payment.vnpay import vnpay
 
 
 def get_client_ip(request):
@@ -120,29 +119,19 @@ def vnpay_topup(request):
     # Unique transaction reference (max 32 chars)
     order_id = f"{payment_history.id}_{uuid.uuid4().hex[:8]}"
     # Hard‑coded public Vietnamese IP for testing
-    ipaddr = "14.226.5.81"
+    ipaddr = get_client_ip(request)
 
-    vnp = vnpay()
-    vnp.requestData["vnp_Version"] = "2.1.0"
-    vnp.requestData["vnp_Command"] = "pay"
-    vnp.requestData["vnp_TmnCode"] = "DZLOX1ST"
-    vnp.requestData["vnp_Amount"] = amount * 100
-    vnp.requestData["vnp_CurrCode"] = "VND"
-    vnp.requestData["vnp_TxnRef"] = order_id
-    vnp.requestData["vnp_OrderInfo"] = f"Thanh toan don hang {order_id}"
-    vnp.requestData["vnp_OrderType"] = "other"
-    vnp.requestData["vnp_Locale"] = "vn"
-    vnp.requestData["vnp_CreateDate"] = now.strftime("%Y%m%d%H%M%S")
-    vnp.requestData["vnp_ExpireDate"] = expire.strftime("%Y%m%d%H%M%S")
-    vnp.requestData["vnp_IpAddr"] = ipaddr
-    vnp.requestData["vnp_ReturnUrl"] = request.build_absolute_uri(
-        "/api/wallet/topup/vnpay/result/"
-    )
+    from apps.payment.registry import PaymentGatewayRegistry
 
-    vnpay_payment_url = vnp.get_payment_url(
-        "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html",
-        "FRD8HSODHRZU3MUSVYOE0O14J48Z190J",
+    vnp_gateway = PaymentGatewayRegistry.get("vnpay")
+
+    result = vnp_gateway.create_payment(
+        amount=amount,
+        order_id=order_id,
+        ipaddr=ipaddr,
+        return_url=request.build_absolute_uri("/api/wallet/topup/vnpay/result/"),
     )
+    vnpay_payment_url = result["pay_url"]
 
     serializer = VnpayTopupResponseSerializer(
         data={
@@ -191,11 +180,16 @@ def momo_topup(request):
     redirect_url = request.build_absolute_uri("/api/wallet/topup/momo/result/")
     ipn_url = request.build_absolute_uri("/api/wallet/topup/momo/ipn/")
 
-    # Use helper to create MoMo payment URL
-    from .momo import create_momo_payment
+    # Use PaymentGatewayRegistry
+    from apps.payment.registry import PaymentGatewayRegistry
+
+    momo_gateway = PaymentGatewayRegistry.get("momo")
 
     try:
-        pay_url = create_momo_payment(amount, redirect_url, ipn_url, order_id)
+        result = momo_gateway.create_payment(
+            amount=amount, order_id=order_id, redirect_url=redirect_url, ipn_url=ipn_url
+        )
+        pay_url = result["pay_url"]
     except Exception as e:
         return Response({"error": str(e)}, status=500)
 
@@ -305,13 +299,15 @@ def vnpay_ipn(request):
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
 
-    vnp = vnpay()
-    vnp.responseData = inputData.dict()
+    from apps.payment.registry import PaymentGatewayRegistry
+
+    vnp_gateway = PaymentGatewayRegistry.get("vnpay")
+
     order_id = inputData.get("vnp_TxnRef")
     vnp_ResponseCode = inputData.get("vnp_ResponseCode")
 
     # Validate VNPay signature
-    if not vnp.validate_response("FRD8HSODHRZU3MUSVYOE0O14J48Z190J"):
+    if not vnp_gateway.verify_payment(inputData.dict()):
         serializer = VnpayIpnResponseSerializer(
             data={"RspCode": "97", "Message": "Invalid Signature"}
         )
@@ -394,9 +390,11 @@ def vnpay_result(request):
         "message": "Missing payment information.",
     }
     if vnp_ResponseCode and vnp_TxnRef and vnp_SecureHash:
-        vnp = vnpay()
-        vnp.responseData = request.GET.dict()
-        valid = vnp.validate_response("FRD8HSODHRZU3MUSVYOE0O14J48Z190J")
+        from apps.payment.registry import PaymentGatewayRegistry
+
+        vnp_gateway = PaymentGatewayRegistry.get("vnpay")
+
+        valid = vnp_gateway.verify_payment(request.GET.dict())
         context["valid"] = valid
         if valid and vnp_ResponseCode == "00":
             context["is_success"] = True
@@ -446,14 +444,16 @@ def stripe_topup(request):
     success_url = f"{redirect_url}?stripe=success&session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{redirect_url}?stripe=cancel"
 
-    from .stripe_utils import create_stripe_checkout_session
+    from apps.payment.registry import PaymentGatewayRegistry
+
+    stripe_gateway = PaymentGatewayRegistry.get("stripe")
 
     try:
-        session = create_stripe_checkout_session(
+        result = stripe_gateway.create_payment(
             amount=amount,
+            order_id=order_id,
             success_url=success_url,
             cancel_url=cancel_url,
-            order_id=order_id,
             user_email=request.user.email or None,
         )
     except Exception as e:
@@ -463,10 +463,10 @@ def stripe_topup(request):
     # Persist Stripe session id alongside our order_id for later reconciliation
     serializer = StripeTopupResponseSerializer(
         data={
-            "sessionId": session.id,
+            "sessionId": result["session_id"],
             "paymentId": payment_history.id,
             "orderId": order_id,
-            "payUrl": session.url,
+            "payUrl": result["pay_url"],
         }
     )
     if serializer.is_valid():
@@ -496,14 +496,14 @@ def stripe_webhook(request):
     webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
     if webhook_secret:
-        try:
-            # Verify the signature (raises exception if invalid)
-            stripe_lib.Webhook.construct_event(payload, sig_header, webhook_secret)
-        except ValueError:
-            logger.error("Stripe webhook: invalid payload")
-            return HttpResponse(status=400)
-        except stripe_lib.error.SignatureVerificationError:
-            logger.error("Stripe webhook: invalid signature")
+        from apps.payment.registry import PaymentGatewayRegistry
+
+        stripe_gateway = PaymentGatewayRegistry.get("stripe")
+
+        if not stripe_gateway.verify_payment(
+            {"payload": payload, "sig_header": sig_header}
+        ):
+            logger.error("Stripe webhook: signature verification failed")
             return HttpResponse(status=400)
 
     # Safely parse the raw payload as a standard Python dictionary to avoid StripeObject AttributeError

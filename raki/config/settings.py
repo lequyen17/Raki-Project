@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "apps.note",
     "apps.card",
     "apps.payment",
+    "infrastructure.payment",
     "drf_spectacular",
 ]
 
