@@ -3,8 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <title>
-      {% if is_success %}Thanh toán thành công{% else %}Thanh toán thất bại{%
-      endif %}
+      <title>
+  {% if is_success %}
+    Thanh toán thành công
+  {% else %}
+    Thanh toán thất bại
+  {% endif %}
+</title>
     </title>
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
@@ -77,7 +82,7 @@
       <div class="icon success">&#10004;</div>
       <h1>Thanh toán thành công!</h1>
       <p>
-        Bạn đã nạp <strong>{{ coins }} coin</strong> ({{ amount_vnd }} VND).
+        Bạn đã nạp coin thành công.
       </p>
       {% else %}
       <div class="icon failure">&#10008;</div>

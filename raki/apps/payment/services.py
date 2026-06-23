@@ -121,7 +121,7 @@ class PaymentService:
         if not order_id:
             return False, "Missing orderId"
 
-        if result_code == "0":
+        if str(result_code) == "0":
             try:
                 payment_id = int(order_id.split("_")[0])
                 with transaction.atomic():

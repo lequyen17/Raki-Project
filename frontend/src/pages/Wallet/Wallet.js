@@ -164,7 +164,7 @@ const Wallet = () => {
   const handleTopUpSubmit = async (e) => {
     e.preventDefault();
     const amountVal = parseInt(topUpAmount, 10);
-    if (isNaN(amountVal) || amountVal < 100000) {
+    if (isNaN(amountVal) || amountVal < 10000) {
       toast.error(t("wallet.top_up_amount_invalid"));
       return;
     }
@@ -193,7 +193,7 @@ const Wallet = () => {
   const handleStripeTopUpSubmit = async (e) => {
     e.preventDefault();
     const amountVal = parseInt(topUpAmount, 10);
-    if (isNaN(amountVal) || amountVal < 100000) {
+    if (isNaN(amountVal) || amountVal < 10000) {
       toast.error(t("wallet.top_up_amount_invalid"));
       return;
     }
@@ -228,7 +228,7 @@ const Wallet = () => {
   const handleMoMoTopUpSubmit = async (e) => {
     e.preventDefault();
     const amountVal = parseInt(topUpAmount, 10);
-    if (isNaN(amountVal) || amountVal < 100000) {
+    if (isNaN(amountVal) || amountVal < 10000) {
       toast.error(t("wallet.top_up_amount_invalid"));
       return;
     }
@@ -413,7 +413,7 @@ const Wallet = () => {
                   placeholder={t("wallet.top_up_amount_placeholder")}
                   value={topUpAmount}
                   onChange={(e) => setTopUpAmount(e.target.value)}
-                  min="100000"
+                  min="10000"
                   required
                   disabled={topUpSubmitting}
                 />

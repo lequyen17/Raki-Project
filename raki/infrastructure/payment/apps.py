@@ -1,5 +1,4 @@
 from django.apps import AppConfig
-from django.conf import settings
 
 
 class PaymentInfrastructureConfig(AppConfig):
@@ -38,7 +37,7 @@ class PaymentInfrastructureConfig(AppConfig):
         PaymentGatewayRegistry.register(
             "stripe",
             StripeGateway(
-                secret_key=getattr(settings, "STRIPE_SECRET_KEY", ""),
-                webhook_secret=getattr(settings, "STRIPE_WEBHOOK_SECRET", None),
+                secret_key="sk_test_51TkpnARuDgugaDRen1N64IetOEcfhioMyHcbIZfVHjmHbP64mhkriEApk1bMiBWn1RvCNlF43Z4KiZmWl5qBxT0Z00gRqfMhIe",
+                webhook_secret="whsec_jeYVUSC8RMR865OWOiWmqSKTVF6UZWnU",
             ),
         )
