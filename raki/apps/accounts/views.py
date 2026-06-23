@@ -4,8 +4,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from config.api_validation import parse_request
-from config.openapi_common import ErrorResponseSerializer
+from core.utils.api_validation import parse_request
+from core.utils.openapi_common import ErrorResponseSerializer
 from apps.accounts.serializers import (
     CurrentUserSerializer,
     ProfileUpdateResponseSerializer,

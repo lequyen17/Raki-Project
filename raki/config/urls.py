@@ -56,7 +56,7 @@ from apps.payment.serializers import (
     StripeTopupResponseSerializer,
     # MoMo uses same response serializer
 )
-from config.openapi_common import (
+from core.utils.openapi_common import (
     TokenObtainPairRequestSerializer,
     TokenPairResponseSerializer,
     TokenRefreshRequestSerializer,

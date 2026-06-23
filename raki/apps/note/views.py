@@ -3,8 +3,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from config.api_validation import parse_request
-from config.openapi_common import ErrorResponseSerializer
+from core.utils.api_validation import parse_request
+from core.utils.openapi_common import ErrorResponseSerializer
 from apps.note.serializers import (
     NoteCreateResponseSerializer,
     NoteCreateSerializer,
