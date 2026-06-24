@@ -78,15 +78,15 @@ def get_client_ip(request):
 @permission_classes([IsAuthenticated])
 def vnpay_topup(request):
     amount_val = request.data.get("amount")
-    
+
     success, message, data = PaymentService.create_topup(
         user=request.user,
         amount=amount_val,
         gateway_type="vnpay",
         ipaddr=get_client_ip(request),
-        return_url=request.build_absolute_uri("/api/wallet/topup/vnpay/result/")
+        return_url=request.data.get("redirectUrl"),
     )
-    
+
     if not success:
         return Response({"error": message}, status=400)
 
@@ -110,7 +110,7 @@ def momo_topup(request):
         amount=amount_val,
         gateway_type="momo",
         redirect_url=request.build_absolute_uri("/api/wallet/topup/momo/result/"),
-        ipn_url=request.build_absolute_uri("/api/wallet/topup/momo/ipn/")
+        ipn_url=request.build_absolute_uri("/api/wallet/topup/momo/ipn/"),
     )
 
     if not success:
@@ -131,19 +131,16 @@ def momo_result(request):
     logger.info("MoMo result callback received: %s", request.GET.dict())
     result_code = request.GET.get("resultCode")
     order_id = request.GET.get("orderId")
+    amount = request.GET.get("amount", "0")
 
     FRONTEND_WALLET_URL = "https://trilogy-had-train.ngrok-free.dev/app/wallet"
 
     success, message = PaymentService.process_momo_callback(order_id, result_code)
-    
+
     if success:
-        return redirect(FRONTEND_WALLET_URL)
-    
-    return Response({
-        "valid": False,
-        "status": "failed",
-        "message": message
-    }, status=400)
+        return redirect(f"{FRONTEND_WALLET_URL}?momo=success&amount={amount}")
+
+    return redirect(f"{FRONTEND_WALLET_URL}?momo=failed")
 
 
 # VNPay IPN endpoint
@@ -158,7 +155,7 @@ def vnpay_ipn(request):
     print("\n=== [VNPay IPN Request GET Data] ===")
     print(request.GET.dict())
     print("=====================================\n")
-    
+
     input_data = request.GET
     result_data = PaymentService.process_vnpay_ipn(input_data.dict())
 
@@ -172,22 +169,26 @@ def vnpay_result(request):
     print("\n=== [VNPay RESULT Request GET Data] ===")
     print(request.GET.dict())
     print("========================================\n")
-    
+
     valid, is_success = PaymentService.verify_vnpay_result(request.GET.dict())
-    
+
     context = {
         "valid": valid,
         "status": valid,
         "message": "Missing payment information.",
     }
-    
-    if request.GET.get("vnp_ResponseCode") and request.GET.get("vnp_TxnRef") and request.GET.get("vnp_SecureHash"):
+
+    if (
+        request.GET.get("vnp_ResponseCode")
+        and request.GET.get("vnp_TxnRef")
+        and request.GET.get("vnp_SecureHash")
+    ):
         if is_success:
             context["is_success"] = True
             context["message"] = "Thanh toán thành công!"
         else:
             context["message"] = "Thanh toán không thành công. Vui lòng thử lại."
-            
+
     return render(request, "payment/result.html", context)
 
 
@@ -202,12 +203,12 @@ def vnpay_result(request):
 @permission_classes([IsAuthenticated])
 def stripe_topup(request):
     amount_val = request.data.get("amount")
-    
+
     redirect_url = request.data.get(
         "redirectUrl",
         request.build_absolute_uri("/app/wallet"),
     )
-    success_url = f"{redirect_url}?stripe=success&session_id={{CHECKOUT_SESSION_ID}}"
+    success_url = f"{redirect_url}?stripe=success&amount={amount_val}&session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{redirect_url}?stripe=cancel"
 
     success, message, data = PaymentService.create_topup(
@@ -215,7 +216,7 @@ def stripe_topup(request):
         amount=amount_val,
         gateway_type="stripe",
         success_url=success_url,
-        cancel_url=cancel_url
+        cancel_url=cancel_url,
     )
 
     if not success:
@@ -228,6 +229,7 @@ def stripe_topup(request):
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 
+
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -236,8 +238,10 @@ def stripe_webhook(request):
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
     webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
-    success, message = PaymentService.process_stripe_webhook(payload, sig_header, webhook_secret)
-    
+    success, message = PaymentService.process_stripe_webhook(
+        payload, sig_header, webhook_secret
+    )
+
     if not success:
         logger.error(f"Stripe webhook error: {message}")
         return HttpResponse(status=400)

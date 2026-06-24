@@ -60,10 +60,7 @@ class PaymentService:
             return False, "Invalid amount format", None
 
         payment_history = PaymentRepository.create_payment(
-            user=user,
-            amount_vnd=amount,
-            coin_received=amount,
-            status="pending"
+            user=user, amount_vnd=amount, coin_received=amount, status="pending"
         )
 
         order_id = f"{payment_history.id}_{uuid.uuid4().hex[:8]}"
@@ -75,26 +72,34 @@ class PaymentService:
                     amount=amount,
                     order_id=order_id,
                     ipaddr=kwargs.get("ipaddr"),
-                    return_url=kwargs.get("return_url")
+                    return_url=kwargs.get("return_url"),
                 )
-                return True, "Success", {
-                    "payUrl": result["pay_url"],
-                    "paymentId": payment_history.id,
-                    "orderId": order_id
-                }
+                return (
+                    True,
+                    "Success",
+                    {
+                        "payUrl": result["pay_url"],
+                        "paymentId": payment_history.id,
+                        "orderId": order_id,
+                    },
+                )
 
             elif gateway_type == "momo":
                 result = gateway.create_payment(
                     amount=amount,
                     order_id=order_id,
                     redirect_url=kwargs.get("redirect_url"),
-                    ipn_url=kwargs.get("ipn_url")
+                    ipn_url=kwargs.get("ipn_url"),
                 )
-                return True, "Success", {
-                    "payUrl": result["pay_url"],
-                    "paymentId": payment_history.id,
-                    "orderId": order_id
-                }
+                return (
+                    True,
+                    "Success",
+                    {
+                        "payUrl": result["pay_url"],
+                        "paymentId": payment_history.id,
+                        "orderId": order_id,
+                    },
+                )
 
             elif gateway_type == "stripe":
                 result = gateway.create_payment(
@@ -102,14 +107,18 @@ class PaymentService:
                     order_id=order_id,
                     success_url=kwargs.get("success_url"),
                     cancel_url=kwargs.get("cancel_url"),
-                    user_email=user.email or None
+                    user_email=user.email or None,
                 )
-                return True, "Success", {
-                    "sessionId": result["session_id"],
-                    "paymentId": payment_history.id,
-                    "orderId": order_id,
-                    "payUrl": result["pay_url"]
-                }
+                return (
+                    True,
+                    "Success",
+                    {
+                        "sessionId": result["session_id"],
+                        "paymentId": payment_history.id,
+                        "orderId": order_id,
+                        "payUrl": result["pay_url"],
+                    },
+                )
             else:
                 return False, "Unsupported gateway", None
         except Exception as e:
@@ -125,7 +134,9 @@ class PaymentService:
             try:
                 payment_id = int(order_id.split("_")[0])
                 with transaction.atomic():
-                    payment = PaymentRepository.get_payment_by_id(payment_id, for_update=True)
+                    payment = PaymentRepository.get_payment_by_id(
+                        payment_id, for_update=True
+                    )
                     if payment.status == "pending":
                         PaymentRepository.mark_payment_completed(payment)
                 return True, "Success"
@@ -139,7 +150,7 @@ class PaymentService:
     @staticmethod
     def process_vnpay_ipn(input_data):
         gateway = PaymentGatewayRegistry.get("vnpay")
-        
+
         if not input_data:
             return {"RspCode": "99", "Message": "Invalid request"}
 
@@ -148,7 +159,7 @@ class PaymentService:
 
         order_id = input_data.get("vnp_TxnRef")
         vnp_ResponseCode = input_data.get("vnp_ResponseCode")
-        
+
         try:
             payment_id = int(order_id.split("_")[0])
             payment = PaymentRepository.get_payment_by_id(payment_id)
@@ -164,7 +175,9 @@ class PaymentService:
 
         if vnp_ResponseCode == "00":
             with transaction.atomic():
-                payment = PaymentRepository.get_payment_by_id(payment_id, for_update=True)
+                payment = PaymentRepository.get_payment_by_id(
+                    payment_id, for_update=True
+                )
                 if payment.status == "pending":
                     PaymentRepository.mark_payment_completed(payment)
             return {"RspCode": "00", "Message": "Confirm Success"}
@@ -178,7 +191,7 @@ class PaymentService:
         vnp_ResponseCode = input_data.get("vnp_ResponseCode")
         vnp_TxnRef = input_data.get("vnp_TxnRef")
         vnp_SecureHash = input_data.get("vnp_SecureHash")
-        
+
         if vnp_ResponseCode and vnp_TxnRef and vnp_SecureHash:
             valid = gateway.verify_payment(input_data)
             is_success = valid and vnp_ResponseCode == "00"
@@ -189,10 +202,13 @@ class PaymentService:
     def process_stripe_webhook(payload, sig_header, webhook_secret):
         if webhook_secret:
             gateway = PaymentGatewayRegistry.get("stripe")
-            if not gateway.verify_payment({"payload": payload, "sig_header": sig_header}):
+            if not gateway.verify_payment(
+                {"payload": payload, "sig_header": sig_header}
+            ):
                 return False, "Signature verification failed"
 
         import json
+
         try:
             event_dict = json.loads(payload)
         except Exception:
@@ -213,7 +229,9 @@ class PaymentService:
 
             with transaction.atomic():
                 try:
-                    payment = PaymentRepository.get_payment_by_id(payment_id, for_update=True)
+                    payment = PaymentRepository.get_payment_by_id(
+                        payment_id, for_update=True
+                    )
                     if payment.status == "pending":
                         PaymentRepository.mark_payment_completed(payment)
                 except Exception:

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../../api/api";
@@ -123,15 +123,51 @@ const Wallet = () => {
     loadWallet();
   }, [navigate, t]);
 
+  const paymentHandledRef = useRef(false);
+
   useEffect(() => {
+    // VNPay Check
     const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");
     const vnp_TxnRef = searchParams.get("vnp_TxnRef");
     const vnp_SecureHash = searchParams.get("vnp_SecureHash");
 
+    // Stripe Check
+    const stripeStatus = searchParams.get("stripe");
+
+    // MoMo Check
+    const momoStatus = searchParams.get("momo");
+
+    let isHandled = false;
+    let isSuccess = false;
+    let coinsReceived = 0;
+
     if (vnp_ResponseCode && vnp_TxnRef && vnp_SecureHash) {
+      isHandled = true;
       if (vnp_ResponseCode === "00") {
+        isSuccess = true;
         const vnp_Amount = searchParams.get("vnp_Amount");
-        const coinsReceived = vnp_Amount ? parseInt(vnp_Amount, 10) / 100 : 0;
+        coinsReceived = vnp_Amount ? parseInt(vnp_Amount, 10) / 100 : 0;
+      }
+    } else if (stripeStatus) {
+      isHandled = true;
+      if (stripeStatus === "success") {
+        isSuccess = true;
+        const amount = searchParams.get("amount");
+        coinsReceived = amount ? parseInt(amount, 10) : 0;
+      }
+    } else if (momoStatus) {
+      isHandled = true;
+      if (momoStatus === "success") {
+        isSuccess = true;
+        const amount = searchParams.get("amount");
+        coinsReceived = amount ? parseInt(amount, 10) : 0;
+      }
+    }
+
+    // Guard: only handle payment callback once per redirect
+    if (isHandled && !paymentHandledRef.current) {
+      paymentHandledRef.current = true;
+      if (isSuccess) {
         toast.success(
           t("wallet.top_up_success", { coins: formatCoin(coinsReceived) }),
         );
@@ -145,7 +181,7 @@ const Wallet = () => {
             setCoinBalance(walletRes.data.coin_balance ?? 0);
             setAllTransactions(historyRes.data.results || []);
           } catch (err) {
-            console.error("Failed to refresh wallet after VNPay", err);
+            console.error("Failed to refresh wallet after top up", err);
           }
         })();
       } else {
@@ -154,7 +190,7 @@ const Wallet = () => {
       // Clean query params to avoid duplicate toasts on refresh
       navigate("/wallet", { replace: true });
     }
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, t]);
 
   const handleOpenPaymentHistory = async () => {
     setShowPaymentHistory(true);
