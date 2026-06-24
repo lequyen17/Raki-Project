@@ -57,11 +57,19 @@ const Header = () => {
           }}
         >
           <div className="raki-brand">
-            <a href="/" className="raki-logo">
-              <span className="raki-logo__text">
-                <span className="raki-logo__accent">ra</span>ki
-              </span>
-            </a>
+            {currentUser ? (
+              <Link to="/decks" className="raki-logo">
+                <span className="raki-logo__text">
+                  <span className="raki-logo__accent">ra</span>ki
+                </span>
+              </Link>
+            ) : (
+              <a href="/" className="raki-logo">
+                <span className="raki-logo__text">
+                  <span className="raki-logo__accent">ra</span>ki
+                </span>
+              </a>
+            )}
           </div>
 
           <nav className="raki-nav-links">
