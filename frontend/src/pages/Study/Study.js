@@ -110,17 +110,32 @@ const Study = () => {
     console.log(newAnswers);
   };
 
+  const RATING_KEYS = { "1": "again", "2": "hard", "3": "good", "4": "easy" };
+
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Ignore key events from input/textarea elements
       const tagName = e.target.tagName;
-      if (e.key !== "Enter" || e.shiftKey) return;
+      if (tagName === "INPUT" || tagName === "TEXTAREA") return;
+      if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
 
-      // Avoid triggering if we're already showing the answer or submitting
-      if (showAnswer || submitting) return;
+      if (!showAnswer && !submitting && e.key === "Enter") {
+        // Prevent default behavior (like form submit) and show answer
+        e.preventDefault();
+        handleShowAnswer();
+        return;
+      }
 
-      // Prevent default behavior (like form submit) and show answer
-      e.preventDefault();
-      handleShowAnswer();
+      if (showAnswer && !submitting && e.key === "Enter") {
+        e.preventDefault();
+        setShowAnswer(false);
+        return;
+      }
+
+      if (showAnswer && !submitting && RATING_KEYS[e.key]) {
+        e.preventDefault();
+        handleReview(RATING_KEYS[e.key]);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -254,6 +269,7 @@ const Study = () => {
                 disabled={submitting}
                 onClick={() => handleReview("again")}
               >
+                <span className="btn-key-hint">1</span>
                 <span className="btn-label">{t("study.again")}</span>
                 <span className="btn-hint">&lt;1m</span>
               </button>
@@ -262,6 +278,7 @@ const Study = () => {
                 disabled={submitting}
                 onClick={() => handleReview("hard")}
               >
+                <span className="btn-key-hint">2</span>
                 <span className="btn-label">{t("study.hard")}</span>
                 <span className="btn-hint">&lt;10m</span>
               </button>
@@ -270,6 +287,7 @@ const Study = () => {
                 disabled={submitting}
                 onClick={() => handleReview("good")}
               >
+                <span className="btn-key-hint">3</span>
                 <span className="btn-label">{t("study.good")}</span>
               </button>
               <button
@@ -277,6 +295,7 @@ const Study = () => {
                 disabled={submitting}
                 onClick={() => handleReview("easy")}
               >
+                <span className="btn-key-hint">4</span>
                 <span className="btn-label">{t("study.easy")}</span>
               </button>
             </div>
