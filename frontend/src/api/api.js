@@ -71,10 +71,7 @@ api.interceptors.response.use(
       }
 
       try {
-        const res = await axios.post(
-          `${process.env.REACT_APP_API_URL}/api/token/refresh/`,
-          { refresh },
-        );
+        const res = await axios.post("/api/token/refresh/", { refresh });
 
         const newAccess = res.data.access;
         const newRefresh = res.data.refresh;
