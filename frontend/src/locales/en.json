@@ -105,7 +105,17 @@
     "error_password_min": "Password must be at least 6 characters",
     "error_confirm_required": "Please confirm your password",
     "error_confirm_mismatch": "Password confirmation does not match",
-    "error_phone_invalid": "Invalid phone number"
+    "error_phone_invalid": "Invalid phone number",
+    "otp_title": "Verify Your Email",
+    "otp_subtitle": "We sent a 6-digit code to",
+    "otp_label": "Enter OTP Code",
+    "otp_submit": "Verify & Create Account",
+    "otp_resend": "Resend OTP",
+    "otp_resend_in": "Resend in {{seconds}}s",
+    "otp_expires_in": "Code expires in",
+    "otp_expired_message": "OTP has expired. Please request a new one.",
+    "otp_back": "← Back to form",
+    "otp_success": "Account created! Redirecting to login..."
   },
 
   "profile": {
@@ -413,7 +423,10 @@
     "CLOZE_REQUIRED": "Cloze templates must contain at least one {{c1::...}}.",
     "CLOZE_INVALID_NUMBERS": "Invalid cloze numbers in template.",
     "NOTETYPE_NOT_FOUND": "Note type not found.",
-    "NOTE_FIELD_REQUIRED": "All note fields are required."
+    "NOTE_FIELD_REQUIRED": "All note fields are required.",
+    "OTP_INVALID": "Incorrect OTP code. Please try again.",
+    "OTP_EXPIRED": "OTP has expired. Please register again.",
+    "OTP_NOT_FOUND": "OTP not found. Please register again."
   },
   "dictionary": {
     "title": "Dictionary Suggestion:",

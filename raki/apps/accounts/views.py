@@ -8,6 +8,7 @@ from core.utils.api_validation import parse_request
 from core.utils.openapi_common import ErrorResponseSerializer
 from apps.accounts.serializers import (
     CurrentUserSerializer,
+    OtpVerifySerializer,
     ProfileUpdateResponseSerializer,
     RegisterResponseSerializer,
     UserProfileSerializer,
@@ -88,9 +89,37 @@ def user_profile(request):
 
 @extend_schema(
     tags=["Accounts"],
-    summary="Đăng ký tài khoản",
+    summary="Bước 1 đăng ký — Gửi OTP qua email",
     auth=[],
     request=UserRegistrationSerializer,
+    responses={
+        200: {"description": "OTP đã được gửi tới email"},
+        400: ErrorResponseSerializer,
+        500: ErrorResponseSerializer,
+    },
+)
+@api_view(["POST"])
+def register_view(request):
+    """
+    Bước 1: Nhận thông tin đăng ký, validate, tạo OTP, lưu Redis (5 phút),
+    gửi OTP qua email. Chưa tạo tài khoản.
+    """
+    validated, error_response = parse_request(request, UserRegistrationSerializer)
+    if error_response:
+        return error_response
+
+    try:
+        data = UserService.initiate_registration(validated)
+        return Response(data, status=200)
+    except Exception as e:
+        return JsonResponse({"error": "REGISTER_FAILED"}, status=500)
+
+
+@extend_schema(
+    tags=["Accounts"],
+    summary="Bước 2 đăng ký — Xác thực OTP & tạo tài khoản",
+    auth=[],
+    request=OtpVerifySerializer,
     responses={
         201: RegisterResponseSerializer,
         400: ErrorResponseSerializer,
@@ -98,13 +127,23 @@ def user_profile(request):
     },
 )
 @api_view(["POST"])
-def register_view(request):
-    validated, error_response = parse_request(request, UserRegistrationSerializer)
+def verify_otp_view(request):
+    """
+    Bước 2: Nhận email + OTP, xác thực với Redis.
+    Nếu đúng thì tạo tài khoản và gửi mail chào mừng.
+    """
+    validated, error_response = parse_request(request, OtpVerifySerializer)
     if error_response:
         return error_response
 
+    email = validated["email"]
+    otp = validated["otp"]
+
     try:
-        data = UserService.register_user(validated)
+        data = UserService.verify_otp_and_register(email, otp)
         return Response(data, status=201)
+    except ValueError as e:
+        error_code = str(e)
+        return JsonResponse({"error": error_code}, status=400)
     except Exception as e:
         return JsonResponse({"error": "REGISTER_FAILED"}, status=500)

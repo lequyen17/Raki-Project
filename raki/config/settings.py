@@ -170,3 +170,17 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "COMPONENT_SPLIT_REQUEST": True,
 }
+
+# Email configuration (SMTP via Gmail)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "halequyen1725@gmail.com"
+EMAIL_HOST_PASSWORD = "zuqo umap whyj yfgk"
+DEFAULT_FROM_EMAIL = "Raki App <halequyen1725@gmail.com>"
+
+
+REDIS_HOST = "redis"
+REDIS_PORT = 6379
+REDIS_DB = 0

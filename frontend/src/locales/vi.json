@@ -104,7 +104,17 @@
         "error_password_min": "Mật khẩu phải có ít nhất 6 ký tự",
         "error_confirm_required": "Vui lòng xác nhận mật khẩu",
         "error_confirm_mismatch": "Xác nhận mật khẩu không khớp",
-        "error_phone_invalid": "Số điện thoại không hợp lệ"
+        "error_phone_invalid": "Số điện thoại không hợp lệ",
+        "otp_title": "Xác thực Email của bạn",
+        "otp_subtitle": "Chúng tôi đã gửi mã 6 chữ số đến",
+        "otp_label": "Nhập mã OTP",
+        "otp_submit": "Xác nhận & Tạo tài khoản",
+        "otp_resend": "Gửi lại OTP",
+        "otp_resend_in": "Gửi lại sau {{seconds}}s",
+        "otp_expires_in": "Mã hết hạn sau",
+        "otp_expired_message": "OTP đã hết hạn. Vui lòng yêu cầu mã mới.",
+        "otp_back": "← Quay lại form",
+        "otp_success": "Tạo tài khoản thành công! Đang chuyển đến trang đăng nhập..."
     },
     "profile": {
         "title": "Hồ sơ của tôi",
@@ -408,7 +418,10 @@
         "CLOZE_REQUIRED": "Mẫu cloze phải chứa ít nhất một {{c1::...}}.",
         "CLOZE_INVALID_NUMBERS": "Số cloze không hợp lệ trong mẫu thẻ.",
         "NOTETYPE_NOT_FOUND": "Không tìm thấy loại ghi chú.",
-        "NOTE_FIELD_REQUIRED": "Tất cả các trường ghi chú đều bắt buộc."
+        "NOTE_FIELD_REQUIRED": "Tất cả các trường ghi chú đều bắt buộc.",
+        "OTP_INVALID": "Mã OTP không chính xác. Vui lòng thử lại.",
+        "OTP_EXPIRED": "Mã OTP đã hết hạn. Vui lòng đăng ký lại.",
+        "OTP_NOT_FOUND": "Không tìm thấy OTP. Vui lòng đăng ký lại."
     },
     "dictionary": {
         "title": "Gợi ý từ điển:",

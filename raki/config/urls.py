@@ -102,6 +102,7 @@ urlpatterns = [
     # Đường dẫn để lấy Access Token mới khi cái cũ hết hạn (Refresh Token)
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/register/", accounts_views.register_view, name="register"),
+    path("api/register/verify-otp/", accounts_views.verify_otp_view, name="register_verify_otp"),
     path("api/profile/", accounts_views.user_profile, name="user_profile"),
     path("api/wallet/", payment_views.wallet_summary, name="wallet_summary"),
     path(

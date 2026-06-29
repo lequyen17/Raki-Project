@@ -99,6 +99,10 @@ class UserRegistrationSerializer(serializers.Serializer):
         }
 
 
+class OtpVerifySerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(min_length=6, max_length=6)
+
 # --- OpenAPI response schemas ---
 
 
