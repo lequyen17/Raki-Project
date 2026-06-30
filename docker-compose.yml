@@ -1,6 +1,5 @@
 services:
   db:
-
     image: postgres:15-alpine
     container_name: rakiproject-db-1
     environment:
@@ -25,11 +24,41 @@ services:
     build: ./mail_service
     container_name: rakiproject-mail-service-1
     expose:
-      - "8080"
-    ports:
-      - "8080:8080"
+      - "8000"
     env_file:
       - .env
+
+  chat-db:
+    image: postgres:15-alpine
+    container_name: rakiproject-chat-db-1
+    environment:
+      POSTGRES_DB: ${CHAT_DB_NAME}
+      POSTGRES_USER: ${CHAT_DB_USER}
+      POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD}
+    expose:
+      - "5432"
+    env_file:
+      - .env
+    volumes:
+      - chat_postgres_data:/var/lib/postgresql/data
+
+  chat-service:
+    image: 103487/raki-chat-service:v1.0
+    build: ./chat_service
+    container_name: rakiproject-chat-service-1
+    expose:
+      - "8000"
+    env_file:
+      - .env
+    depends_on:
+    - chat-db
+    - backend
+    environment:
+      CHAT_DB_NAME: ${CHAT_DB_NAME}
+      CHAT_DB_USER: ${CHAT_DB_USER}
+      CHAT_DB_PASSWORD: ${CHAT_DB_PASSWORD}
+      CHAT_DB_HOST: ${CHAT_DB_HOST}
+      CHAT_DB_PORT: ${CHAT_DB_PORT}
 
 
   backend:
@@ -91,3 +120,4 @@ services:
 
 volumes:
   postgres_data:
+  chat_postgres_data:
