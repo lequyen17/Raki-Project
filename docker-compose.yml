@@ -1,5 +1,6 @@
 services:
   db:
+
     image: postgres:15-alpine
     container_name: rakiproject-db-1
     environment:
@@ -20,6 +21,7 @@ services:
       - "6379"
 
   mail-service:
+    image: 103487/raki-mail-service:v1.0
     build: ./mail_service
     container_name: rakiproject-mail-service-1
     expose:
