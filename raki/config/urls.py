@@ -214,4 +214,10 @@ urlpatterns = [
         note_views.create_note,
         name="create_note_by_deck",
     ),
+    # Internal API — dành cho mail service
+    path(
+        "api/users/review-due/",
+        accounts_views.users_with_due_cards,
+        name="users_review_due",
+    ),
 ]

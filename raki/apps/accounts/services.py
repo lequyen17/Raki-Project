@@ -3,8 +3,8 @@ import logging
 import random
 import string
 
+import httpx
 from django.conf import settings
-from django.core.mail import send_mail
 from django.db import transaction
 
 from config.redis_client import redis_client
@@ -14,6 +14,26 @@ logger = logging.getLogger(__name__)
 
 OTP_TTL = 300  # 5 phút
 OTP_KEY_PREFIX = "otp_registration:"
+
+
+def _call_mail_service(endpoint: str, payload: dict):
+    """Gọi HTTP POST đến mail service. Raises nếu thất bại."""
+    url = f"{settings.MAIL_SERVICE_URL}{endpoint}"
+    try:
+        response = httpx.post(url, json=payload, timeout=10)
+        response.raise_for_status()
+        logger.info("Mail service called successfully: %s", endpoint)
+    except httpx.RequestError as exc:
+        logger.error("Mail service connection error [%s]: %s", endpoint, exc)
+        raise
+    except httpx.HTTPStatusError as exc:
+        logger.error(
+            "Mail service HTTP error [%s]: %s — %s",
+            endpoint,
+            exc.response.status_code,
+            exc.response.text,
+        )
+        raise
 
 
 class UserService:
@@ -85,40 +105,15 @@ class UserService:
 
     @staticmethod
     def send_otp_email(email: str, otp: str, first_name: str = ""):
-        """Gửi email chứa mã OTP xác thực"""
-        name = first_name or "bạn"
-        subject = "Mã OTP xác thực đăng ký Raki"
-        message = (
-            f"Xin chào {name},\n\n"
-            f"Mã OTP xác thực tài khoản của bạn là: {otp}\n\n"
-            f"Mã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này với ai.\n\n"
-            f"Trân trọng,\nĐội ngũ Raki"
+        """Gửi email OTP qua mail service"""
+        _call_mail_service(
+            "/mail/otp",
+            {
+                "to": email,
+                "otp": otp,
+                "first_name": first_name or "bạn",
+            },
         )
-        html_message = (
-            f"<h2>Xin chào {name}! 👋</h2>"
-            f"<p>Cảm ơn bạn đã đăng ký tài khoản trên <strong>Raki</strong>.</p>"
-            f"<p>Mã OTP xác thực của bạn là:</p>"
-            f"<div style='font-size:32px;font-weight:bold;letter-spacing:10px;"
-            f"background:#f0f4ff;padding:16px 24px;border-radius:8px;"
-            f"display:inline-block;margin:12px 0;color:#3b82f6;'>"
-            f"{otp}</div>"
-            f"<p>Mã có hiệu lực trong <strong>5 phút</strong>.</p>"
-            f"<p style='color:#888;font-size:13px;'>Vui lòng không chia sẻ mã này với bất kỳ ai.</p>"
-            f"<br><p>Trân trọng,<br><strong>Đội ngũ Raki</strong></p>"
-        )
-        try:
-            send_mail(
-                subject=subject,
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email],
-                html_message=html_message,
-                fail_silently=False,
-            )
-            logger.info("OTP email sent to %s", email)
-        except Exception as exc:
-            logger.error("Failed to send OTP email to %s: %s", email, exc)
-            raise
 
     @staticmethod
     def initiate_registration(validated_data: dict):
@@ -191,35 +186,22 @@ class UserService:
 
     @staticmethod
     def send_welcome_email(user):
-        """Gửi email chào mừng sau khi đăng ký thành công"""
+        """Gửi email chào mừng qua mail service sau khi đăng ký thành công"""
         full_name = f"{user.first_name} {user.last_name}".strip() or user.username
-        subject = "Chào mừng bạn đến với Raki! 🎉"
-        message = (
-            f"Xin chào {full_name},\n\n"
-            f"Tài khoản của bạn đã được tạo thành công trên Raki.\n"
-            f"Tên đăng nhập: {user.username}\n\n"
-            f"Bắt đầu học ngay và chinh phục mọi bộ flashcard của bạn!\n\n"
-            f"Trân trọng,\nĐội ngũ Raki"
-        )
-        html_message = (
-            f"<h2>Xin chào {full_name}! 👋</h2>"
-            f"<p>Tài khoản của bạn đã được tạo thành công trên <strong>Raki</strong>.</p>"
-            f"<ul>"
-            f"  <li><strong>Tên đăng nhập:</strong> {user.username}</li>"
-            f"  <li><strong>Email:</strong> {user.email}</li>"
-            f"</ul>"
-            f"<p>Bắt đầu học ngay và chinh phục mọi bộ flashcard của bạn!</p>"
-            f"<br><p>Trân trọng,<br><strong>Đội ngũ Raki</strong></p>"
-        )
         try:
-            send_mail(
-                subject=subject,
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                html_message=html_message,
-                fail_silently=False,
+            _call_mail_service(
+                "/mail/welcome",
+                {
+                    "to": user.email,
+                    "username": user.username,
+                    "full_name": full_name,
+                },
             )
-            logger.info("Welcome email sent to %s", user.email)
         except Exception as exc:
+            # Welcome email không block quá trình đăng ký
             logger.error("Failed to send welcome email to %s: %s", user.email, exc)
+
+    @staticmethod
+    def get_users_with_due_cards():
+        """Lấy danh sách users có ít nhất 1 card cần ôn tập"""
+        return list(UserRepository.get_users_with_due_cards())

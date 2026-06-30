@@ -184,3 +184,7 @@ DEFAULT_FROM_EMAIL = "Raki App <halequyen1725@gmail.com>"
 REDIS_HOST = "redis"
 REDIS_PORT = 6379
 REDIS_DB = 0
+
+# Mail Service
+MAIL_SERVICE_URL = "http://mail-service:8080"
+INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "dev-secret-internal-token")

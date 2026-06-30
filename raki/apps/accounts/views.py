@@ -8,6 +8,7 @@ from core.utils.api_validation import parse_request
 from core.utils.openapi_common import ErrorResponseSerializer
 from apps.accounts.serializers import (
     CurrentUserSerializer,
+    DueUsersResponseSerializer,
     OtpVerifySerializer,
     ProfileUpdateResponseSerializer,
     RegisterResponseSerializer,
@@ -147,3 +148,30 @@ def verify_otp_view(request):
         return JsonResponse({"error": error_code}, status=400)
     except Exception as e:
         return JsonResponse({"error": "REGISTER_FAILED"}, status=500)
+
+
+@extend_schema(
+    tags=["Internal"],
+    summary="[Internal] Danh sách users có thẻ cần ôn tập",
+    description=(
+        "API nội bộ dành cho mail service. "
+        "Yêu cầu header `X-Internal-Token` khớp với `INTERNAL_API_TOKEN` trong settings."
+    ),
+    responses={
+        200: DueUsersResponseSerializer,
+        401: ErrorResponseSerializer,
+    },
+)
+@api_view(["GET"])
+def users_with_due_cards(request):
+    """
+    Trả về danh sách users có ít nhất 1 card với next_review <= hôm nay.
+    Chỉ cho phép gọi từ internal service (xác thực bằng X-Internal-Token).
+    """
+    from django.conf import settings as django_settings
+    token = request.headers.get("X-Internal-Token", "")
+    if token != django_settings.INTERNAL_API_TOKEN:
+        return JsonResponse({"error": "UNAUTHORIZED"}, status=401)
+
+    users = UserService.get_users_with_due_cards()
+    return Response({"users": users}, status=200)

@@ -143,3 +143,15 @@ class ProfileUpdateResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField()
     message = serializers.CharField()
     user = UserProfileSerializer()
+
+
+class DueUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    email = serializers.EmailField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    username = serializers.CharField()
+
+
+class DueUsersResponseSerializer(serializers.Serializer):
+    users = DueUserSerializer(many=True)

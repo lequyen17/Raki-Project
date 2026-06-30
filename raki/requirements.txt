@@ -19,3 +19,4 @@ typing_extensions==4.15.0
 uritemplate==4.2.0
 stripe>=8.0.0
 redis==6.2.0
+httpx==0.28.1

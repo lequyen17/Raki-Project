@@ -19,6 +19,16 @@ services:
     expose:
       - "6379"
 
+  mail-service:
+    build: ./mail_service
+    container_name: rakiproject-mail-service-1
+    expose:
+      - "8080"
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+
 
   backend:
     image: 103487/raki-backend:v3.0

@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from apps.card.models import Card, Progress
 
 User = get_user_model()
@@ -44,4 +45,15 @@ class UserRepository:
             password=password,
             first_name=first_name,
             last_name=last_name,
+        )
+
+    @staticmethod
+    def get_users_with_due_cards():
+        """Lấy users có ít nhất 1 card với next_review <= hôm nay"""
+        today = timezone.now().date()
+        return (
+            User.objects
+            .filter(user__next_review__lte=today)
+            .distinct()
+            .values("id", "email", "first_name", "last_name", "username")
         )
