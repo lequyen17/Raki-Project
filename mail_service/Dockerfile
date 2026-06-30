@@ -18,4 +18,12 @@ EXPOSE 8000
 
 # Step 7: Lệnh để chạy FastAPI khi container khởi động
 # Chú ý: Đổi host thành 0.0.0.0 để Docker có thể map port ra máy thật
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]  
+CMD [
+  "uvicorn",
+  "app.main:app",
+  "--host",
+  "0.0.0.0",
+  "--port",
+  "8000",
+  "--reload"
+]

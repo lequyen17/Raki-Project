@@ -22,6 +22,8 @@ services:
   mail-service:
     image: 103487/raki-mail-service:v1.0
     build: ./mail_service
+    volumes:
+    - ./mail_service:/app
     container_name: rakiproject-mail-service-1
     expose:
       - "8000"
@@ -45,6 +47,8 @@ services:
   chat-service:
     image: 103487/raki-chat-service:v1.0
     build: ./chat_service
+    volumes:
+    - ./chat_service:/app
     container_name: rakiproject-chat-service-1
     expose:
       - "8000"
@@ -65,6 +69,8 @@ services:
     image: 103487/raki-backend:v3.0
     container_name: rakiproject-backend-1
     build: ./raki
+    volumes:
+    - ./raki:/app
     expose:
       - "8000"
     depends_on:
@@ -99,6 +105,8 @@ services:
     image: 103487/raki-frontend:v4.0
     container_name: rakiproject-frontend-1
     build: ./frontend
+    volumes:
+    - ./frontend:/src
     expose:
       - "3000"
     depends_on:
