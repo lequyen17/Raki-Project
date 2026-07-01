@@ -24,9 +24,6 @@ COPY requirements.txt /app/
 # Cài đặt các thư viện từ file requirements sạch bạn vừa tạo
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Sao chép toàn bộ mã nguồn backend vào thư mục làm việc trong container
-COPY . /app/
-
 # Mở cổng 8000 (cổng chạy mặc định của Django)
 EXPOSE 8000
 

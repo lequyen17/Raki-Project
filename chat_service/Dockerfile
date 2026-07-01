@@ -10,12 +10,11 @@ COPY requirements.txt .
 # Step 4: Cài đặt các thư viện không dùng cache của pip để giảm dung lượng image
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Step 5: Copy toàn bộ code từ máy của bạn vào thư mục /app trong container
-COPY . .
 
 # Step 6: Mở port 8000 của container để bên ngoài có thể truy cập
 EXPOSE 8000      
 
 # Step 7: Lệnh để chạy FastAPI khi container khởi động
-# Chú ý: Đổi host thành 0.0.0.0 để Docker có thể map port ra máy thật
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]  
+# Chạy FastAPI ở chế độ development
+# --reload sẽ tự động restart server khi source code thay đổi
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

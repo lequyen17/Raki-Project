@@ -1,20 +1,17 @@
+# Sử dụng Node.js bản Alpine
 FROM node:20-alpine
 
+# Thư mục làm việc
 WORKDIR /app
 
-# Sao chép file quản lý thư viện vào trước
+# Copy package.json và package-lock.json
 COPY package*.json ./
 
-# Cài đặt các thư viện cần thiết
+# Cài dependencies
 RUN npm install
 
-# Sao chép toàn bộ code còn lại vào container
-COPY . .
-
-# Build dự án Next.js sang production
-RUN npm run build
-
-# Next.js mặc định chạy cổng 3000
+# Mở cổng mặc định của Next.js
 EXPOSE 3000
 
-CMD ["npm", "start"]
+# Chạy Next.js ở chế độ development
+CMD ["npm", "run", "dev"]

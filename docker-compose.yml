@@ -98,6 +98,8 @@ services:
     container_name: rakiproject-raki-page-1
     build:
       context: ./raki-page
+    volumes:
+    - ./raki-page:/app
     expose:
       - "3000"
 
@@ -106,7 +108,7 @@ services:
     container_name: rakiproject-frontend-1
     build: ./frontend
     volumes:
-    - ./frontend:/src
+    - ./frontend:/app
     expose:
       - "3000"
     depends_on:
