@@ -28,8 +28,27 @@
     "MY_DECKS": "MY DECKS",
     "INTRO": "INTRODUCE",
     "COMMUNITY": "COMMUNITY",
+    "CHAT": "CHAT",
     "wallet": "My Wallet"
       
+    },
+    "chat": {
+        "title": "Messages",
+        "subtitle": "Chat with other users in the system.",
+        "search_user": "Search users to message...",
+        "no_conversations": "No conversations yet.",
+        "select_conversation": "Select a conversation",
+        "select_conversation_hint": "Pick one from the list or search for a user to start chatting.",
+        "start_chatting": "Send the first message to start the conversation.",
+        "type_message": "Type a message...",
+        "send": "Send",
+        "no_messages": "No messages yet",
+        "unknown_user": "User",
+        "load_conversations_error": "Could not load conversations.",
+        "load_messages_error": "Could not load messages.",
+        "start_conversation_error": "Could not start conversation.",
+        "send_error": "Could not send message.",
+        "connection_error": "Realtime connection lost. Messages can still be sent via API."
     },
     "community": {
         "title": "Community Decks",

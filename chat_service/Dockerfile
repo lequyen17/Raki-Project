@@ -1,20 +1,12 @@
-# Step 1: Sử dụng Python bản lightweight (slim) để giảm kích thước image
 FROM python:3.11-slim
 
-# Step 2: Đặt thư mục làm việc bên trong container là /app
 WORKDIR /app
 
-# Step 3: Copy file requirements trước để tận dụng Docker cache (tăng tốc độ build sau này)
 COPY requirements.txt .
-
-# Step 4: Cài đặt các thư viện không dùng cache của pip để giảm dung lượng image
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY app/ ./app/
 
-# Step 6: Mở port 8000 của container để bên ngoài có thể truy cập
-EXPOSE 8000      
+EXPOSE 8000
 
-# Step 7: Lệnh để chạy FastAPI khi container khởi động
-# Chạy FastAPI ở chế độ development
-# --reload sẽ tự động restart server khi source code thay đổi
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["sh", "-c", "until python -c 'import socket; s = socket.socket(); s.connect((\"chat-db\", 5432))' 2>/dev/null; do echo 'Đang chờ chat-db...'; sleep 1; done; uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]

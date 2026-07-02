@@ -63,6 +63,9 @@ services:
       CHAT_DB_PASSWORD: ${CHAT_DB_PASSWORD}
       CHAT_DB_HOST: ${CHAT_DB_HOST}
       CHAT_DB_PORT: ${CHAT_DB_PORT}
+      SECRET_KEY: ${SECRET_KEY}
+      BACKEND_URL: http://backend:8000
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
 
 
   backend:
@@ -98,8 +101,6 @@ services:
     container_name: rakiproject-raki-page-1
     build:
       context: ./raki-page
-    volumes:
-    - ./raki-page:/app
     expose:
       - "3000"
 
@@ -127,6 +128,7 @@ services:
       - frontend
       - backend
       - raki-page
+      - chat-service
 
 volumes:
   postgres_data:

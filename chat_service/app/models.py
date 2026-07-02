@@ -70,7 +70,9 @@ class ConversationParticipant(Base):
 
     is_admin = Column(Boolean, default=False)
 
-    last_read_message_id = Column(Integer, ForeignKey("message.id"), nullable=True)
+    last_read_message_id = Column(
+        Integer, ForeignKey("message.id", use_alter=True), nullable=True
+    )
 
     # relationships
     conversation = relationship("Conversation", back_populates="participants")

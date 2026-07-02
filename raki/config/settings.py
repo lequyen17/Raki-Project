@@ -187,4 +187,5 @@ REDIS_DB = 0
 
 # Mail Service
 MAIL_SERVICE_URL = "http://mail-service:8000"
+CHAT_SERVICE_URL = "http://chat-service:8000"
 INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "dev-secret-internal-token")

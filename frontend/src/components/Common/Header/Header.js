@@ -80,6 +80,12 @@ const Header = () => {
             <Link to="/community" className="raki-nav-item">
               {t("header.COMMUNITY")}
             </Link>
+
+            
+            <Link to="/chat" className="raki-nav-item">
+                {t("header.CHAT")}
+            </Link>
+            
           </nav>
         </div>
 

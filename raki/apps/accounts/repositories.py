@@ -57,3 +57,12 @@ class UserRepository:
             .distinct()
             .values("id", "email", "first_name", "last_name", "username")
         )
+
+    @staticmethod
+    def get_users_by_ids(user_ids):
+        if not user_ids:
+            return []
+        return (
+            User.objects.filter(id__in=user_ids)
+            .values("id", "username", "first_name", "last_name")
+        )

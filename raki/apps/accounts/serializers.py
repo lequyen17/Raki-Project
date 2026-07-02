@@ -107,6 +107,7 @@ class OtpVerifySerializer(serializers.Serializer):
 
 
 class CurrentUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
     username = serializers.CharField()
     first_name = serializers.CharField()
     last_name = serializers.CharField()
@@ -155,3 +156,14 @@ class DueUserSerializer(serializers.Serializer):
 
 class DueUsersResponseSerializer(serializers.Serializer):
     users = DueUserSerializer(many=True)
+
+
+class BatchUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+
+
+class BatchUsersResponseSerializer(serializers.Serializer):
+    users = BatchUserSerializer(many=True)

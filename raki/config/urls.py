@@ -220,4 +220,9 @@ urlpatterns = [
         accounts_views.users_with_due_cards,
         name="users_review_due",
     ),
+    path(
+        "api/users/batch/",
+        accounts_views.users_batch,
+        name="users_batch",
+    ),
 ]

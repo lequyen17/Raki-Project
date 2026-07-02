@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from core.utils.api_validation import parse_request
 from core.utils.openapi_common import ErrorResponseSerializer
 from apps.accounts.serializers import (
+    BatchUsersResponseSerializer,
     CurrentUserSerializer,
     DueUsersResponseSerializer,
     OtpVerifySerializer,
@@ -29,6 +30,7 @@ from apps.accounts.services import UserService
 def getAuth(request):
     return Response(
         {
+            "id": request.user.id,
             "username": request.user.username,
             "first_name": request.user.first_name,
             "last_name": request.user.last_name,
@@ -174,4 +176,35 @@ def users_with_due_cards(request):
         return JsonResponse({"error": "UNAUTHORIZED"}, status=401)
 
     users = UserService.get_users_with_due_cards()
+    return Response({"users": users}, status=200)
+
+
+@extend_schema(
+    tags=["Internal"],
+    summary="[Internal] Lấy thông tin users theo danh sách ID",
+    description=(
+        "API nội bộ dành cho chat service. "
+        "Yêu cầu header `X-Internal-Token` khớp với `INTERNAL_API_TOKEN` trong settings."
+    ),
+    responses={
+        200: BatchUsersResponseSerializer,
+        401: ErrorResponseSerializer,
+    },
+)
+@api_view(["GET"])
+def users_batch(request):
+    from django.conf import settings as django_settings
+
+    token = request.headers.get("X-Internal-Token", "")
+    if token != django_settings.INTERNAL_API_TOKEN:
+        return JsonResponse({"error": "UNAUTHORIZED"}, status=401)
+
+    ids_param = request.query_params.get("ids", "")
+    user_ids = []
+    for part in ids_param.split(","):
+        part = part.strip()
+        if part.isdigit():
+            user_ids.append(int(part))
+
+    users = UserService.get_users_by_ids(user_ids)
     return Response({"users": users}, status=200)

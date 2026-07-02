@@ -205,3 +205,7 @@ class UserService:
     def get_users_with_due_cards():
         """Lấy danh sách users có ít nhất 1 card cần ôn tập"""
         return list(UserRepository.get_users_with_due_cards())
+
+    @staticmethod
+    def get_users_by_ids(user_ids):
+        return list(UserRepository.get_users_by_ids(user_ids))

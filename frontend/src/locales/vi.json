@@ -27,8 +27,27 @@
         "my_decks": "Thẻ của tôi",
         "MY_DECKS": "BỘ THẺ",
         "COMMUNITY": "CỘNG ĐỒNG",
+        "CHAT": "CHAT",
         "INTRO": "GIỚI THIỆU",
         "wallet": "Ví của tôi"
+    },
+    "chat": {
+        "title": "Tin nhắn",
+        "subtitle": "Trò chuyện với người dùng khác trong hệ thống.",
+        "search_user": "Tìm người dùng để nhắn tin...",
+        "no_conversations": "Chưa có cuộc trò chuyện nào.",
+        "select_conversation": "Chọn cuộc trò chuyện",
+        "select_conversation_hint": "Chọn từ danh sách bên trái hoặc tìm người dùng để bắt đầu chat.",
+        "start_chatting": "Gửi tin nhắn đầu tiên để bắt đầu trò chuyện.",
+        "type_message": "Nhập tin nhắn...",
+        "send": "Gửi",
+        "no_messages": "Chưa có tin nhắn",
+        "unknown_user": "Người dùng",
+        "load_conversations_error": "Không thể tải danh sách trò chuyện.",
+        "load_messages_error": "Không thể tải tin nhắn.",
+        "start_conversation_error": "Không thể bắt đầu cuộc trò chuyện.",
+        "send_error": "Không thể gửi tin nhắn.",
+        "connection_error": "Mất kết nối realtime. Tin nhắn vẫn gửi được qua API."
     },
     "community": {
         "title": "Bộ thẻ cộng đồng",

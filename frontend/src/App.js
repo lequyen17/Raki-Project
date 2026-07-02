@@ -11,6 +11,7 @@ import Wallet from "./pages/Wallet/Wallet";
 import Community from "./pages/Community/Community";
 import CommunityDeckView from "./pages/Community/CommunityDeckView";
 import CardDetail from "./pages/CardDetail/CardDetail";
+import Chat from "./pages/Chat/Chat";
 import Header from "./components/Common/Header/Header";
 import Footer from "./components/Common/Footer/Footer";
 import Setting from "./pages/Setting/Setting";
@@ -38,6 +39,7 @@ function App() {
           <Route path="/cards/:cardId" element={<CardDetail />} />
           <Route path="/community" element={<Community />} />
           <Route path="/community/:deckId" element={<CommunityDeckView />} />
+          <Route path="/chat" element={<Chat />} />
         </Routes>
         <Footer />
       </AuthProvider>
