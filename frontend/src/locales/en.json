@@ -48,7 +48,19 @@
         "load_messages_error": "Could not load messages.",
         "start_conversation_error": "Could not start conversation.",
         "send_error": "Could not send message.",
-        "connection_error": "Realtime connection lost. Messages can still be sent via API."
+        "connection_error": "Realtime connection lost. Messages can still be sent via API.",
+        "unnamed_group": "Unnamed group",
+        "create_group_title": "Create group chat",
+        "group_name_placeholder": "Group name...",
+        "create_group_button": "Create group",
+        "group_name_required": "Please enter a group name.",
+        "group_members_required": "Choose at least 2 members to create a group.",
+        "group_create_error": "Could not create group chat.",
+        "add_to_group": "Add",
+        "remove_from_group": "Remove",
+        "no_group_members_selected": "No members selected.",
+        "seen": "Seen by",
+        "sent": "Sent"
     },
     "community": {
         "title": "Community Decks",

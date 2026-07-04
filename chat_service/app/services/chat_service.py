@@ -28,6 +28,9 @@ def _participant_user_ids(conversation: Conversation, current_user_id: int) -> l
 
 
 def _serialize_message(message: Message, users_map: dict[int, UserBrief]) -> MessageOut:
+    seen_by_ids = [
+        read.user_id for read in message.reads if read.user_id != message.sender_id
+    ]
     return MessageOut(
         id=message.id,
         conversation_id=message.conversation_id,
@@ -36,6 +39,8 @@ def _serialize_message(message: Message, users_map: dict[int, UserBrief]) -> Mes
         type=message.type.value,
         created_at=message.created_at,
         sender=users_map.get(message.sender_id),
+        seen_by_ids=seen_by_ids,
+        seen_count=len(seen_by_ids),
     )
 
 
@@ -102,8 +107,19 @@ def list_conversations(db: Session, user_id: int) -> list[ConversationOut]:
 
     for conversation in conversations:
         last_message = _get_last_message(db, conversation.id)
+        if last_message:
+            last_message.reads = (
+                db.query(MessageRead)
+                .filter(MessageRead.message_id == last_message.id)
+                .all()
+            )
         other_ids = _participant_user_ids(conversation, user_id)
         other_user = users_map.get(other_ids[0]) if other_ids else None
+        participant_users = [
+            users_map[p.user_id]
+            for p in conversation.participants
+            if p.left_at is None and p.user_id in users_map
+        ]
 
         results.append(
             ConversationOut(
@@ -113,6 +129,7 @@ def list_conversations(db: Session, user_id: int) -> list[ConversationOut]:
                 created_at=conversation.created_at,
                 updated_at=conversation.updated_at,
                 other_user=other_user,
+                participants=participant_users,
                 last_message=(
                     _serialize_message(last_message, users_map)
                     if last_message
@@ -167,6 +184,40 @@ def get_or_create_private_conversation(
     return conversation
 
 
+def create_group_conversation(
+    db: Session,
+    creator_id: int,
+    name: str,
+    participant_ids: list[int],
+) -> Conversation:
+    unique_participants = {pid for pid in participant_ids if pid != creator_id}
+    unique_participants.add(creator_id)
+
+    if len(unique_participants) < 3:
+        raise ValueError("GROUP_NEEDS_AT_LEAST_3_MEMBERS")
+
+    conversation = Conversation(
+        type=ConversationType.GROUP,
+        name=name.strip(),
+        created_by=creator_id,
+    )
+    db.add(conversation)
+    db.flush()
+
+    for participant_id in sorted(unique_participants):
+        db.add(
+            ConversationParticipant(
+                conversation_id=conversation.id,
+                user_id=participant_id,
+                is_admin=(participant_id == creator_id),
+            )
+        )
+
+    db.commit()
+    db.refresh(conversation)
+    return conversation
+
+
 def user_is_participant(db: Session, conversation_id: int, user_id: int) -> bool:
     return (
         db.query(ConversationParticipant)
@@ -205,6 +256,18 @@ def list_messages(
 
     sender_ids = {m.sender_id for m in messages}
     users_map = fetch_users_by_ids(list(sender_ids))
+    message_ids = [m.id for m in messages]
+    if message_ids:
+        reads = (
+            db.query(MessageRead)
+            .filter(MessageRead.message_id.in_(message_ids))
+            .all()
+        )
+        reads_by_message: dict[int, list[MessageRead]] = {}
+        for read in reads:
+            reads_by_message.setdefault(read.message_id, []).append(read)
+        for message in messages:
+            message.reads = reads_by_message.get(message.id, [])
 
     return [_serialize_message(m, users_map) for m in messages], has_more
 
@@ -233,11 +296,26 @@ def create_message(
     db.commit()
     db.refresh(message)
 
+    message.reads = []
     users_map = fetch_users_by_ids([sender_id])
     return _serialize_message(message, users_map)
 
 
-def mark_conversation_read(db: Session, conversation_id: int, user_id: int) -> None:
+def get_message_seen_by_ids(db: Session, message_id: int, sender_id: int) -> list[int]:
+    reads = (
+        db.query(MessageRead)
+        .filter(
+            MessageRead.message_id == message_id,
+            MessageRead.user_id != sender_id,
+        )
+        .all()
+    )
+    return [read.user_id for read in reads]
+
+
+def mark_conversation_read(
+    db: Session, conversation_id: int, user_id: int
+) -> tuple[int | None, list[int]]:
     participant = (
         db.query(ConversationParticipant)
         .filter(
@@ -253,4 +331,17 @@ def mark_conversation_read(db: Session, conversation_id: int, user_id: int) -> N
     last_message = _get_last_message(db, conversation_id)
     if last_message:
         participant.last_read_message_id = last_message.id
+        read = (
+            db.query(MessageRead)
+            .filter(
+                MessageRead.message_id == last_message.id,
+                MessageRead.user_id == user_id,
+            )
+            .first()
+        )
+        if not read:
+            db.add(MessageRead(message_id=last_message.id, user_id=user_id))
         db.commit()
+        seen_by_ids = get_message_seen_by_ids(db, last_message.id, last_message.sender_id)
+        return last_message.id, seen_by_ids
+    return None, []

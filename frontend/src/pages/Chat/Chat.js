@@ -22,6 +22,14 @@ function displayName(user) {
   return fullName || user.username;
 }
 
+function conversationTitle(conversation, t) {
+  if (!conversation) return "";
+  if (conversation.type === "group") {
+    return conversation.name || t("chat.unnamed_group");
+  }
+  return displayName(conversation.other_user) || t("chat.unknown_user");
+}
+
 function Chat() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -36,6 +44,8 @@ function Chat() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [selectedGroupUsers, setSelectedGroupUsers] = useState([]);
 
   const wsRef = useRef(null);
   const wsReconnectAttemptRef = useRef(0);
@@ -62,55 +72,70 @@ function Chat() {
 
   const connectWebSocket = useCallback(
     (conversationId, isReconnect = false) => {
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-
-    if (!isReconnect) wsReconnectAttemptRef.current = 0;
-
-    const ws = new WebSocket(getChatWebSocketUrl(conversationId));
-    wsRef.current = ws;
-
-    ws.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data);
-        if (payload.type === "message" && payload.data) {
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === payload.data.id)) return prev;
-            return [...prev, payload.data];
-          });
-        }
-      } catch (e) {
-        console.error(e);
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
       }
-    };
 
-    ws.onerror = () => {
-      toast.error(t("chat.connection_error"));
-    };
+      if (!isReconnect) wsReconnectAttemptRef.current = 0;
 
-    ws.onclose = async (event) => {
-      // Backend close code 4001 khi JWT hết hạn/invalid
-      if (
-        event.code === 4001 &&
-        wsReconnectAttemptRef.current < 1 &&
-        activeConversationIdRef.current === conversationId
-      ) {
-        wsReconnectAttemptRef.current += 1;
+      const ws = new WebSocket(getChatWebSocketUrl(conversationId));
+      wsRef.current = ws;
+
+      ws.onmessage = (event) => {
         try {
-          await refreshAccessToken();
-          connectWebSocket(conversationId, true);
-          fetchConversations();
-          return;
+          const payload = JSON.parse(event.data);
+          if (payload.type === "message" && payload.data) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === payload.data.id)) return prev;
+              return [...prev, payload.data];
+            });
+            return;
+          }
+
+          if (payload.type === "read_update" && payload.data) {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === payload.data.message_id
+                  ? {
+                      ...msg,
+                      seen_by_ids: payload.data.seen_by_ids || [],
+                      seen_count: (payload.data.seen_by_ids || []).length,
+                    }
+                  : msg,
+              ),
+            );
+          }
         } catch (e) {
-          localStorage.clear();
-          navigate("/login");
-          return;
+          console.error(e);
         }
-      }
-    };
-  },
+      };
+
+      ws.onerror = () => {
+        toast.error(t("chat.connection_error"));
+      };
+
+      ws.onclose = async (event) => {
+        // Backend close code 4001 khi JWT hết hạn/invalid
+        if (
+          event.code === 4001 &&
+          wsReconnectAttemptRef.current < 1 &&
+          activeConversationIdRef.current === conversationId
+        ) {
+          wsReconnectAttemptRef.current += 1;
+          try {
+            await refreshAccessToken();
+            connectWebSocket(conversationId, true);
+            fetchConversations();
+            return;
+          } catch (e) {
+            localStorage.clear();
+            navigate("/login");
+            return;
+          }
+        }
+      };
+    },
     [t, fetchConversations, navigate],
   );
 
@@ -126,7 +151,20 @@ function Chat() {
       try {
         const res = await chatApi.get(`/conversations/${conversation.id}/messages`);
         setMessages(res.data.results || []);
-        await chatApi.post(`/conversations/${conversation.id}/read`);
+        const readRes = await chatApi.post(`/conversations/${conversation.id}/read`);
+        if (readRes.data?.last_read_message_id) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === readRes.data.last_read_message_id
+                ? {
+                    ...msg,
+                    seen_by_ids: readRes.data.seen_by_ids || [],
+                    seen_count: (readRes.data.seen_by_ids || []).length,
+                  }
+                : msg,
+            ),
+          );
+        }
         connectWebSocket(conversation.id);
         fetchConversations();
       } catch (err) {
@@ -151,6 +189,42 @@ function Chat() {
     } catch (err) {
       console.error(err);
       toast.error(t("chat.start_conversation_error"));
+    }
+  };
+
+  const toggleGroupUser = (user) => {
+    setSelectedGroupUsers((prev) => {
+      const exists = prev.some((item) => item.id === user.id);
+      if (exists) return prev.filter((item) => item.id !== user.id);
+      return [...prev, user];
+    });
+  };
+
+  const createGroupConversation = async () => {
+    const trimmedName = groupName.trim();
+    if (!trimmedName) {
+      toast.error(t("chat.group_name_required"));
+      return;
+    }
+    if (selectedGroupUsers.length < 2) {
+      toast.error(t("chat.group_members_required"));
+      return;
+    }
+
+    try {
+      const res = await chatApi.post("/conversations/group", {
+        name: trimmedName,
+        participant_ids: selectedGroupUsers.map((u) => u.id),
+      });
+      setGroupName("");
+      setSelectedGroupUsers([]);
+      setSearchQuery("");
+      setSearchResults([]);
+      await fetchConversations();
+      openConversation(res.data);
+    } catch (err) {
+      console.error(err);
+      toast.error(t("chat.group_create_error"));
     }
   };
 
@@ -253,17 +327,56 @@ function Chat() {
             {searchResults.length > 0 && (
               <div className="chat-search__results">
                 {searchResults.map((user) => (
-                  <button
-                    key={user.id}
-                    type="button"
-                    className="chat-search__item"
-                    onClick={() => startConversation(user)}
-                  >
-                    {user.username}
-                  </button>
+                  <div key={user.id} className="chat-search__item chat-search__item--actions">
+                    <button
+                      type="button"
+                      className="chat-search__action"
+                      onClick={() => startConversation(user)}
+                    >
+                      {user.username}
+                    </button>
+                    <button
+                      type="button"
+                      className="chat-search__add"
+                      onClick={() => toggleGroupUser(user)}
+                    >
+                      {selectedGroupUsers.some((item) => item.id === user.id)
+                        ? t("chat.remove_from_group")
+                        : t("chat.add_to_group")}
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="chat-group-builder">
+            <h3>{t("chat.create_group_title")}</h3>
+            <input
+              type="text"
+              placeholder={t("chat.group_name_placeholder")}
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+            />
+            <div className="chat-group-builder__selected">
+              {selectedGroupUsers.length === 0 ? (
+                <span>{t("chat.no_group_members_selected")}</span>
+              ) : (
+                selectedGroupUsers.map((user) => (
+                  <button
+                    key={user.id}
+                    type="button"
+                    className="chat-group-member-tag"
+                    onClick={() => toggleGroupUser(user)}
+                  >
+                    {user.username} x
+                  </button>
+                ))
+              )}
+            </div>
+            <button type="button" onClick={createGroupConversation}>
+              {t("chat.create_group_button")}
+            </button>
           </div>
 
           <div className="chat-conversation-list">
@@ -274,7 +387,7 @@ function Chat() {
             ) : (
               conversations.map((conv) => {
                 const isActive = activeConversation?.id === conv.id;
-                const name = displayName(conv.other_user) || t("chat.unknown_user");
+                const name = conversationTitle(conv, t);
                 const preview = conv.last_message?.content || t("chat.no_messages");
 
                 return (
@@ -309,7 +422,7 @@ function Chat() {
           ) : (
             <>
               <div className="chat-main__header">
-                <h2>{displayName(activeConversation.other_user)}</h2>
+                <h2>{conversationTitle(activeConversation, t)}</h2>
               </div>
 
               <div className="chat-messages">
@@ -330,6 +443,13 @@ function Chat() {
                           <span className="chat-message__time">
                             {formatTime(msg.created_at)}
                           </span>
+                          {isMine && (
+                            <span className="chat-message__seen">
+                              {msg.seen_count > 0
+                                ? `${t("chat.seen")} ${msg.seen_count}`
+                                : t("chat.sent")}
+                            </span>
+                          )}
                         </div>
                       </div>
                     );
