@@ -8,6 +8,7 @@ from django.conf import settings
 from django.db import transaction
 
 from config.redis_client import redis_client
+from core.exceptions.exceptions import BadRequestException, InternalServerException
 from .repositories import UserRepository
 
 logger = logging.getLogger(__name__)
@@ -127,11 +128,16 @@ class UserService:
         payload = {**validated_data, "otp": otp}
         redis_client.setex(key, OTP_TTL, json.dumps(payload))
 
-        UserService.send_otp_email(
-            email=validated_data["email"],
-            otp=otp,
-            first_name=validated_data.get("first_name", ""),
-        )
+        try:
+            UserService.send_otp_email(
+                email=validated_data["email"],
+                otp=otp,
+                first_name=validated_data.get("first_name", ""),
+            )
+        except Exception as exc:
+            logger.error("Failed to send OTP email to %s: %s", validated_data["email"], exc)
+            raise InternalServerException("REGISTER_FAILED") from exc
+
         return {"message": "OTP_SENT"}
 
     @staticmethod
@@ -144,13 +150,13 @@ class UserService:
         raw = redis_client.get(key)
 
         if raw is None:
-            raise ValueError("OTP_EXPIRED")
+            raise BadRequestException("OTP_EXPIRED")
 
         payload = json.loads(raw)
         stored_otp = payload.get("otp", "")
 
         if otp_input != stored_otp:
-            raise ValueError("OTP_INVALID")
+            raise BadRequestException("OTP_INVALID")
 
         # Xóa key khỏi Redis ngay sau khi xác thực thành công
         redis_client.delete(key)

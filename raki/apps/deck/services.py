@@ -2,6 +2,13 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 
+from core.exceptions.exceptions import (
+    BadRequestException,
+    ConflictException,
+    NotFoundException,
+    PaymentRequiredException,
+    PermissionDeniedException,
+)
 from apps.deck.repositories import DeckRepository
 from apps.card.repositories import CardRepository
 from apps.deck.models import Deck, UserDeck
@@ -18,14 +25,14 @@ class DeckService:
     def _get_deck_or_404(deck_id, user):
         deck = DeckRepository.get_deck_for_user(deck_id, user)
         if not deck:
-            raise LookupError("DECK_NOT_FOUND")
+            raise NotFoundException("DECK_NOT_FOUND")
         return deck
 
     @staticmethod
     def _get_deck_for_owner_or_404(deck_id, user):
         deck = DeckRepository.get_deck_for_owner(deck_id, user)
         if not deck:
-            raise LookupError("DECK_NOT_FOUND_OR_NOT_OWNER")
+            raise PermissionDeniedException("DECK_NOT_FOUND_OR_NOT_OWNER")
         return deck
 
     @staticmethod
@@ -139,10 +146,10 @@ class DeckService:
         # Lấy deck công khai
         deck = Deck.objects.filter(id=deck_id, share_mode="public").first()
         if not deck:
-            raise LookupError("DECK_NOT_FOUND_OR_NOT_PUBLIC")
+            raise NotFoundException("DECK_NOT_FOUND_OR_NOT_PUBLIC")
 
         if UserDeck.objects.filter(user=user, deck=deck).exists():
-            return {"success": False, "message": "Already learning this deck"}
+            raise ConflictException("ALREADY_LEARNING_DECK")
 
         all_decks_to_learn = DeckRepository.get_all_descendants(deck)
 
@@ -153,13 +160,13 @@ class DeckService:
         ):
             balance = WalletRepository.get_coin_balance(user)
             if balance < coin_price:
-                return {"success": False, "error": "INSUFFICIENT_COINS"}
+                raise PaymentRequiredException("INSUFFICIENT_COINS")
 
             owner_ud = (
                 deck.deck_users.filter(role="owner").select_related("user").first()
             )
             if not owner_ud:
-                raise LookupError("DECK_OWNER_NOT_FOUND")
+                raise NotFoundException("DECK_OWNER_NOT_FOUND")
 
             with transaction.atomic():
                 buyer_profile = user.profile
@@ -198,7 +205,7 @@ class DeckService:
             user=user, deck_id=deck_id, role="viewer"
         ).first()
         if not user_deck:
-            raise LookupError("DECK_NOT_FOUND_OR_NOT_VIEWER")
+            raise NotFoundException("DECK_NOT_FOUND_OR_NOT_VIEWER")
 
         deck = user_deck.deck
 
@@ -237,8 +244,11 @@ class DeckService:
     # MOVE (business rule nằm ở service)
     # =========================
     @staticmethod
-    def move_deck(validated_data):
+    def move_deck(user, validated_data):
         deck = validated_data["deck"]
+        if not DeckRepository.get_deck_for_owner(deck.id, user):
+            raise PermissionDeniedException("DECK_NOT_FOUND_OR_NOT_OWNER")
+
         parent = validated_data["parent"]
         DeckRepository.move_deck(deck, parent)
         return {
@@ -380,7 +390,7 @@ class DeckService:
             DeckRepository.remove_non_owner_members(deck)
         elif share_mode == "public":
             if coin_price < 0:
-                raise ValueError("INVALID_COIN_PRICE")
+                raise BadRequestException("INVALID_COIN_PRICE")
             DeckRepository.update_deck_share(
                 deck, share_mode="public", coin_price=coin_price
             )
@@ -399,9 +409,9 @@ class DeckService:
 
         target_user = User.objects.filter(username=username).first()
         if not target_user:
-            raise LookupError("USER_NOT_FOUND")
+            raise NotFoundException("USER_NOT_FOUND")
         if target_user.id == user.id:
-            raise ValueError("CANNOT_SHARE_WITH_SELF")
+            raise BadRequestException("CANNOT_SHARE_WITH_SELF")
 
         if deck.share_mode != "restricted":
             DeckRepository.update_deck_share(
@@ -413,7 +423,7 @@ class DeckService:
             existing = UserDeck.objects.filter(user=target_user, deck=d).first()
             if existing:
                 if existing.role == "owner":
-                    raise ValueError("USER_ALREADY_OWNER")
+                    raise BadRequestException("USER_ALREADY_OWNER")
                 existing.role = role
                 existing.save(update_fields=["role"])
             else:
@@ -426,7 +436,7 @@ class DeckService:
         deck = DeckService._get_deck_for_owner_or_404(deck_id, user)
         target_user = User.objects.filter(id=target_user_id).first()
         if not target_user:
-            raise LookupError("USER_NOT_FOUND")
+            raise NotFoundException("USER_NOT_FOUND")
 
         all_decks = DeckRepository.get_all_descendants(deck)
         deck_ids = [d.id for d in all_decks]
@@ -440,7 +450,7 @@ class DeckService:
         )
 
         if deleted == 0:
-            raise LookupError("COLLABORATOR_NOT_FOUND")
+            raise NotFoundException("COLLABORATOR_NOT_FOUND")
 
         return DeckService._build_share_settings(deck)
 

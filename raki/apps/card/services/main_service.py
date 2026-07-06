@@ -1,5 +1,6 @@
 from django.utils import timezone
 
+from core.exceptions.exceptions import NotFoundException
 from apps.deck.repositories import DeckRepository
 from apps.card.repositories import CardRepository
 from apps.card.services.review_service import ReviewService
@@ -23,7 +24,7 @@ class CardMainService:
     def list_cards_by_deck(deck_id, user):
         deck = DeckRepository.get_deck_for_user(deck_id, user)
         if not deck:
-            raise LookupError("DECK_NOT_FOUND")
+            raise NotFoundException("DECK_NOT_FOUND")
 
         def get_descendants(d):
             descendants = [d.id]
@@ -72,7 +73,7 @@ class CardMainService:
     def get_card_detail(card_id, user):
         card = CardRepository.get_card_by_id(card_id, user)
         if not card:
-            raise LookupError("CARD_NOT_FOUND")
+            raise NotFoundException("CARD_NOT_FOUND")
 
         from apps.deck.models import UserDeck
 
@@ -92,7 +93,7 @@ class CardMainService:
     def get_study_cards(deck_id, user):
         deck = DeckRepository.get_deck_for_user(deck_id, user)
         if not deck:
-            raise LookupError("DECK_NOT_FOUND")
+            raise NotFoundException("DECK_NOT_FOUND")
 
         today = timezone.localdate()
 
@@ -157,7 +158,7 @@ class CardMainService:
     def review_card(card_id, user, validated_data):
         card = CardRepository.get_card_for_review(card_id, user)
         if not card:
-            raise LookupError("CARD_NOT_FOUND")
+            raise NotFoundException("CARD_NOT_FOUND")
 
         quality = validated_data["quality"]
 
@@ -175,7 +176,7 @@ class CardMainService:
     def update_card(card_id, user, field_values_list):
         card = CardRepository.get_card_for_edit(card_id, user)
         if not card:
-            raise LookupError("CARD_NOT_FOUND_OR_NOT_EDITOR")
+            raise NotFoundException("CARD_NOT_FOUND_OR_NOT_EDITOR")
 
         data_dict = {item["name"]: item["value"] for item in field_values_list}
 
@@ -206,5 +207,5 @@ class CardMainService:
     def delete_card(card_id, user):
         success = CardRepository.delete_card(card_id, user)
         if not success:
-            raise LookupError("CARD_NOT_FOUND")
+            raise NotFoundException("CARD_NOT_FOUND")
         return {"success": True}

@@ -6,6 +6,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 import logging
 
+from core.utils.api_response import ApiResponse
+
 logger = logging.getLogger(__name__)
 
 from apps.payment.serializers import (
@@ -31,7 +33,7 @@ from apps.payment.services import WalletService, PaymentService
 @permission_classes([IsAuthenticated])
 def wallet_summary(request):
     data = WalletService.get_wallet_summary(request.user)
-    return Response(data)
+    return ApiResponse(data=data)
 
 
 @extend_schema(
@@ -43,7 +45,7 @@ def wallet_summary(request):
 @permission_classes([IsAuthenticated])
 def coin_histories(request):
     data = WalletService.get_coin_histories(request.user)
-    return Response(data)
+    return ApiResponse(data=data)
 
 
 @extend_schema(
@@ -55,7 +57,7 @@ def coin_histories(request):
 @permission_classes([IsAuthenticated])
 def payment_histories(request):
     data = WalletService.get_payment_histories(request.user)
-    return Response(data)
+    return ApiResponse(data=data)
 
 
 def get_client_ip(request):

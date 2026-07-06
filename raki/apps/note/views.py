@@ -1,9 +1,8 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from core.utils.api_validation import parse_request
+from core.utils.api_response import ApiResponse
 from core.utils.openapi_common import ErrorResponseSerializer
 from apps.note.serializers import (
     NoteCreateResponseSerializer,
@@ -35,15 +34,13 @@ from apps.note.services.main_service import NoteMainService
 @permission_classes([IsAuthenticated])
 def note_types_view(request):
     if request.method == "POST":
-        validated, error_response = parse_request(request, NoteTypeSerializer)
-        if error_response:
-            return error_response
-
-        data = NoteMainService.create_note_type(request.user, validated)
-        return Response(data, status=201)
+        serializer = NoteTypeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = NoteMainService.create_note_type(request.user, serializer.validated_data)
+        return ApiResponse(data=data, message="Note type created successfully", status_code=201)
 
     data = NoteMainService.get_note_types(request.user)
-    return Response(data)
+    return ApiResponse(data=data)
 
 
 @extend_schema(
@@ -59,14 +56,11 @@ def note_types_view(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_note(request, deck_id):
-    validated, error_response = parse_request(
-        request, NoteCreateSerializer, user=request.user
+    serializer = NoteCreateSerializer(
+        data=request.data, context={"user": request.user}
     )
-    if error_response:
-        return error_response
-
-    try:
-        data = NoteMainService.create_note(deck_id, request.user, validated)
-        return Response(data, status=201)
-    except LookupError as e:
-        return Response({"error": str(e)}, status=404)
+    serializer.is_valid(raise_exception=True)
+    data = NoteMainService.create_note(
+        deck_id, request.user, serializer.validated_data
+    )
+    return ApiResponse(data=data, message="Note created successfully", status_code=201)

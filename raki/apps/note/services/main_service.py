@@ -1,6 +1,7 @@
 from apps.deck.repositories import DeckRepository
 from apps.note.repositories import NoteRepository
 from apps.note.services.create_note import NoteService
+from core.exceptions.exceptions import NotFoundException
 
 
 class NoteMainService:
@@ -56,7 +57,7 @@ class NoteMainService:
     def create_note(deck_id, user, validated_data):
         deck = DeckRepository.get_deck_for_edit(deck_id, user)
         if not deck:
-            raise LookupError("DECK_NOT_FOUND_OR_NOT_EDITOR")
+            raise NotFoundException("DECK_NOT_FOUND_OR_NOT_EDITOR")
 
         note_type = validated_data["note_type"]
         values_data = validated_data["values_data"]

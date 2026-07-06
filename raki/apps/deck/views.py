@@ -1,11 +1,9 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from core.utils.api_validation import parse_request
+from core.utils.api_response import ApiResponse
 from core.utils.openapi_common import ErrorResponseSerializer
-from apps.deck.repositories import DeckRepository
 from apps.deck.serializers import (
     DeckCollaboratorAddSerializer,
     DeckDetailResponseSerializer,
@@ -44,15 +42,13 @@ from apps.deck.services import DeckService
 @permission_classes([IsAuthenticated])
 def user_decks(request):
     if request.method == "POST":
-        validated, error_response = parse_request(request, DeckSerializer)
-        if error_response:
-            return error_response
-
-        data = DeckService.create_deck(request.user, validated)
-        return Response(data, status=201)
+        serializer = DeckSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = DeckService.create_deck(request.user, serializer.validated_data)
+        return ApiResponse(data=data, message="Deck created successfully", status_code=201)
 
     data = DeckService.get_user_decks(request.user)
-    return Response(data)
+    return ApiResponse(data=data)
 
 
 @extend_schema(
@@ -68,18 +64,12 @@ def user_decks(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def move_user_deck(request):
-    validated, error_response = parse_request(
-        request, DeckMoveSerializer, user=request.user
+    serializer = DeckMoveSerializer(
+        data=request.data, context={"user": request.user}
     )
-    if error_response:
-        return error_response
-
-    deck = DeckRepository.get_deck_for_owner(validated["deck"].id, request.user)
-    if not deck:
-        return Response({"error": "DECK_NOT_FOUND_OR_NOT_OWNER"}, status=403)
-
-    data = DeckService.move_deck(validated)
-    return Response(data)
+    serializer.is_valid(raise_exception=True)
+    data = DeckService.move_deck(request.user, serializer.validated_data)
+    return ApiResponse(data=data, message="Deck moved successfully")
 
 
 @extend_schema(
@@ -114,29 +104,19 @@ def move_user_deck(request):
 @api_view(["GET", "PUT", "DELETE"])
 @permission_classes([IsAuthenticated])
 def user_deck_detail(request, deck_id):
-    try:
-        if request.method == "GET":
-            data = DeckService.get_deck_detail(deck_id, request.user)
-            return Response(data)
-        elif request.method == "PUT":
-            deck = DeckRepository.get_deck_for_owner(deck_id, request.user)
-            if not deck:
-                return Response({"error": "DECK_NOT_FOUND_OR_NOT_OWNER"}, status=403)
+    if request.method == "GET":
+        data = DeckService.get_deck_detail(deck_id, request.user)
+        return ApiResponse(data=data)
 
-            validated, error_response = parse_request(
-                request, DeckSerializer, deck=deck
-            )
-            if error_response:
-                return error_response
+    if request.method == "PUT":
+        deck = DeckService._get_deck_for_owner_or_404(deck_id, request.user)
+        serializer = DeckSerializer(data=request.data, context={"deck": deck})
+        serializer.is_valid(raise_exception=True)
+        data = DeckService.update_deck(deck, serializer.validated_data)
+        return ApiResponse(data=data, message="Deck updated successfully")
 
-            data = DeckService.update_deck(deck, validated)
-            return Response(data)
-        elif request.method == "DELETE":
-            data = DeckService.delete_deck(deck_id, request.user)
-            return Response(data)
-
-    except LookupError as e:
-        return Response({"error": str(e)}, status=404)
+    data = DeckService.delete_deck(deck_id, request.user)
+    return ApiResponse(data=data, message="Deck deleted successfully")
 
 
 @extend_schema(
@@ -149,7 +129,7 @@ def user_deck_detail(request, deck_id):
 @permission_classes([IsAuthenticated])
 def public_decks(request):
     data = DeckService.get_public_decks(request.user)
-    return Response(data)
+    return ApiResponse(data=data)
 
 
 @extend_schema(
@@ -164,17 +144,8 @@ def public_decks(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def learn_public_deck(request, deck_id):
-    try:
-        data = DeckService.learn_public_deck(deck_id, request.user)
-
-        if isinstance(data, dict) and data.get("success") is False:
-            status = 402 if data.get("error") == "INSUFFICIENT_COINS" else 400
-            return Response(data, status=status)
-
-        return Response(data, status=200)
-
-    except LookupError as e:
-        return Response({"error": str(e)}, status=404)
+    data = DeckService.learn_public_deck(deck_id, request.user)
+    return ApiResponse(data=data, message="Deck learned successfully")
 
 
 @extend_schema(
@@ -189,11 +160,8 @@ def learn_public_deck(request, deck_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def unlearn_deck(request, deck_id):
-    try:
-        data = DeckService.unlearn_deck(deck_id, request.user)
-        return Response(data, status=200)
-    except LookupError as e:
-        return Response({"error": str(e)}, status=404)
+    data = DeckService.unlearn_deck(deck_id, request.user)
+    return ApiResponse(data=data, message="Deck unlearned successfully")
 
 
 @extend_schema(
@@ -219,21 +187,16 @@ def unlearn_deck(request, deck_id):
 @api_view(["GET", "PUT"])
 @permission_classes([IsAuthenticated])
 def deck_share_settings(request, deck_id):
-    try:
-        if request.method == "GET":
-            data = DeckService.get_share_settings(deck_id, request.user)
-            return Response(data)
+    if request.method == "GET":
+        data = DeckService.get_share_settings(deck_id, request.user)
+        return ApiResponse(data=data)
 
-        validated, error_response = parse_request(request, DeckShareSettingsSerializer)
-        if error_response:
-            return error_response
-
-        data = DeckService.update_share_settings(deck_id, request.user, validated)
-        return Response(data)
-    except LookupError as e:
-        return Response({"error": str(e)}, status=403)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=400)
+    serializer = DeckShareSettingsSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = DeckService.update_share_settings(
+        deck_id, request.user, serializer.validated_data
+    )
+    return ApiResponse(data=data, message="Share settings updated successfully")
 
 
 @extend_schema(
@@ -251,19 +214,12 @@ def deck_share_settings(request, deck_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def deck_add_collaborator(request, deck_id):
-    try:
-        validated, error_response = parse_request(
-            request, DeckCollaboratorAddSerializer
-        )
-        if error_response:
-            return error_response
-
-        data = DeckService.add_collaborator(deck_id, request.user, validated)
-        return Response(data)
-    except LookupError as e:
-        return Response({"error": str(e)}, status=404)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=400)
+    serializer = DeckCollaboratorAddSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = DeckService.add_collaborator(
+        deck_id, request.user, serializer.validated_data
+    )
+    return ApiResponse(data=data, message="Collaborator added successfully")
 
 
 @extend_schema(
@@ -279,11 +235,8 @@ def deck_add_collaborator(request, deck_id):
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def deck_remove_collaborator(request, deck_id, user_id):
-    try:
-        data = DeckService.remove_collaborator(deck_id, request.user, user_id)
-        return Response(data)
-    except LookupError as e:
-        return Response({"error": str(e)}, status=404)
+    data = DeckService.remove_collaborator(deck_id, request.user, user_id)
+    return ApiResponse(data=data, message="Collaborator removed successfully")
 
 
 @extend_schema(
@@ -297,4 +250,4 @@ def deck_remove_collaborator(request, deck_id, user_id):
 def search_users(request):
     query = request.query_params.get("q", "")
     data = DeckService.search_users(query, request.user)
-    return Response(data)
+    return ApiResponse(data=data)

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from core.exceptions.exceptions import NotFoundException
 from .repositories import DeckRepository
 
 
@@ -34,7 +35,7 @@ class DeckMoveSerializer(serializers.Serializer):
         deck = DeckRepository.get_deck_for_user(deck_id, user)
 
         if not deck:
-            raise LookupError("DECK_NOT_FOUND")
+            raise NotFoundException("DECK_NOT_FOUND")
 
         if parent_id is None:
             return {"deck": deck, "parent": None}
@@ -42,7 +43,7 @@ class DeckMoveSerializer(serializers.Serializer):
         parent = DeckRepository.get_parent_deck_for_user(parent_id, user)
 
         if not parent:
-            raise LookupError("PARENT_DECK_NOT_FOUND")
+            raise NotFoundException("PARENT_DECK_NOT_FOUND")
 
         if parent.id == deck.id:
             raise serializers.ValidationError("DECK_MOVE_SELF")

@@ -1,10 +1,10 @@
-from django.http import JsonResponse
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from core.utils.api_validation import parse_request
+from core.exceptions.exceptions import UnauthorizedException
+from core.utils.api_response import ApiResponse
 from core.utils.openapi_common import ErrorResponseSerializer
 from apps.accounts.serializers import (
     BatchUsersResponseSerializer,
@@ -62,9 +62,8 @@ def user_profile(request):
 
     if request.method == "GET":
         profile_data = UserService.get_user_profile_data(user)
-
-        return Response(
-            {
+        return ApiResponse(
+            data={
                 "id": user.id,
                 "username": user.username,
                 "email": user.email,
@@ -76,18 +75,14 @@ def user_profile(request):
                 "is_staff": user.is_staff,
             }
         )
+    if request.method == "PUT":
 
-    validated, error_response = parse_request(
-        request, UserProfileUpdateSerializer, user=user
-    )
-    if error_response:
-        return error_response
-
-    try:
-        data = UserService.update_user_profile(user, validated)
-        return Response(data, status=200)
-    except Exception as e:
-        return Response({"error": "PROFILE_UPDATE_FAILED"}, status=500)
+        serializer = UserProfileUpdateSerializer(
+            data=request.data, context={"user": user}
+        )
+        serializer.is_valid(raise_exception=True)
+        data = UserService.update_user_profile(user, serializer.validated_data)
+        return ApiResponse(data=data, message="Profile updated successfully")
 
 
 @extend_schema(
@@ -107,15 +102,10 @@ def register_view(request):
     Bước 1: Nhận thông tin đăng ký, validate, tạo OTP, lưu Redis (5 phút),
     gửi OTP qua email. Chưa tạo tài khoản.
     """
-    validated, error_response = parse_request(request, UserRegistrationSerializer)
-    if error_response:
-        return error_response
-
-    try:
-        data = UserService.initiate_registration(validated)
-        return Response(data, status=200)
-    except Exception as e:
-        return JsonResponse({"error": "REGISTER_FAILED"}, status=500)
+    serializer = UserRegistrationSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = UserService.initiate_registration(serializer.validated_data)
+    return ApiResponse(data=data, message="OTP sent successfully")
 
 
 @extend_schema(
@@ -135,21 +125,13 @@ def verify_otp_view(request):
     Bước 2: Nhận email + OTP, xác thực với Redis.
     Nếu đúng thì tạo tài khoản và gửi mail chào mừng.
     """
-    validated, error_response = parse_request(request, OtpVerifySerializer)
-    if error_response:
-        return error_response
+    serializer = OtpVerifySerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
 
-    email = validated["email"]
-    otp = validated["otp"]
-
-    try:
-        data = UserService.verify_otp_and_register(email, otp)
-        return Response(data, status=201)
-    except ValueError as e:
-        error_code = str(e)
-        return JsonResponse({"error": error_code}, status=400)
-    except Exception as e:
-        return JsonResponse({"error": "REGISTER_FAILED"}, status=500)
+    email = serializer.validated_data["email"]
+    otp = serializer.validated_data["otp"]
+    data = UserService.verify_otp_and_register(email, otp)
+    return ApiResponse(data=data, message="Registered successfully", status_code=201)
 
 
 @extend_schema(
@@ -171,12 +153,13 @@ def users_with_due_cards(request):
     Chỉ cho phép gọi từ internal service (xác thực bằng X-Internal-Token).
     """
     from django.conf import settings as django_settings
+
     token = request.headers.get("X-Internal-Token", "")
     if token != django_settings.INTERNAL_API_TOKEN:
-        return JsonResponse({"error": "UNAUTHORIZED"}, status=401)
+        raise UnauthorizedException("UNAUTHORIZED")
 
     users = UserService.get_users_with_due_cards()
-    return Response({"users": users}, status=200)
+    return ApiResponse(data={"users": users})
 
 
 @extend_schema(
@@ -197,7 +180,7 @@ def users_batch(request):
 
     token = request.headers.get("X-Internal-Token", "")
     if token != django_settings.INTERNAL_API_TOKEN:
-        return JsonResponse({"error": "UNAUTHORIZED"}, status=401)
+        raise UnauthorizedException("UNAUTHORIZED")
 
     ids_param = request.query_params.get("ids", "")
     user_ids = []
@@ -207,4 +190,4 @@ def users_batch(request):
             user_ids.append(int(part))
 
     users = UserService.get_users_by_ids(user_ids)
-    return Response({"users": users}, status=200)
+    return ApiResponse(data={"users": users})
