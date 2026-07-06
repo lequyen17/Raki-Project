@@ -1,7 +1,9 @@
 /**
  * Maps backend error codes to translated messages.
  *
- * Backend returns { "error": "ERROR_CODE" }.
+ * Backend returns { "status", "message", "data" } on success,
+ * or { "status": "error", "message": "ERROR_CODE", "data": null } on failure.
+ * Legacy payment endpoints may still return { "error": "..." }.
  * This utility converts the code into a user-facing translated string.
  *
  * @param {string|undefined} errorCode - The error code from backend response
@@ -54,6 +56,11 @@ const ERROR_CODE_MAP = {
   NOTETYPE_NOT_FOUND: "apiErrors.NOTETYPE_NOT_FOUND",
   NOTE_FIELD_REQUIRED: "apiErrors.NOTE_FIELD_REQUIRED",
 };
+
+export function getApiErrorCode(responseData) {
+  if (!responseData) return undefined;
+  return responseData.error ?? responseData.message;
+}
 
 export function mapApiError(errorCode, t, fallbackKey) {
   if (!errorCode) {

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../../api/api";
-import { mapApiError } from "../../utils/errorMapper";
+import { getApiErrorCode, mapApiError } from "../../utils/errorMapper";
 import toast from "react-hot-toast";
 import "./AddCard.css";
 import Button from "../../components/Common/Button/Button.js";
@@ -54,7 +54,11 @@ const AddCard = () => {
     try {
       const res = await api.get("/api/note-types/");
       setNoteTypes(res.data.results || []);
-      if (res.data.results && res.data.results.length > 0 && !selectedNoteTypeId) {
+      if (
+        res.data.results &&
+        res.data.results.length > 0 &&
+        !selectedNoteTypeId
+      ) {
         setSelectedNoteTypeId(res.data.results[0].id);
       }
     } catch (err) {
@@ -83,11 +87,19 @@ const AddCard = () => {
   );
 
   const handleOpenDictionary = (targetFieldId) => {
-    if (!selectedNoteType || !selectedNoteType.definitions || selectedNoteType.definitions.length === 0) return;
+    if (
+      !selectedNoteType ||
+      !selectedNoteType.definitions ||
+      selectedNoteType.definitions.length === 0
+    )
+      return;
     const firstDefId = selectedNoteType.definitions[0].id;
     const word = noteValues[firstDefId] || "";
     if (!word.trim()) {
-      toast.error(t("addCard.error_first_field_empty") || "Please enter a word in the first field.");
+      toast.error(
+        t("addCard.error_first_field_empty") ||
+          "Please enter a word in the first field.",
+      );
       return;
     }
     setDictWord(word.trim());
@@ -99,7 +111,9 @@ const AddCard = () => {
     if (dictTargetFieldId) {
       setNoteValues((prev) => ({
         ...prev,
-        [dictTargetFieldId]: prev[dictTargetFieldId] ? prev[dictTargetFieldId] + "\n" + text : text
+        [dictTargetFieldId]: prev[dictTargetFieldId]
+          ? prev[dictTargetFieldId] + "\n" + text
+          : text,
       }));
     }
     setDictModalOpen(false);
@@ -133,8 +147,14 @@ const AddCard = () => {
       toast.success(t("addCard.toast_card_added"));
       navigate(`/decks/${deckId}/cards`);
     } catch (err) {
-      const errorMsg = err.response?.data?.error;
-      toast.error(t("addCard.toast_add_failed", { error: errorMsg ? mapApiError(errorMsg, t, "common.error_system") : err.message }));
+      const errorMsg = getApiErrorCode(err.response?.data);
+      toast.error(
+        t("addCard.toast_add_failed", {
+          error: errorMsg
+            ? mapApiError(errorMsg, t, "common.error_system")
+            : err.message,
+        }),
+      );
     }
   };
 
@@ -208,14 +228,18 @@ const AddCard = () => {
 
   const handleTemplateChange = (id, field, value) => {
     setNewTemplates(
-      newTemplates.map((t_item) => (t_item.id === id ? { ...t_item, [field]: value } : t_item)),
+      newTemplates.map((t_item) =>
+        t_item.id === id ? { ...t_item, [field]: value } : t_item,
+      ),
     );
   };
 
   const submitCreateNoteType = async () => {
     const isInvalid = newTemplates.some(
       (t_item) =>
-        !t_item.name.trim() || !t_item.front.trim() || (!t_item.is_cloze && !t_item.back.trim()),
+        !t_item.name.trim() ||
+        !t_item.front.trim() ||
+        (!t_item.is_cloze && !t_item.back.trim()),
     );
     if (isInvalid) {
       toast.error(t("addCard.toast_all_fields_required"));
@@ -225,7 +249,9 @@ const AddCard = () => {
     const fieldTagRegex = /{{.*}}/;
     const hasEmptyTags = newTemplates.some((t_item) => {
       if (t_item.is_cloze) return false;
-      return !fieldTagRegex.test(t_item.front) && !fieldTagRegex.test(t_item.back);
+      return (
+        !fieldTagRegex.test(t_item.front) && !fieldTagRegex.test(t_item.back)
+      );
     });
 
     if (hasEmptyTags) {
@@ -237,7 +263,9 @@ const AddCard = () => {
     for (const t_item of clozeTemplates) {
       const indexes = extractClozeIndexes(t_item.front);
       if (indexes.length > 0 && !isValidClozeSequence(indexes)) {
-        toast.error(t("addCard.toast_cloze_invalid_numbers", { name: t_item.name }));
+        toast.error(
+          t("addCard.toast_cloze_invalid_numbers", { name: t_item.name }),
+        );
         return;
       }
     }
@@ -257,7 +285,9 @@ const AddCard = () => {
         name: newNoteTypeName,
         definitions: validDefs,
         templates: newTemplates.map(({ name, is_cloze, front, back }) => ({
-          name, is_cloze, front,
+          name,
+          is_cloze,
+          front,
           back: is_cloze ? front : back,
         })),
       });
@@ -272,8 +302,14 @@ const AddCard = () => {
         setSelectedNoteTypeId(res.data.id);
       }
     } catch (err) {
-      const errorMsg = err.response?.data?.error;
-      toast.error(t("addCard.toast_create_failed", { error: errorMsg ? mapApiError(errorMsg, t, "common.error_system") : err.message }));
+      const errorMsg = getApiErrorCode(err.response?.data);
+      toast.error(
+        t("addCard.toast_create_failed", {
+          error: errorMsg
+            ? mapApiError(errorMsg, t, "common.error_system")
+            : err.message,
+        }),
+      );
     }
   };
 
@@ -311,7 +347,9 @@ const AddCard = () => {
             >
               {t("addCard.back_to_cards")}
             </button>
-            <h1 className="page-title">{t("addCard.page_title", { deckName })}</h1>
+            <h1 className="page-title">
+              {t("addCard.page_title", { deckName })}
+            </h1>
           </div>
         </header>
 
@@ -320,7 +358,9 @@ const AddCard = () => {
             <div className="card-form-section card-card">
               <div className="form-group-row">
                 <div className="form-group flex-1" style={{ marginBottom: 0 }}>
-                  <label className="form-label">{t("addCard.select_note_type")}</label>
+                  <label className="form-label">
+                    {t("addCard.select_note_type")}
+                  </label>
                   <select
                     className="form-select"
                     value={selectedNoteTypeId}
@@ -328,7 +368,8 @@ const AddCard = () => {
                   >
                     {noteTypes.map((nt) => (
                       <option key={nt.id} value={nt.id}>
-                        {nt.name} {nt.user_id ? t("addCard.custom") : t("addCard.system")}
+                        {nt.name}{" "}
+                        {nt.user_id ? t("addCard.custom") : t("addCard.system")}
                       </option>
                     ))}
                   </select>
@@ -347,14 +388,29 @@ const AddCard = () => {
               <div className="fields-grid">
                 {selectedNoteType?.definitions.map((def, index) => (
                   <div key={def.id} className="form-group">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <label className="form-label" style={{ marginBottom: 0 }}>{def.name}</label>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <label className="form-label" style={{ marginBottom: 0 }}>
+                        {def.name}
+                      </label>
                       {index > 0 && (
                         <button
                           type="button"
                           onClick={() => handleOpenDictionary(def.id)}
                           title={t("dictionary.suggest_tooltip")}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 4px' }}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            fontSize: "1.2rem",
+                            padding: "0 4px",
+                          }}
                         >
                           🪄
                         </button>
@@ -366,7 +422,9 @@ const AddCard = () => {
                       onChange={(e) =>
                         handleNoteValueChange(def.id, e.target.value)
                       }
-                      placeholder={t("addCard.enter_text_for", { field: def.name })}
+                      placeholder={t("addCard.enter_text_for", {
+                        field: def.name,
+                      })}
                     />
                   </div>
                 ))}

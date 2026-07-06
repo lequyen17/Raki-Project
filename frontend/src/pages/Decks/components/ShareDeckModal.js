@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import api from "../../../api/api";
-import { mapApiError } from "../../../utils/errorMapper";
+import { getApiErrorCode, mapApiError } from "../../../utils/errorMapper";
 import Button from "../../../components/Common/Button/Button.js";
 
 const SHARE_MODES = ["private", "public", "restricted"];
@@ -50,8 +50,8 @@ const ShareDeckModal = ({
       applySettings(res.data);
     } catch (err) {
       setError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "decks.share.error_load")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "decks.share.error_load")
           : t("decks.share.error_load"),
       );
     } finally {
@@ -140,8 +140,8 @@ const ShareDeckModal = ({
       onClose();
     } catch (err) {
       setError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "decks.share.error_save")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "decks.share.error_save")
           : t("decks.share.error_save"),
       );
     } finally {
@@ -172,8 +172,8 @@ const ShareDeckModal = ({
       onSaved?.(res.data);
     } catch (err) {
       setError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "decks.share.error_invite")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "decks.share.error_invite")
           : t("decks.share.error_invite"),
       );
     } finally {
@@ -192,8 +192,8 @@ const ShareDeckModal = ({
       onSaved?.(res.data);
     } catch (err) {
       setError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "decks.share.error_remove")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "decks.share.error_remove")
           : t("decks.share.error_remove"),
       );
     } finally {

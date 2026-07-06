@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import api from "../../api/api";
 import { tokenizeTemplate } from "../../utils/cardParser";
-import { mapApiError } from "../../utils/errorMapper";
+import { getApiErrorCode, mapApiError } from "../../utils/errorMapper";
 import "./Cards.css";
 import Pagination, {
   usePagination,
@@ -44,8 +44,8 @@ const Cards = () => {
         return;
       }
       setError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "cards.error_load")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "cards.error_load")
           : t("cards.error_load"),
       );
     } finally {
@@ -178,8 +178,8 @@ const Cards = () => {
         return;
       }
       toast.error(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "common.error")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "common.error")
           : t("common.error"),
       );
     } finally {

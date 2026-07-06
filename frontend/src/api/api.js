@@ -10,6 +10,20 @@ const api = axios.create({
 let isRefreshing = false;
 let failedQueue = [];
 
+const isApiEnvelope = (body) =>
+  body &&
+  typeof body === "object" &&
+  "status" in body &&
+  "message" in body &&
+  "data" in body;
+
+const unwrapApiResponse = (response) => {
+  if (isApiEnvelope(response.data)) {
+    response.data = response.data.data;
+  }
+  return response;
+};
+
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
@@ -31,9 +45,7 @@ api.interceptors.request.use((config) => {
 });
 
 // RESPONSE INTERCEPTOR
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+api.interceptors.response.use(unwrapApiResponse, async (error) => {
     const originalRequest = error.config;
 
     // Loại bỏ tất cả các request auth để tránh lặp vô hạn

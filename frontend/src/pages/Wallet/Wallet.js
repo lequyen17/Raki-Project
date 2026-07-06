@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { getApiErrorCode } from "../../utils/errorMapper";
 import api from "../../api/api";
 import Button from "../../components/Common/Button/Button";
 import toast from "react-hot-toast";
@@ -218,7 +219,7 @@ const Wallet = () => {
         toast.error(t("wallet.top_up_error"));
       }
     } catch (err) {
-      const errMsg = err.response?.data?.error || t("wallet.top_up_error");
+      const errMsg = getApiErrorCode(err.response?.data) || t("wallet.top_up_error");
       toast.error(errMsg);
     } finally {
       setTopUpSubmitting(false);
@@ -253,7 +254,7 @@ const Wallet = () => {
       // ĐÃ SỬA: Thay 'res' bằng 'err' để log đúng lỗi lỗi từ Axios
       console.error("API Thất Bại - Chi tiết lỗi:", err.response || err);
 
-      const errMsg = err.response?.data?.error || t("wallet.top_up_error");
+      const errMsg = getApiErrorCode(err.response?.data) || t("wallet.top_up_error");
       toast.error(errMsg);
     } finally {
       setTopUpSubmitting(false);
@@ -281,7 +282,7 @@ const Wallet = () => {
         toast.error(t("wallet.top_up_error"));
       }
     } catch (err) {
-      const errMsg = err.response?.data?.error || t("wallet.top_up_error");
+      const errMsg = getApiErrorCode(err.response?.data) || t("wallet.top_up_error");
       toast.error(errMsg);
     } finally {
       setTopUpSubmitting(false);

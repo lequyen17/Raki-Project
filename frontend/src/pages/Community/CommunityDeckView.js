@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import api from "../../api/api";
-import { mapApiError } from "../../utils/errorMapper";
+import { getApiErrorCode, mapApiError } from "../../utils/errorMapper";
 import Button from "../../components/Common/Button/Button";
 import CoinPrice from "../../components/Common/CoinPrice/CoinPrice";
 import Pagination, { usePagination } from "../../components/Common/Pagination/Pagination";
@@ -61,8 +61,7 @@ const CommunityDeckView = () => {
       setSidebarRefresh((n) => n + 1);
     } catch (err) {
       console.error(err);
-      const apiError =
-        err.response?.data?.error || err.response?.data?.message;
+      const apiError = getApiErrorCode(err.response?.data);
       toast.error(mapApiError(apiError, t, "decks.error_learn_deck"));
     } finally {
       setLearningLoading(false);
@@ -86,8 +85,9 @@ const CommunityDeckView = () => {
         navigate("/login");
         return;
       }
-      const message = err.response?.data?.error
-        ? mapApiError(err.response.data.error, t, "decks.error_stop_learning")
+      const errorCode = getApiErrorCode(err.response?.data);
+      const message = errorCode
+        ? mapApiError(errorCode, t, "decks.error_stop_learning")
         : t("decks.error_stop_learning");
       toast.error(message);
     } finally {

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../../api/api";
-import { mapApiError } from "../../utils/errorMapper";
+import { getApiErrorCode, mapApiError } from "../../utils/errorMapper";
 import DeckLeft from "./components/DeckLeft";
 import DeckRight from "./components/DeckRight";
 import CreateDeck from "./components/CreateDeck";
@@ -160,8 +160,8 @@ const Decks = () => {
         return;
       }
       setCreateError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "decks.error_create")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "decks.error_create")
           : t("decks.error_create"),
       );
     } finally {
@@ -247,8 +247,8 @@ const Decks = () => {
         return;
       }
       setEditError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "decks.error_update")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "decks.error_update")
           : t("decks.error_update"),
       );
     } finally {
@@ -291,8 +291,8 @@ const Decks = () => {
       setExpandedIds((prev) => new Set(prev).add(targetDeckId));
     } catch (err) {
       setMoveError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "decks.error_move")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "decks.error_move")
           : t("decks.error_move"),
       );
     } finally {
@@ -320,8 +320,8 @@ const Decks = () => {
       );
     } catch (err) {
       setMoveError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "decks.error_move")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "decks.error_move")
           : t("decks.error_move"),
       );
     } finally {
@@ -345,8 +345,8 @@ const Decks = () => {
       setSelectedDeckId(null);
       setSelectedDeckInfo(null);
       setStatsError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "decks.error_stats")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "decks.error_stats")
           : t("decks.error_stats"),
       );
     } finally {
@@ -368,8 +368,8 @@ const Decks = () => {
       setStatsError("");
     } catch (err) {
       setStatsError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "decks.error_delete")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "decks.error_delete")
           : t("decks.error_delete"),
       );
     } finally {
@@ -400,8 +400,8 @@ const Decks = () => {
         return;
       }
       setStatsError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "decks.error_stop_learning")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "decks.error_stop_learning")
           : t("decks.error_stop_learning"),
       );
     } finally {

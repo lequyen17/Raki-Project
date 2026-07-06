@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../api/api";
-import { mapApiError } from "../../utils/errorMapper";
+import { getApiErrorCode, mapApiError } from "../../utils/errorMapper";
 import Button from "../../components/Common/Button/Button.js";
 import Input from "../../components/Common/Input/Input.js";
 import "./Profile.css";
@@ -106,8 +106,9 @@ const Profile = () => {
         setIsEditing(false);
       }
     } catch (err) {
-      if (err.response?.data?.error) {
-        setError(mapApiError(err.response.data.error, t, "profile.error_update"));
+      const errorCode = getApiErrorCode(err.response?.data);
+      if (errorCode) {
+        setError(mapApiError(errorCode, t, "profile.error_update"));
       } else {
         setError(t("profile.error_update"));
       }

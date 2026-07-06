@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import api from "../../api/api";
 import { tokenizeTemplate } from "../../utils/cardParser";
-import { mapApiError } from "../../utils/errorMapper";
+import { getApiErrorCode, mapApiError } from "../../utils/errorMapper";
 import Button from "../../components/Common/Button/Button";
 import DictionaryModal from "../../components/Common/DictionaryModal/DictionaryModal";
 import "./CardDetail.css";
@@ -43,8 +43,8 @@ const CardDetail = () => {
         return;
       }
       setError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "common.error")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "common.error")
           : "Error loading card details",
       );
     } finally {
@@ -98,8 +98,8 @@ const CardDetail = () => {
       toast.success(t("common.save_success"));
     } catch (err) {
       toast.error(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "common.error")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "common.error")
           : "Error saving card",
       );
     } finally {
@@ -118,8 +118,8 @@ const CardDetail = () => {
       navigate(-1);
     } catch (err) {
       toast.error(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "common.error")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "common.error")
           : "Error deleting card",
       );
       setLoading(false);

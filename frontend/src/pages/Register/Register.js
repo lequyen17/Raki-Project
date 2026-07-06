@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../../api/api";
-import { mapApiError } from "../../utils/errorMapper";
+import { getApiErrorCode, mapApiError } from "../../utils/errorMapper";
 import Button from "../../components/Common/Button/Button.js";
 import Input from "../../components/Common/Input/Input.js";
 import "./Register.css";
@@ -169,9 +169,10 @@ const Register = () => {
       // focus đầu tiên sau khi render
       setTimeout(() => inputRefs.current[0]?.focus(), 50);
     } catch (err) {
-      if (err.response?.data?.error) {
+      const errorCode = getApiErrorCode(err.response?.data);
+      if (errorCode) {
         setGeneralError(
-          mapApiError(err.response.data.error, t, "common.error_system")
+          mapApiError(errorCode, t, "common.error_system")
         );
       } else {
         setGeneralError(t("common.error_system"));
@@ -241,9 +242,10 @@ const Register = () => {
       // Thành công → redirect login
       navigate("/login");
     } catch (err) {
-      if (err.response?.data?.error) {
+      const errorCode = getApiErrorCode(err.response?.data);
+      if (errorCode) {
         setOtpError(
-          mapApiError(err.response.data.error, t, "common.error_system")
+          mapApiError(errorCode, t, "common.error_system")
         );
       } else {
         setOtpError(t("common.error_system"));

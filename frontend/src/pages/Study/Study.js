@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../../api/api";
-import { mapApiError } from "../../utils/errorMapper";
+import { getApiErrorCode, mapApiError } from "../../utils/errorMapper";
 import { tokenizeTemplate } from "../../utils/cardParser";
 import toast from "react-hot-toast";
 import "./Study.css";
@@ -41,8 +41,8 @@ const Study = () => {
         return;
       }
       setError(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "study.error_load")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "study.error_load")
           : t("study.error_load"),
       );
     } finally {
@@ -87,8 +87,8 @@ const Study = () => {
     } catch (err) {
       console.error(err);
       toast.error(
-        err.response?.data?.error
-          ? mapApiError(err.response.data.error, t, "study.error_review")
+        getApiErrorCode(err.response?.data)
+          ? mapApiError(getApiErrorCode(err.response?.data), t, "study.error_review")
           : t("study.error_review"),
       );
     } finally {
