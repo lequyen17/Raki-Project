@@ -40,7 +40,6 @@ from drf_spectacular.views import SpectacularAPIView
 from django.contrib import admin
 from django.urls import path
 
-# Sử dụng 'as' để đặt tên riêng cho từng file views
 from apps.accounts import views as accounts_views
 from apps.deck import views as deck_views
 from apps.card import views as card_views
@@ -54,7 +53,6 @@ from apps.payment.serializers import (
     VnpayTopupResponseSerializer,
     VnpayIpnResponseSerializer,
     StripeTopupResponseSerializer,
-    # MoMo uses same response serializer
 )
 from core.utils.openapi_common import (
     TokenObtainPairRequestSerializer,
@@ -89,140 +87,175 @@ urlpatterns = [
     # SWAGGER
     # ======================
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    # giao diện swagger
     path(
         "api/docs/elements/",
         SpectacularElementsView.as_view(),
         name="elements",
     ),
     # Các route của accounts
-    # Đường dẫn đăng nhập để lấy Token (thay cho login_view cũ)
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/auth/", accounts_views.getAuth, name="current-user"),
-    # Đường dẫn để lấy Access Token mới khi cái cũ hết hạn (Refresh Token)
+    path(
+        "api/auth/",
+        accounts_views.CurrentUserView.as_view(),
+        name="current-user",
+    ),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    path("api/register/", accounts_views.register_view, name="register"),
-    path("api/register/verify-otp/", accounts_views.verify_otp_view, name="register_verify_otp"),
-    path("api/profile/", accounts_views.user_profile, name="user_profile"),
-    path("api/wallet/", payment_views.wallet_summary, name="wallet_summary"),
+    path(
+        "api/register/",
+        accounts_views.RegisterView.as_view(),
+        name="register",
+    ),
+    path(
+        "api/register/verify-otp/",
+        accounts_views.VerifyOtpView.as_view(),
+        name="register_verify_otp",
+    ),
+    path(
+        "api/profile/",
+        accounts_views.UserProfileView.as_view(),
+        name="user_profile",
+    ),
+    path(
+        "api/wallet/",
+        payment_views.WalletSummaryView.as_view(),
+        name="wallet_summary",
+    ),
     path(
         "api/wallet/coin-history/",
-        payment_views.coin_histories,
+        payment_views.CoinHistoriesView.as_view(),
         name="coin_histories",
     ),
     path(
         "api/wallet/payment-history/",
-        payment_views.payment_histories,
+        payment_views.PaymentHistoriesView.as_view(),
         name="payment_histories",
     ),
     path(
         "api/wallet/topup/vnpay/",
-        payment_views.vnpay_topup,
+        payment_views.VnpayTopupView.as_view(),
         name="vnpay_topup",
     ),
     path(
         "api/wallet/topup/vnpay/ipn/",
-        payment_views.vnpay_ipn,
+        payment_views.VnpayIpnView.as_view(),
         name="vnpay_ipn",
     ),
     path(
         "api/wallet/topup/vnpay/result/",
-        payment_views.vnpay_result,
+        payment_views.VnpayResultView.as_view(),
         name="vnpay_result",
     ),
-    # MoMo endpoints
     path(
         "api/wallet/topup/momo/",
-        payment_views.momo_topup,
+        payment_views.MomoTopupView.as_view(),
         name="momo_topup",
     ),
     path(
         "api/wallet/topup/momo/result/",
-        payment_views.momo_result,
+        payment_views.MomoResultView.as_view(),
         name="momo_result",
     ),
-    # Stripe endpoints
     path(
         "api/wallet/topup/stripe/",
-        payment_views.stripe_topup,
+        payment_views.StripeTopupView.as_view(),
         name="stripe_topup",
     ),
     path(
         "api/wallet/topup/stripe/webhook/",
-        payment_views.stripe_webhook,
+        payment_views.StripeWebhookView.as_view(),
         name="stripe_webhook",
     ),
     # Các route của deck
-    path("api/decks/", deck_views.user_decks, name="user_decks"),
-    path("api/decks/public/", deck_views.public_decks, name="public_decks"),
+    path(
+        "api/decks/",
+        deck_views.UserDecksView.as_view(),
+        name="user_decks",
+    ),
+    path(
+        "api/decks/public/",
+        deck_views.PublicDecksView.as_view(),
+        name="public_decks",
+    ),
     path(
         "api/decks/<int:deck_id>/learn/",
-        deck_views.learn_public_deck,
+        deck_views.LearnPublicDeckView.as_view(),
         name="learn_public_deck",
     ),
     path(
         "api/decks/<int:deck_id>/unlearn/",
-        deck_views.unlearn_deck,
+        deck_views.UnlearnDeckView.as_view(),
         name="unlearn_deck",
     ),
-    path("api/decks/move/", deck_views.move_user_deck, name="move_user_deck"),
+    path(
+        "api/decks/move/",
+        deck_views.MoveUserDeckView.as_view(),
+        name="move_user_deck",
+    ),
     path(
         "api/decks/<int:deck_id>/",
-        deck_views.user_deck_detail,
+        deck_views.UserDeckDetailView.as_view(),
         name="user_deck_detail",
     ),
     path(
         "api/decks/<int:deck_id>/share/",
-        deck_views.deck_share_settings,
+        deck_views.DeckShareSettingsView.as_view(),
         name="deck_share_settings",
     ),
     path(
         "api/decks/<int:deck_id>/collaborators/",
-        deck_views.deck_add_collaborator,
+        deck_views.DeckAddCollaboratorView.as_view(),
         name="deck_add_collaborator",
     ),
     path(
         "api/decks/<int:deck_id>/collaborators/<int:user_id>/",
-        deck_views.deck_remove_collaborator,
+        deck_views.DeckRemoveCollaboratorView.as_view(),
         name="deck_remove_collaborator",
     ),
-    path("api/users/search/", deck_views.search_users, name="search_users"),
+    path(
+        "api/users/search/",
+        deck_views.SearchUsersView.as_view(),
+        name="search_users",
+    ),
     path(
         "api/decks/<int:deck_id>/cards/",
-        card_views.list_cards_by_deck,
+        card_views.ListCardsByDeckView.as_view(),
         name="list_cards_by_deck",
     ),
     path(
         "api/decks/<int:deck_id>/study/",
-        card_views.get_study_cards,
+        card_views.StudyCardsView.as_view(),
         name="get_study_cards",
     ),
     path(
         "api/cards/<int:card_id>/review/",
-        card_views.review_card,
+        card_views.ReviewCardView.as_view(),
         name="review_card",
     ),
     path(
         "api/cards/<int:card_id>/",
-        card_views.card_detail,
+        card_views.CardDetailView.as_view(),
         name="card_detail",
     ),
     # Các route của note
-    path("api/note-types/", note_views.note_types_view, name="note_types"),
+    path(
+        "api/note-types/",
+        note_views.NoteTypesView.as_view(),
+        name="note_types",
+    ),
     path(
         "api/decks/<int:deck_id>/notes/",
-        note_views.create_note,
+        note_views.CreateNoteView.as_view(),
         name="create_note_by_deck",
     ),
     # Internal API — dành cho mail service
     path(
         "api/users/review-due/",
-        accounts_views.users_with_due_cards,
+        accounts_views.UsersWithDueCardsView.as_view(),
         name="users_review_due",
     ),
     path(
         "api/users/batch/",
-        accounts_views.users_batch,
+        accounts_views.UsersBatchView.as_view(),
         name="users_batch",
     ),
 ]
