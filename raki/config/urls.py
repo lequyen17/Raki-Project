@@ -82,7 +82,7 @@ TokenRefreshView = extend_schema(
 )(TokenRefreshView)
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("api/admin/", admin.site.urls),
     # ======================
     # SWAGGER
     # ======================

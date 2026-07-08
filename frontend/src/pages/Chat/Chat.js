@@ -24,10 +24,30 @@ function displayName(user) {
 
 function conversationTitle(conversation, t) {
   if (!conversation) return "";
-  if (conversation.type === "group") {
-    return conversation.name || t("chat.unnamed_group");
+  return conversation.name || t("chat.unknown_user");
+}
+
+function conversationPreview(conversation, currentUserId) {
+  if (!conversation) return "";
+
+  if (conversation.is_deleted) {
+    return "Đã xóa tin nhắn";
   }
-  return displayName(conversation.other_user) || t("chat.unknown_user");
+
+  const hasReply = Boolean(conversation.reply_to_message_id);
+  const content = (conversation.content || "").trim();
+
+  if (hasReply) {
+    return "Đã trả lời tin nhắn";
+  }
+
+  if (!content) return "";
+
+  if (conversation.sender_id === currentUserId) {
+    return `Bạn: ${content}`;
+  }
+
+  return content;
 }
 
 function Chat() {
@@ -61,7 +81,16 @@ function Chat() {
     try {
       setLoadingConversations(true);
       const res = await chatApi.get("/conversations");
-      setConversations(res.data.results || []);
+      const sortedResults = [...(res.data.results || [])].sort((a, b) => {
+        const aTime = a.message_created_at
+          ? new Date(a.message_created_at).getTime()
+          : 0;
+        const bTime = b.message_created_at
+          ? new Date(b.message_created_at).getTime()
+          : 0;
+        return bTime - aTime;
+      });
+      setConversations(sortedResults);
     } catch (err) {
       console.error(err);
       toast.error(t("chat.load_conversations_error"));
@@ -388,7 +417,10 @@ function Chat() {
               conversations.map((conv) => {
                 const isActive = activeConversation?.id === conv.id;
                 const name = conversationTitle(conv, t);
-                const preview = conv.last_message?.content || t("chat.no_messages");
+                const preview =
+                  conversationPreview(conv, currentUser?.id) ||
+                  t("chat.no_messages");
+                const avatarFallback = name?.charAt(0)?.toUpperCase() || "?";
 
                 return (
                   <button
@@ -398,12 +430,23 @@ function Chat() {
                     onClick={() => openConversation(conv)}
                   >
                     <div className="chat-conversation-item__top">
-                      <span className="chat-conversation-item__name">{name}</span>
-                      {conv.unread_count > 0 && (
-                        <span className="chat-conversation-item__badge">
-                          {conv.unread_count}
-                        </span>
-                      )}
+                      <div className="chat-conversation-item__identity">
+                        {conv.avatar ? (
+                          <img
+                            src={conv.avatar}
+                            alt={name}
+                            className="chat-conversation-item__avatar"
+                          />
+                        ) : (
+                          <span className="chat-conversation-item__avatar chat-conversation-item__avatar--fallback">
+                            {avatarFallback}
+                          </span>
+                        )}
+                        <span className="chat-conversation-item__name">{name}</span>
+                      </div>
+                      <span className="chat-conversation-item__time">
+                        {formatTime(conv.message_created_at)}
+                      </span>
                     </div>
                     <p className="chat-conversation-item__preview">{preview}</p>
                   </button>

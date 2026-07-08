@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.endpoints.deps import get_db
 from app.core.security import get_current_user_id
 from app.schemas.chat import (
     ConversationCreate,
@@ -14,7 +14,6 @@ from app.schemas.chat import (
     ReadConversationResponse,
 )
 from app.services import chat_service
-from app.services.user_client import fetch_users_by_ids
 from app.ws.manager import manager
 
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
@@ -42,18 +41,18 @@ def create_conversation(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    users_map = fetch_users_by_ids([body.other_user_id])
-    other_user = users_map.get(body.other_user_id)
-
     return ConversationOut(
         id=conversation.id,
         type=conversation.type.value,
         name=conversation.name,
-        created_at=conversation.created_at,
-        updated_at=conversation.updated_at,
-        other_user=other_user,
-        last_message=None,
-        unread_count=0,
+        avatar=None,
+        last_message_id=None,
+        sender_id=None,
+        message_type=None,
+        content=None,
+        reply_to_message_id=None,
+        is_deleted=None,
+        message_created_at=None,
     )
 
 
@@ -70,20 +69,18 @@ def create_group_conversation(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    participant_ids = [p.user_id for p in conversation.participants if p.left_at is None]
-    users_map = fetch_users_by_ids(participant_ids)
-    participants = [users_map[pid] for pid in participant_ids if pid in users_map]
-
     return ConversationOut(
         id=conversation.id,
         type=conversation.type.value,
         name=conversation.name,
-        created_at=conversation.created_at,
-        updated_at=conversation.updated_at,
-        other_user=None,
-        participants=participants,
-        last_message=None,
-        unread_count=0,
+        avatar=None,
+        last_message_id=None,
+        sender_id=None,
+        message_type=None,
+        content=None,
+        reply_to_message_id=None,
+        is_deleted=None,
+        message_created_at=None,
     )
 
 
@@ -113,9 +110,7 @@ def send_message(
     user_id: int = Depends(get_current_user_id),
 ):
     try:
-        return chat_service.create_message(
-            db, conversation_id, user_id, body.content
-        )
+        return chat_service.create_message(db, conversation_id, user_id, body.content)
     except PermissionError:
         raise HTTPException(status_code=403, detail="NOT_PARTICIPANT")
 

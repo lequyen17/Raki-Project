@@ -45,7 +45,6 @@ class Conversation(Base):
     created_by = Column(BigInteger)
 
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # relationships
     participants = relationship(

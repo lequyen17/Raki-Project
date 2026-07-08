@@ -1,7 +1,9 @@
 from datetime import datetime
 
+
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import aliased
 
 from app.models import (
     Conversation,
@@ -19,7 +21,9 @@ from app.schemas.chat import (
 from app.services.user_client import fetch_users_by_ids
 
 
-def _participant_user_ids(conversation: Conversation, current_user_id: int) -> list[int]:
+def _participant_user_ids(
+    conversation: Conversation, current_user_id: int
+) -> list[int]:
     return [
         p.user_id
         for p in conversation.participants
@@ -82,60 +86,54 @@ def _unread_count(db: Session, conversation_id: int, user_id: int) -> int:
 
 
 def list_conversations(db: Session, user_id: int) -> list[ConversationOut]:
+
+    # 1. Subquery cực kỳ đơn giản: Chỉ lấy tin nhắn cuối của MỌI cuộc hội thoại
+    # Không cần biết cuộc hội thoại đó của ai
+    last_message_subquery = (
+        db.query(Message)
+        .distinct(Message.conversation_id)
+        .order_by(Message.conversation_id, desc(Message.id))
+        .subquery()
+    )
+
+    LastMessage = aliased(Message, last_message_subquery)
+
+    # 2. Query chính: Bộ lọc user_id nằm ĐỘC NHẤT ở đây
     conversations = (
-        db.query(Conversation)
-        .join(ConversationParticipant)
+        db.query(Conversation, LastMessage)
+        .join(
+            ConversationParticipant,
+            ConversationParticipant.conversation_id == Conversation.id,
+        )
+        # Khớp ID phòng chat của User với ID phòng chat của đống tin nhắn cuối kia
+        .outerjoin(LastMessage, Conversation.id == LastMessage.conversation_id)
         .filter(
             ConversationParticipant.user_id == user_id,
             ConversationParticipant.left_at.is_(None),
         )
-        .order_by(desc(Conversation.updated_at))
+        .order_by(desc(func.coalesce(LastMessage.id, 0)), desc(Conversation.id))
         .all()
     )
 
-    other_user_ids: set[int] = set()
-    sender_ids: set[int] = set()
-
-    for conversation in conversations:
-        other_user_ids.update(_participant_user_ids(conversation, user_id))
-        last_message = _get_last_message(db, conversation.id)
-        if last_message:
-            sender_ids.add(last_message.sender_id)
-
-    users_map = fetch_users_by_ids(list(other_user_ids | sender_ids))
     results: list[ConversationOut] = []
 
-    for conversation in conversations:
-        last_message = _get_last_message(db, conversation.id)
-        if last_message:
-            last_message.reads = (
-                db.query(MessageRead)
-                .filter(MessageRead.message_id == last_message.id)
-                .all()
-            )
-        other_ids = _participant_user_ids(conversation, user_id)
-        other_user = users_map.get(other_ids[0]) if other_ids else None
-        participant_users = [
-            users_map[p.user_id]
-            for p in conversation.participants
-            if p.left_at is None and p.user_id in users_map
-        ]
+    for conversation, last_message in conversations:
 
         results.append(
             ConversationOut(
                 id=conversation.id,
                 type=conversation.type.value,
                 name=conversation.name,
-                created_at=conversation.created_at,
-                updated_at=conversation.updated_at,
-                other_user=other_user,
-                participants=participant_users,
-                last_message=(
-                    _serialize_message(last_message, users_map)
-                    if last_message
-                    else None
+                avatar=conversation.avatar,
+                last_message_id=last_message.id if last_message else None,
+                sender_id=last_message.sender_id if last_message else None,
+                message_type=last_message.type.value if last_message else None,
+                content=last_message.content if last_message else None,
+                reply_to_message_id=(
+                    last_message.reply_to_message_id if last_message else None
                 ),
-                unread_count=_unread_count(db, conversation.id, user_id),
+                is_deleted=last_message.is_deleted if last_message else None,
+                message_created_at=last_message.created_at if last_message else None,
             )
         )
 
@@ -164,8 +162,16 @@ def get_or_create_private_conversation(
     if existing:
         return existing
 
+    # other_user = db.query(User).filter(User.id == other_user_id).first()
+    # if not other_user:
+    #     raise ValueError("OTHER_USER_NOT_FOUND")
+
+    # # Lấy tên đối phương (bạn thay .full_name hoặc .username tùy theo bảng User của bạn nhé)
+    # other_user_name = other_user.username
+
     conversation = Conversation(
         type=ConversationType.PRIVATE,
+        name="default",
         created_by=user_id,
     )
     db.add(conversation)
@@ -259,9 +265,7 @@ def list_messages(
     message_ids = [m.id for m in messages]
     if message_ids:
         reads = (
-            db.query(MessageRead)
-            .filter(MessageRead.message_id.in_(message_ids))
-            .all()
+            db.query(MessageRead).filter(MessageRead.message_id.in_(message_ids)).all()
         )
         reads_by_message: dict[int, list[MessageRead]] = {}
         for read in reads:
@@ -289,7 +293,9 @@ def create_message(
     )
     db.add(message)
 
-    conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    conversation = (
+        db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    )
     if conversation:
         conversation.updated_at = datetime.utcnow()
 
@@ -342,6 +348,8 @@ def mark_conversation_read(
         if not read:
             db.add(MessageRead(message_id=last_message.id, user_id=user_id))
         db.commit()
-        seen_by_ids = get_message_seen_by_ids(db, last_message.id, last_message.sender_id)
+        seen_by_ids = get_message_seen_by_ids(
+            db, last_message.id, last_message.sender_id
+        )
         return last_message.id, seen_by_ids
     return None, []

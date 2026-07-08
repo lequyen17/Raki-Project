@@ -43,12 +43,15 @@ class ConversationOut(BaseModel):
     id: int
     type: str
     name: Optional[str]
-    created_at: datetime
-    updated_at: datetime
-    other_user: Optional[UserBrief] = None
-    participants: list[UserBrief] = Field(default_factory=list)
-    last_message: Optional[MessageOut] = None
-    unread_count: int = 0
+    avatar: Optional[str]
+
+    last_message_id: Optional[int] = None
+    sender_id: Optional[int] = None
+    message_type: Optional[str] = None
+    content: Optional[str] = None
+    reply_to_message_id: Optional[int] = None
+    is_deleted: Optional[bool] = None
+    message_created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
