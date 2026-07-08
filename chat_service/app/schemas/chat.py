@@ -30,6 +30,8 @@ class MessageOut(BaseModel):
     sender_id: int
     content: Optional[str]
     type: str
+    reply_to_message_id: Optional[int] = None
+    is_deleted: Optional[bool] = None
     created_at: datetime
     sender: Optional[UserBrief] = None
     seen_by_ids: list[int] = Field(default_factory=list)

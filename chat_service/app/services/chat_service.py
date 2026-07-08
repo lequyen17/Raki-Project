@@ -21,16 +21,6 @@ from app.schemas.chat import (
 from app.services.user_client import fetch_users_by_ids
 
 
-def _participant_user_ids(
-    conversation: Conversation, current_user_id: int
-) -> list[int]:
-    return [
-        p.user_id
-        for p in conversation.participants
-        if p.left_at is None and p.user_id != current_user_id
-    ]
-
-
 def _serialize_message(message: Message, users_map: dict[int, UserBrief]) -> MessageOut:
     seen_by_ids = [
         read.user_id for read in message.reads if read.user_id != message.sender_id
@@ -58,31 +48,6 @@ def _get_last_message(db: Session, conversation_id: int) -> Message | None:
         .order_by(desc(Message.created_at))
         .first()
     )
-
-
-def _unread_count(db: Session, conversation_id: int, user_id: int) -> int:
-    participant = (
-        db.query(ConversationParticipant)
-        .filter(
-            ConversationParticipant.conversation_id == conversation_id,
-            ConversationParticipant.user_id == user_id,
-            ConversationParticipant.left_at.is_(None),
-        )
-        .first()
-    )
-    if not participant:
-        return 0
-
-    query = db.query(func.count(Message.id)).filter(
-        Message.conversation_id == conversation_id,
-        Message.is_deleted.is_(False),
-        Message.sender_id != user_id,
-    )
-
-    if participant.last_read_message_id:
-        query = query.filter(Message.id > participant.last_read_message_id)
-
-    return query.scalar() or 0
 
 
 def list_conversations(db: Session, user_id: int) -> list[ConversationOut]:

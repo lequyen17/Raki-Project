@@ -1,4 +1,10 @@
-import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -66,11 +72,17 @@ function Chat() {
   const [searching, setSearching] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [selectedGroupUsers, setSelectedGroupUsers] = useState([]);
+  const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
+  const [modalSearchQuery, setModalSearchQuery] = useState("");
+  const [modalSearchResults, setModalSearchResults] = useState([]);
+  const [modalSearching, setModalSearching] = useState(false);
+  const [creatingGroup, setCreatingGroup] = useState(false);
 
   const wsRef = useRef(null);
   const wsReconnectAttemptRef = useRef(0);
   const messagesEndRef = useRef(null);
   const searchTimeoutRef = useRef(null);
+  const modalSearchTimeoutRef = useRef(null);
   const activeConversationIdRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -178,9 +190,13 @@ function Chat() {
       setLoadingMessages(true);
 
       try {
-        const res = await chatApi.get(`/conversations/${conversation.id}/messages`);
+        const res = await chatApi.get(
+          `/conversations/${conversation.id}/messages`,
+        );
         setMessages(res.data.results || []);
-        const readRes = await chatApi.post(`/conversations/${conversation.id}/read`);
+        const readRes = await chatApi.post(
+          `/conversations/${conversation.id}/read`,
+        );
         if (readRes.data?.last_read_message_id) {
           setMessages((prev) =>
             prev.map((msg) =>
@@ -229,6 +245,30 @@ function Chat() {
     });
   };
 
+  const resetCreateGroupModalState = () => {
+    setGroupName("");
+    setSelectedGroupUsers([]);
+    setModalSearchQuery("");
+    setModalSearchResults([]);
+    setModalSearching(false);
+    setCreatingGroup(false);
+
+    if (modalSearchTimeoutRef.current) {
+      clearTimeout(modalSearchTimeoutRef.current);
+      modalSearchTimeoutRef.current = null;
+    }
+  };
+
+  const openCreateGroupModal = () => {
+    resetCreateGroupModalState();
+    setIsCreateGroupModalOpen(true);
+  };
+
+  const closeCreateGroupModal = () => {
+    setIsCreateGroupModalOpen(false);
+    resetCreateGroupModalState();
+  };
+
   const createGroupConversation = async () => {
     const trimmedName = groupName.trim();
     if (!trimmedName) {
@@ -241,19 +281,23 @@ function Chat() {
     }
 
     try {
+      setCreatingGroup(true);
       const res = await chatApi.post("/conversations/group", {
         name: trimmedName,
         participant_ids: selectedGroupUsers.map((u) => u.id),
       });
       setGroupName("");
       setSelectedGroupUsers([]);
-      setSearchQuery("");
-      setSearchResults([]);
+      setModalSearchQuery("");
+      setModalSearchResults([]);
+      setIsCreateGroupModalOpen(false);
+      setCreatingGroup(false);
       await fetchConversations();
       openConversation(res.data);
     } catch (err) {
       console.error(err);
       toast.error(t("chat.group_create_error"));
+      setCreatingGroup(false);
     }
   };
 
@@ -334,13 +378,54 @@ function Chat() {
     };
   }, [searchQuery]);
 
+  useEffect(() => {
+    if (!isCreateGroupModalOpen) return;
+
+    if (modalSearchTimeoutRef.current) {
+      clearTimeout(modalSearchTimeoutRef.current);
+    }
+
+    if (modalSearchQuery.trim().length < 2) {
+      setModalSearchResults([]);
+      return;
+    }
+
+    modalSearchTimeoutRef.current = setTimeout(async () => {
+      try {
+        setModalSearching(true);
+        const res = await api.get("/api/users/search/", {
+          params: { q: modalSearchQuery.trim() },
+        });
+        setModalSearchResults(res.data.results || []);
+      } catch (err) {
+        console.error(err);
+        setModalSearchResults([]);
+      } finally {
+        setModalSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (modalSearchTimeoutRef.current) {
+        clearTimeout(modalSearchTimeoutRef.current);
+        modalSearchTimeoutRef.current = null;
+      }
+    };
+  }, [modalSearchQuery, isCreateGroupModalOpen]);
+
   return (
     <div className="chat-page">
       <div className="chat-container">
         <aside className="chat-sidebar">
           <div className="chat-sidebar__header">
             <h1>{t("chat.title")}</h1>
-            <p>{t("chat.subtitle")}</p>
+            <button
+              type="button"
+              className="chat-create-group-btn"
+              onClick={openCreateGroupModal}
+            >
+              {t("chat.create_group_button")}
+            </button>
           </div>
 
           <div className="chat-search">
@@ -356,7 +441,10 @@ function Chat() {
             {searchResults.length > 0 && (
               <div className="chat-search__results">
                 {searchResults.map((user) => (
-                  <div key={user.id} className="chat-search__item chat-search__item--actions">
+                  <div
+                    key={user.id}
+                    className="chat-search__item chat-search__item--actions"
+                  >
                     <button
                       type="button"
                       className="chat-search__action"
@@ -364,48 +452,10 @@ function Chat() {
                     >
                       {user.username}
                     </button>
-                    <button
-                      type="button"
-                      className="chat-search__add"
-                      onClick={() => toggleGroupUser(user)}
-                    >
-                      {selectedGroupUsers.some((item) => item.id === user.id)
-                        ? t("chat.remove_from_group")
-                        : t("chat.add_to_group")}
-                    </button>
                   </div>
                 ))}
               </div>
             )}
-          </div>
-
-          <div className="chat-group-builder">
-            <h3>{t("chat.create_group_title")}</h3>
-            <input
-              type="text"
-              placeholder={t("chat.group_name_placeholder")}
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-            />
-            <div className="chat-group-builder__selected">
-              {selectedGroupUsers.length === 0 ? (
-                <span>{t("chat.no_group_members_selected")}</span>
-              ) : (
-                selectedGroupUsers.map((user) => (
-                  <button
-                    key={user.id}
-                    type="button"
-                    className="chat-group-member-tag"
-                    onClick={() => toggleGroupUser(user)}
-                  >
-                    {user.username} x
-                  </button>
-                ))
-              )}
-            </div>
-            <button type="button" onClick={createGroupConversation}>
-              {t("chat.create_group_button")}
-            </button>
           </div>
 
           <div className="chat-conversation-list">
@@ -442,7 +492,9 @@ function Chat() {
                             {avatarFallback}
                           </span>
                         )}
-                        <span className="chat-conversation-item__name">{name}</span>
+                        <span className="chat-conversation-item__name">
+                          {name}
+                        </span>
                       </div>
                       <span className="chat-conversation-item__time">
                         {formatTime(conv.message_created_at)}
@@ -459,6 +511,7 @@ function Chat() {
         <main className="chat-main">
           {!activeConversation ? (
             <div className="chat-placeholder">
+              
               <h2>{t("chat.select_conversation")}</h2>
               <p>{t("chat.select_conversation_hint")}</p>
             </div>
@@ -466,6 +519,7 @@ function Chat() {
             <>
               <div className="chat-main__header">
                 <h2>{conversationTitle(activeConversation, t)}</h2>
+                
               </div>
 
               <div className="chat-messages">
@@ -516,6 +570,129 @@ function Chat() {
           )}
         </main>
       </div>
+
+      {isCreateGroupModalOpen && (
+        <div
+          className="chat-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeCreateGroupModal}
+        >
+          <div className="chat-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="chat-modal__header">
+              <h3 className="chat-modal__title">
+                {t("chat.create_group_title")}
+              </h3>
+              <button
+                type="button"
+                className="chat-modal__close"
+                onClick={closeCreateGroupModal}
+                aria-label={t("common.cancel")}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="chat-modal__body">
+              <input
+                type="text"
+                className="chat-modal__input"
+                placeholder={t("chat.group_name_placeholder")}
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+              />
+
+              <div className="chat-modal__user-search">
+                <input
+                  type="text"
+                  className="chat-modal__input"
+                  placeholder={t("chat.search_user")}
+                  value={modalSearchQuery}
+                  onChange={(e) => setModalSearchQuery(e.target.value)}
+                />
+
+                {modalSearching && (
+                  <div className="chat-modal__status">
+                    {t("common.search")}...
+                  </div>
+                )}
+
+                {modalSearchResults.length > 0 && (
+                  <div className="chat-modal__user-results">
+                    {modalSearchResults.map((user) => {
+                      const isSelected = selectedGroupUsers.some(
+                        (item) => item.id === user.id,
+                      );
+                      return (
+                        <div key={user.id} className="chat-modal__user-result">
+                          <span className="chat-modal__user-name">
+                            {user.username}
+                          </span>
+                          <button
+                            type="button"
+                            className="chat-modal__user-toggle"
+                            onClick={() => toggleGroupUser(user)}
+                          >
+                            {isSelected
+                              ? t("chat.remove_from_group")
+                              : t("chat.add_to_group")}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="chat-modal__selected">
+                {selectedGroupUsers.length === 0 ? (
+                  <span className="chat-modal__selected-empty">
+                    {t("chat.no_group_members_selected")}
+                  </span>
+                ) : (
+                  <div className="chat-modal__selected-tags">
+                    {selectedGroupUsers.map((user) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        className="chat-group-member-tag"
+                        onClick={() => toggleGroupUser(user)}
+                      >
+                        {user.username} x
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="chat-modal__actions">
+              <button
+                type="button"
+                className="chat-modal__cancel"
+                onClick={closeCreateGroupModal}
+                disabled={creatingGroup}
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                type="button"
+                className="chat-modal__create"
+                onClick={createGroupConversation}
+                disabled={
+                  creatingGroup ||
+                  !groupName.trim() ||
+                  selectedGroupUsers.length < 2
+                }
+              >
+                {creatingGroup
+                  ? t("common.loading")
+                  : t("chat.create_group_button")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
