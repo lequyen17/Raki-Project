@@ -10,32 +10,60 @@ from app.models import (
     ConversationParticipant,
     ConversationType,
     Message,
-    MessageRead,
     MessageType,
 )
 from app.schemas.chat import (
     ConversationOut,
     MessageOut,
+    ParticipantOut,
     UserBrief,
 )
 from app.services.user_client import fetch_users_by_ids
 
 
-def _serialize_message(message: Message, users_map: dict[int, UserBrief]) -> MessageOut:
-    seen_by_ids = [
-        read.user_id for read in message.reads if read.user_id != message.sender_id
-    ]
+def _serialize_message(message: Message) -> MessageOut:
     return MessageOut(
         id=message.id,
         conversation_id=message.conversation_id,
         sender_id=message.sender_id,
         content=message.content,
         type=message.type.value,
+        reply_to_message_id=message.reply_to_message_id,
+        is_deleted=message.is_deleted,
         created_at=message.created_at,
-        sender=users_map.get(message.sender_id),
-        seen_by_ids=seen_by_ids,
-        seen_count=len(seen_by_ids),
     )
+
+
+def _get_conversation_participants(
+    db: Session, conversation_id: int
+) -> list[ParticipantOut]:
+    participants = (
+        db.query(ConversationParticipant)
+        .filter(
+            ConversationParticipant.conversation_id == conversation_id,
+            ConversationParticipant.left_at.is_(None),
+        )
+        .all()
+    )
+    users_map = fetch_users_by_ids([p.user_id for p in participants])
+    print("participants:", [p.user_id for p in participants])
+    print("users_map:", users_map)
+
+    result = []
+
+    for participant in participants:
+        user = users_map.get(participant.user_id)
+
+        result.append(
+            ParticipantOut(
+                user_id=participant.user_id,
+                name=user.username,
+                avatar=user.avatar if user else None,
+                last_read_message_id=participant.last_read_message_id,
+            )
+        )
+
+    return result
 
 
 def _get_last_message(db: Session, conversation_id: int) -> Message | None:
@@ -127,16 +155,14 @@ def get_or_create_private_conversation(
     if existing:
         return existing
 
-    # other_user = db.query(User).filter(User.id == other_user_id).first()
-    # if not other_user:
-    #     raise ValueError("OTHER_USER_NOT_FOUND")
-
-    # # Lấy tên đối phương (bạn thay .full_name hoặc .username tùy theo bảng User của bạn nhé)
-    # other_user_name = other_user.username
+    other_users = fetch_users_by_ids([other_user_id])
+    other_user = other_users.get(other_user_id)
+    if not other_user:
+        raise ValueError("OTHER_USER_NOT_FOUND")
 
     conversation = Conversation(
         type=ConversationType.PRIVATE,
-        name="default",
+        name=other_user.username,
         created_by=user_id,
     )
     db.add(conversation)
@@ -208,13 +234,12 @@ def list_messages(
     user_id: int,
     limit: int = 50,
     before_id: int | None = None,
-) -> tuple[list[MessageOut], bool]:
+) -> tuple[list[MessageOut], bool, list[ParticipantOut]]:
     if not user_is_participant(db, conversation_id, user_id):
         raise PermissionError("NOT_PARTICIPANT")
 
     query = db.query(Message).filter(
         Message.conversation_id == conversation_id,
-        Message.is_deleted.is_(False),
     )
 
     if before_id:
@@ -225,20 +250,9 @@ def list_messages(
     messages = messages[:limit]
     messages.reverse()
 
-    sender_ids = {m.sender_id for m in messages}
-    users_map = fetch_users_by_ids(list(sender_ids))
-    message_ids = [m.id for m in messages]
-    if message_ids:
-        reads = (
-            db.query(MessageRead).filter(MessageRead.message_id.in_(message_ids)).all()
-        )
-        reads_by_message: dict[int, list[MessageRead]] = {}
-        for read in reads:
-            reads_by_message.setdefault(read.message_id, []).append(read)
-        for message in messages:
-            message.reads = reads_by_message.get(message.id, [])
+    participants = _get_conversation_participants(db, conversation_id)
 
-    return [_serialize_message(m, users_map) for m in messages], has_more
+    return [_serialize_message(m) for m in messages], has_more, participants
 
 
 def create_message(
@@ -267,26 +281,12 @@ def create_message(
     db.commit()
     db.refresh(message)
 
-    message.reads = []
-    users_map = fetch_users_by_ids([sender_id])
-    return _serialize_message(message, users_map)
-
-
-def get_message_seen_by_ids(db: Session, message_id: int, sender_id: int) -> list[int]:
-    reads = (
-        db.query(MessageRead)
-        .filter(
-            MessageRead.message_id == message_id,
-            MessageRead.user_id != sender_id,
-        )
-        .all()
-    )
-    return [read.user_id for read in reads]
+    return _serialize_message(message)
 
 
 def mark_conversation_read(
     db: Session, conversation_id: int, user_id: int
-) -> tuple[int | None, list[int]]:
+) -> int | None:
     participant = (
         db.query(ConversationParticipant)
         .filter(
@@ -302,19 +302,6 @@ def mark_conversation_read(
     last_message = _get_last_message(db, conversation_id)
     if last_message:
         participant.last_read_message_id = last_message.id
-        read = (
-            db.query(MessageRead)
-            .filter(
-                MessageRead.message_id == last_message.id,
-                MessageRead.user_id == user_id,
-            )
-            .first()
-        )
-        if not read:
-            db.add(MessageRead(message_id=last_message.id, user_id=user_id))
         db.commit()
-        seen_by_ids = get_message_seen_by_ids(
-            db, last_message.id, last_message.sender_id
-        )
-        return last_message.id, seen_by_ids
-    return None, []
+        return last_message.id
+    return None

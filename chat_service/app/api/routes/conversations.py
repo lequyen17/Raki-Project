@@ -93,13 +93,13 @@ def get_messages(
     user_id: int = Depends(get_current_user_id),
 ):
     try:
-        results, has_more = chat_service.list_messages(
+        results, has_more, participants = chat_service.list_messages(
             db, conversation_id, user_id, limit=limit, before_id=before_id
         )
     except PermissionError:
         raise HTTPException(status_code=403, detail="NOT_PARTICIPANT")
 
-    return {"results": results, "has_more": has_more}
+    return {"results": results, "has_more": has_more, "participants": participants}
 
 
 @router.post("/{conversation_id}/messages", response_model=MessageOut)
@@ -122,7 +122,7 @@ async def mark_read(
     user_id: int = Depends(get_current_user_id),
 ):
     try:
-        last_read_message_id, seen_by_ids = chat_service.mark_conversation_read(
+        last_read_message_id = chat_service.mark_conversation_read(
             db, conversation_id, user_id
         )
     except PermissionError:
@@ -137,7 +137,6 @@ async def mark_read(
                     "conversation_id": conversation_id,
                     "message_id": last_read_message_id,
                     "reader_id": user_id,
-                    "seen_by_ids": seen_by_ids,
                 },
             },
             exclude_user_id=None,
@@ -147,5 +146,5 @@ async def mark_read(
         "success": True,
         "conversation_id": conversation_id,
         "last_read_message_id": last_read_message_id,
-        "seen_by_ids": seen_by_ids,
+        "seen_by_ids": [],
     }

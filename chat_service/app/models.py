@@ -108,8 +108,6 @@ class Message(Base):
 
     attachments = relationship("Attachment", back_populates="message")
 
-    reads = relationship("MessageRead", back_populates="message")
-
     __table_args__ = (
         Index("idx_message_conversation_created_at", "conversation_id", "created_at"),
     )
@@ -137,21 +135,3 @@ class Attachment(Base):
 
     def __repr__(self):
         return self.file_name
-
-
-class MessageRead(Base):
-    __tablename__ = "message_read"
-
-    id = Column(Integer, primary_key=True, index=True)
-
-    message_id = Column(Integer, ForeignKey("message.id", ondelete="CASCADE"))
-    user_id = Column(BigInteger)
-
-    read_at = Column(DateTime, default=datetime.utcnow)
-
-    message = relationship("Message", back_populates="reads")
-
-    __table_args__ = (Index("idx_message_read_user_id", "user_id"),)
-
-    def __repr__(self):
-        return f"Message {self.message_id} - User {self.user_id}"

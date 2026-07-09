@@ -163,6 +163,7 @@ class BatchUserSerializer(serializers.Serializer):
     username = serializers.CharField()
     first_name = serializers.CharField()
     last_name = serializers.CharField()
+    avatar = serializers.URLField(allow_null=True, required=False)
 
 
 class BatchUsersResponseSerializer(serializers.Serializer):

@@ -16,4 +16,4 @@ SECRET_KEY = "django-insecure-th-%d0roim2x$t-+inu!(v_eav@635=c30k*-=igvm$-uq_8jy
 JWT_ALGORITHM = "HS256"
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")
-INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "dev-secret-internal-token")
+INTERNAL_API_TOKEN = "dev-secret-internal-token"

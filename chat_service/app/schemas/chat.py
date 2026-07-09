@@ -9,6 +9,7 @@ class UserBrief(BaseModel):
     username: str
     first_name: str = ""
     last_name: str = ""
+    avatar: str | None = None
 
 
 class ConversationCreate(BaseModel):
@@ -33,12 +34,16 @@ class MessageOut(BaseModel):
     reply_to_message_id: Optional[int] = None
     is_deleted: Optional[bool] = None
     created_at: datetime
-    sender: Optional[UserBrief] = None
-    seen_by_ids: list[int] = Field(default_factory=list)
-    seen_count: int = 0
 
     class Config:
         from_attributes = True
+
+
+class ParticipantOut(BaseModel):
+    user_id: int
+    name: str
+    avatar: Optional[str] = None
+    last_read_message_id: Optional[int] = None
 
 
 class ConversationOut(BaseModel):
@@ -66,6 +71,7 @@ class ConversationListResponse(BaseModel):
 class MessageListResponse(BaseModel):
     results: list[MessageOut]
     has_more: bool = False
+    participants: list[ParticipantOut] = Field(default_factory=list)
 
 
 class ReadConversationResponse(BaseModel):

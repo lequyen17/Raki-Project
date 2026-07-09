@@ -25,19 +25,18 @@ def fetch_users_by_ids(user_ids: list[int]) -> dict[int, UserBrief]:
             timeout=10,
         )
         response.raise_for_status()
-        users = response.json().get("users", [])
+        payload = response.json()
+        users = payload.get("data", {}).get("users", [])
         return {
             user["id"]: UserBrief(
                 id=user["id"],
                 username=user["username"],
                 first_name=user.get("first_name", ""),
                 last_name=user.get("last_name", ""),
+                avatar=user.get("avatar", None),
             )
             for user in users
         }
     except Exception as exc:
         logger.error("Failed to fetch users from backend: %s", exc)
-        return {
-            uid: UserBrief(id=uid, username=f"user_{uid}")
-            for uid in unique_ids
-        }
+        return {uid: UserBrief(id=uid, username=f"user_{uid}") for uid in unique_ids}

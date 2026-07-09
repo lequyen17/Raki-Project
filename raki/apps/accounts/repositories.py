@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db.models import F
 from django.utils import timezone
 from apps.card.models import Card, Progress
 
@@ -52,8 +53,7 @@ class UserRepository:
         """Lấy users có ít nhất 1 card với next_review <= hôm nay"""
         today = timezone.now().date()
         return (
-            User.objects
-            .filter(user__next_review__lte=today)
+            User.objects.filter(user__next_review__lte=today)
             .distinct()
             .values("id", "email", "first_name", "last_name", "username")
         )
@@ -64,5 +64,6 @@ class UserRepository:
             return []
         return (
             User.objects.filter(id__in=user_ids)
-            .values("id", "username", "first_name", "last_name")
+            .annotate(avatar=F("profile__avatar"))
+            .values("id", "username", "first_name", "last_name", "avatar")
         )

@@ -12,6 +12,7 @@ class Profile(models.Model):
     total_learned_cards = models.IntegerField(default=0)
 
     coin_balance = models.PositiveIntegerField(default=0)
+    avatar = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return f"Profile of {self.user.username}"
