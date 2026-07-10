@@ -100,6 +100,9 @@ function Chat() {
   const [conversationDetail, setConversationDetail] = useState(null);
   const [loadingConversations, setLoadingConversations] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
+  const shouldScrollToBottomRef = useRef(true);
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -174,6 +177,7 @@ function Chat() {
         try {
           const payload = JSON.parse(event.data);
           if (payload.type === "message" && payload.data) {
+            shouldScrollToBottomRef.current = true;
             setMessages((prev) => {
               if (prev.some((m) => m.id === payload.data.id)) return prev;
               return [...prev, payload.data];
@@ -256,7 +260,9 @@ function Chat() {
         const res = await chatApi.get(
           `/conversations/${conversation.id}/messages`,
         );
+        shouldScrollToBottomRef.current = true;
         setMessages(res.data.results || []);
+        setHasMoreMessages(res.data.has_more || false);
         setParticipants(res.data.participants || []);
         const detailRes = await chatApi.get(
           `/conversations/${conversation.id}`,
@@ -290,6 +296,43 @@ function Chat() {
     },
     [connectWebSocket, fetchConversations, t],
   );
+
+  const loadMoreMessages = async () => {
+    if (!activeConversation || loadingMoreMessages || !hasMoreMessages) return;
+    if (messages.length === 0) return;
+
+    try {
+      setLoadingMoreMessages(true);
+      const firstMessageId = messages[0].id;
+      const res = await chatApi.get(
+        `/conversations/${activeConversation.id}/messages`,
+        { params: { before_id: firstMessageId, limit: 20 } }
+      );
+      
+      const newMessages = res.data.results || [];
+      if (newMessages.length > 0) {
+        shouldScrollToBottomRef.current = false;
+        const container = messagesContainerRef.current;
+        const previousScrollHeight = container ? container.scrollHeight : 0;
+        
+        setMessages(prev => [...newMessages, ...prev]);
+        setHasMoreMessages(res.data.has_more || false);
+        
+        if (container) {
+          setTimeout(() => {
+            container.scrollTop = container.scrollHeight - previousScrollHeight;
+          }, 0);
+        }
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(t("chat.load_messages_error"));
+    } finally {
+      setLoadingMoreMessages(false);
+    }
+  };
 
   const startConversation = async (user) => {
     try {
@@ -415,6 +458,7 @@ function Chat() {
         `/conversations/${activeConversation.id}/messages`,
         { content, reply_to_message_id: replyToMessageId },
       );
+      shouldScrollToBottomRef.current = true;
       setMessages((prev) => [...prev, res.data]);
       setReplyTarget(null);
       fetchConversations();
@@ -676,10 +720,16 @@ function Chat() {
   }, [memberSearchQuery, isConversationInfoOpen]);
 
   useEffect(() => {
-    if (messagesContainerRef.current) {
+    if (shouldScrollToBottomRef.current && messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const handleScroll = (e) => {
+    if (e.target.scrollTop === 0 && hasMoreMessages && !loadingMoreMessages) {
+      loadMoreMessages();
+    }
+  };
 
   return (
     <div className="chat-page">
@@ -827,13 +877,19 @@ function Chat() {
                 </div>
               </div>
 
-              <div className="chat-messages" ref={messagesContainerRef}>
+              <div className="chat-messages" ref={messagesContainerRef} onScroll={handleScroll}>
                 {loadingMessages ? (
                   <div className="chat-empty">{t("common.loading")}</div>
                 ) : messages.length === 0 ? (
                   <div className="chat-empty">{t("chat.start_chatting")}</div>
                 ) : (
-                  messages.map((msg) => {
+                  <>
+                    {hasMoreMessages && loadingMoreMessages && (
+                      <div className="chat-load-more" style={{ textAlign: "center", padding: "10px" }}>
+                        <span style={{ color: "var(--color-primary)", fontSize: "0.9rem" }}>Đang tải...</span>
+                      </div>
+                    )}
+                    {messages.map((msg) => {
                     const isMine = msg.sender_id === currentUser?.id;
                     const sender = participantByUserId(msg.sender_id);
                     const replyToMessage = messages.find(
@@ -927,6 +983,8 @@ function Chat() {
                       </div>
                     );
                   })
+                  }
+                  </>
                 )}
               </div>
 
