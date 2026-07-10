@@ -46,8 +46,6 @@ def _get_conversation_participants(
         .all()
     )
     users_map = fetch_users_by_ids([p.user_id for p in participants])
-    print("participants:", [p.user_id for p in participants])
-    print("users_map:", users_map)
 
     result = []
 
@@ -57,13 +55,193 @@ def _get_conversation_participants(
         result.append(
             ParticipantOut(
                 user_id=participant.user_id,
-                name=user.username,
+                name=user.username if user else f"user_{participant.user_id}",
                 avatar=user.avatar if user else None,
                 last_read_message_id=participant.last_read_message_id,
+                joined_at=participant.joined_at,
+                is_admin=participant.is_admin,
             )
         )
 
     return result
+
+
+def get_conversation_detail(db: Session, conversation_id: int, user_id: int) -> dict:
+    if not user_is_participant(db, conversation_id, user_id):
+        raise PermissionError("NOT_PARTICIPANT")
+
+    conversation = (
+        db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    )
+    if not conversation:
+        raise ValueError("CONVERSATION_NOT_FOUND")
+
+    participants = _get_conversation_participants(db, conversation_id)
+    creator_map = fetch_users_by_ids([conversation.created_by])
+    creator = creator_map.get(conversation.created_by)
+    creator_name = creator.username if creator else f"user_{conversation.created_by}"
+
+    return {
+        "id": conversation.id,
+        "type": conversation.type.value,
+        "name": conversation.name,
+        "avatar": conversation.avatar,
+        "created_at": conversation.created_at,
+        "created_by": conversation.created_by,
+        "created_by_name": creator_name,
+        "participants": participants,
+    }
+
+
+def update_group_name(
+    db: Session,
+    conversation_id: int,
+    user_id: int,
+    name: str,
+) -> Conversation:
+    participant = (
+        db.query(ConversationParticipant)
+        .filter(
+            ConversationParticipant.conversation_id == conversation_id,
+            ConversationParticipant.user_id == user_id,
+            ConversationParticipant.left_at.is_(None),
+        )
+        .first()
+    )
+    if not participant:
+        raise PermissionError("NOT_PARTICIPANT")
+
+    conversation = (
+        db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    )
+    if not conversation:
+        raise ValueError("CONVERSATION_NOT_FOUND")
+    if conversation.type != ConversationType.GROUP:
+        raise ValueError("NOT_GROUP_CONVERSATION")
+
+    conversation.name = name.strip()
+    db.commit()
+    db.refresh(conversation)
+    return conversation
+
+
+def leave_group(db: Session, conversation_id: int, user_id: int) -> None:
+    participant = (
+        db.query(ConversationParticipant)
+        .filter(
+            ConversationParticipant.conversation_id == conversation_id,
+            ConversationParticipant.user_id == user_id,
+            ConversationParticipant.left_at.is_(None),
+        )
+        .first()
+    )
+    if not participant:
+        raise PermissionError("NOT_PARTICIPANT")
+
+    conversation = (
+        db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    )
+    if not conversation:
+        raise ValueError("CONVERSATION_NOT_FOUND")
+    if conversation.type != ConversationType.GROUP:
+        raise ValueError("NOT_GROUP_CONVERSATION")
+
+    participant.left_at = datetime.utcnow()
+    participant.is_admin = False
+    db.commit()
+
+
+def _require_group_admin(
+    db: Session, conversation_id: int, user_id: int
+) -> ConversationParticipant:
+    participant = (
+        db.query(ConversationParticipant)
+        .filter(
+            ConversationParticipant.conversation_id == conversation_id,
+            ConversationParticipant.user_id == user_id,
+            ConversationParticipant.left_at.is_(None),
+        )
+        .first()
+    )
+    if not participant:
+        raise PermissionError("NOT_PARTICIPANT")
+
+    conversation = (
+        db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    )
+    if not conversation or conversation.type != ConversationType.GROUP:
+        raise ValueError("NOT_GROUP_CONVERSATION")
+
+    if not participant.is_admin:
+        raise PermissionError("NOT_ADMIN")
+
+    return participant
+
+
+def add_group_members(
+    db: Session,
+    conversation_id: int,
+    user_id: int,
+    participant_ids: list[int],
+) -> list[ParticipantOut]:
+    _require_group_admin(db, conversation_id, user_id)
+
+    if not participant_ids:
+        return _get_conversation_participants(db, conversation_id)
+
+    unique_ids = sorted({int(pid) for pid in participant_ids if pid})
+    if not unique_ids:
+        return _get_conversation_participants(db, conversation_id)
+
+    existing = {
+        p.user_id
+        for p in db.query(ConversationParticipant)
+        .filter(
+            ConversationParticipant.conversation_id == conversation_id,
+            ConversationParticipant.left_at.is_(None),
+        )
+        .all()
+    }
+
+    for pid in unique_ids:
+        if pid in existing:
+            continue
+        db.add(
+            ConversationParticipant(
+                conversation_id=conversation_id,
+                user_id=pid,
+                is_admin=False,
+            )
+        )
+
+    db.commit()
+    return _get_conversation_participants(db, conversation_id)
+
+
+def set_member_admin(
+    db: Session,
+    conversation_id: int,
+    user_id: int,
+    member_user_id: int,
+    is_admin: bool,
+) -> list[ParticipantOut]:
+    _require_group_admin(db, conversation_id, user_id)
+
+    participant = (
+        db.query(ConversationParticipant)
+        .filter(
+            ConversationParticipant.conversation_id == conversation_id,
+            ConversationParticipant.user_id == member_user_id,
+            ConversationParticipant.left_at.is_(None),
+        )
+        .first()
+    )
+    if not participant:
+        raise ValueError("PARTICIPANT_NOT_FOUND")
+
+    participant.is_admin = bool(is_admin)
+    db.commit()
+    return _get_conversation_participants(db, conversation_id)
 
 
 def _get_last_message(db: Session, conversation_id: int) -> Message | None:
@@ -260,15 +438,29 @@ def create_message(
     conversation_id: int,
     sender_id: int,
     content: str,
+    reply_to_message_id: int | None = None,
 ) -> MessageOut:
     if not user_is_participant(db, conversation_id, sender_id):
         raise PermissionError("NOT_PARTICIPANT")
+
+    if reply_to_message_id is not None:
+        reply_to = (
+            db.query(Message)
+            .filter(
+                Message.id == reply_to_message_id,
+                Message.conversation_id == conversation_id,
+            )
+            .first()
+        )
+        if not reply_to:
+            raise ValueError("REPLY_MESSAGE_NOT_FOUND")
 
     message = Message(
         conversation_id=conversation_id,
         sender_id=sender_id,
         content=content.strip(),
         type=MessageType.TEXT,
+        reply_to_message_id=reply_to_message_id,
     )
     db.add(message)
 
@@ -281,6 +473,32 @@ def create_message(
     db.commit()
     db.refresh(message)
 
+    return _serialize_message(message)
+
+
+def delete_message(
+    db: Session,
+    conversation_id: int,
+    message_id: int,
+    user_id: int,
+) -> MessageOut:
+    message = (
+        db.query(Message)
+        .filter(
+            Message.id == message_id,
+            Message.conversation_id == conversation_id,
+        )
+        .first()
+    )
+    if not message:
+        raise ValueError("MESSAGE_NOT_FOUND")
+    if message.sender_id != user_id:
+        raise PermissionError("NOT_MESSAGE_OWNER")
+
+    message.is_deleted = True
+    message.content = "This message has been deleted by the user."
+    db.commit()
+    db.refresh(message)
     return _serialize_message(message)
 
 

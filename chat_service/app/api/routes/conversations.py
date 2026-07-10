@@ -4,9 +4,13 @@ from sqlalchemy.orm import Session
 from app.api.endpoints.deps import get_db
 from app.core.security import get_current_user_id
 from app.schemas.chat import (
+    ConversationDetailOut,
     ConversationCreate,
     ConversationListResponse,
     ConversationOut,
+    ConversationUpdateName,
+    MembersAddBody,
+    MemberAdminUpdateBody,
     GroupConversationCreate,
     MessageCreate,
     MessageListResponse,
@@ -102,6 +106,110 @@ def get_messages(
     return {"results": results, "has_more": has_more, "participants": participants}
 
 
+@router.get("/{conversation_id}", response_model=ConversationDetailOut)
+def get_conversation_detail(
+    conversation_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    try:
+        return chat_service.get_conversation_detail(db, conversation_id, user_id)
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="NOT_PARTICIPANT")
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.patch("/{conversation_id}", response_model=ConversationOut)
+def update_conversation_name(
+    conversation_id: int,
+    body: ConversationUpdateName,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    try:
+        conversation = chat_service.update_group_name(
+            db, conversation_id, user_id, body.name
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="NOT_PARTICIPANT")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return ConversationOut(
+        id=conversation.id,
+        type=conversation.type.value,
+        name=conversation.name,
+        avatar=conversation.avatar,
+        last_message_id=None,
+        sender_id=None,
+        message_type=None,
+        content=None,
+        reply_to_message_id=None,
+        is_deleted=None,
+        message_created_at=None,
+    )
+
+
+@router.post("/{conversation_id}/members")
+def add_members(
+    conversation_id: int,
+    body: MembersAddBody,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    try:
+        participants = chat_service.add_group_members(
+            db, conversation_id, user_id, body.participant_ids
+        )
+    except PermissionError as exc:
+        if str(exc) == "NOT_ADMIN":
+            raise HTTPException(status_code=403, detail="NOT_ADMIN")
+        raise HTTPException(status_code=403, detail="NOT_PARTICIPANT")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return {"participants": participants}
+
+
+@router.patch("/{conversation_id}/members/{member_user_id}/admin")
+def update_member_admin(
+    conversation_id: int,
+    member_user_id: int,
+    body: MemberAdminUpdateBody,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    try:
+        participants = chat_service.set_member_admin(
+            db, conversation_id, user_id, member_user_id, body.is_admin
+        )
+    except PermissionError as exc:
+        if str(exc) == "NOT_ADMIN":
+            raise HTTPException(status_code=403, detail="NOT_ADMIN")
+        raise HTTPException(status_code=403, detail="NOT_PARTICIPANT")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return {"participants": participants}
+
+
+@router.post("/{conversation_id}/leave")
+def leave_group(
+    conversation_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    try:
+        chat_service.leave_group(db, conversation_id, user_id)
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="NOT_PARTICIPANT")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return {"success": True}
+
+
 @router.post("/{conversation_id}/messages", response_model=MessageOut)
 def send_message(
     conversation_id: int,
@@ -110,9 +218,36 @@ def send_message(
     user_id: int = Depends(get_current_user_id),
 ):
     try:
-        return chat_service.create_message(db, conversation_id, user_id, body.content)
+        return chat_service.create_message(
+            db,
+            conversation_id,
+            user_id,
+            body.content,
+            reply_to_message_id=body.reply_to_message_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     except PermissionError:
         raise HTTPException(status_code=403, detail="NOT_PARTICIPANT")
+
+
+@router.delete("/{conversation_id}/messages/{message_id}", response_model=MessageOut)
+def delete_message(
+    conversation_id: int,
+    message_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    try:
+        message = chat_service.delete_message(db, conversation_id, message_id, user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except PermissionError as exc:
+        if str(exc) == "NOT_MESSAGE_OWNER":
+            raise HTTPException(status_code=403, detail="NOT_MESSAGE_OWNER")
+        raise HTTPException(status_code=403, detail="NOT_PARTICIPANT")
+
+    return message
 
 
 @router.post("/{conversation_id}/read", response_model=ReadConversationResponse)

@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useRef,
   useState,
+  useMemo,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -56,6 +57,18 @@ function conversationPreview(conversation, currentUserId) {
   return content;
 }
 
+function messagePreviewText(message) {
+  if (!message) return "";
+  if (message.is_deleted) return "Người dùng đã xóa tin nhắn này";
+  return (message.content || "").trim();
+}
+
+function formatDateTime(isoString) {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  return date.toLocaleString();
+}
+
 function Chat() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -64,6 +77,8 @@ function Chat() {
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [participants, setParticipants] = useState([]);
+  const [conversationDetail, setConversationDetail] = useState(null);
   const [loadingConversations, setLoadingConversations] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [messageInput, setMessageInput] = useState("");
@@ -77,6 +92,22 @@ function Chat() {
   const [modalSearchResults, setModalSearchResults] = useState([]);
   const [modalSearching, setModalSearching] = useState(false);
   const [creatingGroup, setCreatingGroup] = useState(false);
+  const [replyTarget, setReplyTarget] = useState(null);
+  const [openActionsForMessageId, setOpenActionsForMessageId] = useState(null);
+  const [isConversationMenuOpen, setIsConversationMenuOpen] = useState(false);
+  const [isConversationInfoOpen, setIsConversationInfoOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [memberSearchQuery, setMemberSearchQuery] = useState("");
+  const [memberSearchResults, setMemberSearchResults] = useState([]);
+  const [memberSearching, setMemberSearching] = useState(false);
+  const memberSearchTimeoutRef = useRef(null);
+
+  const isCurrentUserAdmin = useMemo(() => {
+    const list = conversationDetail?.participants || [];
+    return list.some(
+      (p) => p.user_id === currentUser?.id && Boolean(p.is_admin),
+    );
+  }, [conversationDetail, currentUser]);
 
   const wsRef = useRef(null);
   const wsReconnectAttemptRef = useRef(0);
@@ -187,6 +218,12 @@ function Chat() {
   const openConversation = useCallback(
     async (conversation) => {
       setActiveConversation(conversation);
+      setReplyTarget(null);
+      setOpenActionsForMessageId(null);
+      setIsConversationMenuOpen(false);
+      setIsConversationInfoOpen(false);
+      setMemberSearchQuery("");
+      setMemberSearchResults([]);
       setLoadingMessages(true);
 
       try {
@@ -194,6 +231,12 @@ function Chat() {
           `/conversations/${conversation.id}/messages`,
         );
         setMessages(res.data.results || []);
+        setParticipants(res.data.participants || []);
+        const detailRes = await chatApi.get(
+          `/conversations/${conversation.id}`,
+        );
+        setConversationDetail(detailRes.data);
+        setRenameValue(detailRes.data?.name || "");
         const readRes = await chatApi.post(
           `/conversations/${conversation.id}/read`,
         );
@@ -308,22 +351,155 @@ function Chat() {
 
     setMessageInput("");
 
+    const replyToMessageId = replyTarget?.id || null;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ content }));
+      wsRef.current.send(
+        JSON.stringify({
+          content,
+          reply_to_message_id: replyToMessageId,
+        }),
+      );
+      setReplyTarget(null);
       return;
     }
 
     try {
       const res = await chatApi.post(
         `/conversations/${activeConversation.id}/messages`,
-        { content },
+        { content, reply_to_message_id: replyToMessageId },
       );
       setMessages((prev) => [...prev, res.data]);
+      setReplyTarget(null);
       fetchConversations();
     } catch (err) {
       console.error(err);
       toast.error(t("chat.send_error"));
       setMessageInput(content);
+    }
+  };
+
+  const handleReplyMessage = (msg) => {
+    setReplyTarget(msg);
+    setOpenActionsForMessageId(null);
+  };
+
+  const handleDeleteMessage = async (msg) => {
+    if (!activeConversation) return;
+    try {
+      const res = await chatApi.delete(
+        `/conversations/${activeConversation.id}/messages/${msg.id}`,
+      );
+      setMessages((prev) =>
+        prev.map((item) =>
+          item.id === msg.id ? { ...item, ...res.data } : item,
+        ),
+      );
+      setOpenActionsForMessageId(null);
+      fetchConversations();
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể xóa tin nhắn");
+    }
+  };
+
+  const participantByUserId = useCallback(
+    (userId) => participants.find((p) => p.user_id === userId),
+    [participants],
+  );
+
+  const handleUpdateConversationName = async () => {
+    if (!activeConversation || !renameValue.trim()) return;
+    try {
+      const res = await chatApi.patch(
+        `/conversations/${activeConversation.id}`,
+        {
+          name: renameValue.trim(),
+        },
+      );
+      setActiveConversation((prev) =>
+        prev ? { ...prev, name: res.data.name } : prev,
+      );
+      setConversationDetail((prev) =>
+        prev ? { ...prev, name: res.data.name } : prev,
+      );
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === activeConversation.id
+            ? { ...conv, name: res.data.name }
+            : conv,
+        ),
+      );
+      setIsConversationMenuOpen(false);
+      toast.success("Đã đổi tên đoạn chat");
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể đổi tên đoạn chat");
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!activeConversation) return;
+    try {
+      await chatApi.post(`/conversations/${activeConversation.id}/leave`);
+      setActiveConversation(null);
+      setConversationDetail(null);
+      setMessages([]);
+      setParticipants([]);
+      setIsConversationInfoOpen(false);
+      setIsConversationMenuOpen(false);
+      await fetchConversations();
+      toast.success("Đã rời nhóm");
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể rời nhóm");
+    }
+  };
+
+  const refreshConversationDetail = async (conversationId) => {
+    if (!conversationId) return;
+    const detailRes = await chatApi.get(`/conversations/${conversationId}`);
+    setConversationDetail(detailRes.data);
+  };
+
+  const handleAddMember = async (user) => {
+    if (!conversationDetail) return;
+    try {
+      const res = await chatApi.post(
+        `/conversations/${conversationDetail.id}/members`,
+        { participant_ids: [user.id] },
+      );
+      setParticipants(res.data.participants || []);
+      await refreshConversationDetail(conversationDetail.id);
+      toast.success("Đã thêm thành viên");
+      setMemberSearchQuery("");
+      setMemberSearchResults([]);
+    } catch (err) {
+      console.error(err);
+      if (err.response?.data?.detail === "NOT_ADMIN") {
+        toast.error("Chỉ admin mới thêm thành viên được");
+        return;
+      }
+      toast.error("Không thể thêm thành viên");
+    }
+  };
+
+  const handleToggleAdmin = async (member) => {
+    if (!conversationDetail) return;
+    try {
+      const res = await chatApi.patch(
+        `/conversations/${conversationDetail.id}/members/${member.user_id}/admin`,
+        { is_admin: !member.is_admin },
+      );
+      setParticipants(res.data.participants || []);
+      await refreshConversationDetail(conversationDetail.id);
+      toast.success("Đã cập nhật quyền");
+    } catch (err) {
+      console.error(err);
+      if (err.response?.data?.detail === "NOT_ADMIN") {
+        toast.error("Chỉ admin mới đổi quyền được");
+        return;
+      }
+      toast.error("Không thể cập nhật quyền");
     }
   };
 
@@ -412,6 +588,41 @@ function Chat() {
       }
     };
   }, [modalSearchQuery, isCreateGroupModalOpen]);
+
+  useEffect(() => {
+    if (!isConversationInfoOpen) return;
+
+    if (memberSearchTimeoutRef.current) {
+      clearTimeout(memberSearchTimeoutRef.current);
+    }
+
+    if (memberSearchQuery.trim().length < 2) {
+      setMemberSearchResults([]);
+      return;
+    }
+
+    memberSearchTimeoutRef.current = setTimeout(async () => {
+      try {
+        setMemberSearching(true);
+        const res = await api.get("/api/users/search/", {
+          params: { q: memberSearchQuery.trim() },
+        });
+        setMemberSearchResults(res.data.results || []);
+      } catch (err) {
+        console.error(err);
+        setMemberSearchResults([]);
+      } finally {
+        setMemberSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (memberSearchTimeoutRef.current) {
+        clearTimeout(memberSearchTimeoutRef.current);
+        memberSearchTimeoutRef.current = null;
+      }
+    };
+  }, [memberSearchQuery, isConversationInfoOpen]);
 
   return (
     <div className="chat-page">
@@ -511,7 +722,6 @@ function Chat() {
         <main className="chat-main">
           {!activeConversation ? (
             <div className="chat-placeholder">
-              
               <h2>{t("chat.select_conversation")}</h2>
               <p>{t("chat.select_conversation_hint")}</p>
             </div>
@@ -519,7 +729,45 @@ function Chat() {
             <>
               <div className="chat-main__header">
                 <h2>{conversationTitle(activeConversation, t)}</h2>
-                
+                <div className="chat-main__header-actions">
+                  <button
+                    type="button"
+                    className="chat-main__menu-btn"
+                    onClick={() => setIsConversationMenuOpen((prev) => !prev)}
+                  >
+                    ⋯
+                  </button>
+                  {isConversationMenuOpen && (
+                    <div className="chat-main__menu">
+                      <div className="chat-main__menu-rename">
+                        <input
+                          type="text"
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          placeholder="Tên đoạn chat"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleUpdateConversationName}
+                        >
+                          Đổi tên
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsConversationInfoOpen(true);
+                          setIsConversationMenuOpen(false);
+                        }}
+                      >
+                        Xem thông tin nhóm
+                      </button>
+                      <button type="button" onClick={handleLeaveGroup}>
+                        Rời nhóm
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="chat-messages">
@@ -530,13 +778,40 @@ function Chat() {
                 ) : (
                   messages.map((msg) => {
                     const isMine = msg.sender_id === currentUser?.id;
+                    const sender = participantByUserId(msg.sender_id);
+                    const replyToMessage = messages.find(
+                      (item) => item.id === msg.reply_to_message_id,
+                    );
+                    const displayedContent = msg.is_deleted
+                      ? "Người dùng đã xóa tin nhắn này"
+                      : msg.content;
                     return (
                       <div
                         key={msg.id}
                         className={`chat-message${isMine ? " chat-message--mine" : ""}`}
                       >
+                        {!isMine && (
+                          <div className="chat-message__sender">
+                            {sender?.avatar ? (
+                              <img
+                                src={sender.avatar}
+                                alt={sender?.name || "user"}
+                                className="chat-message__sender-avatar"
+                              />
+                            ) : (
+                              <span className="chat-message__sender-avatar chat-message__sender-avatar--fallback">
+                                {(sender?.name || "U").charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <div className="chat-message__bubble">
-                          <p>{msg.content}</p>
+                          {replyToMessage && (
+                            <div className="chat-message__reply-preview">
+                              {messagePreviewText(replyToMessage)}
+                            </div>
+                          )}
+                          <p>{displayedContent}</p>
                           <span className="chat-message__time">
                             {formatTime(msg.created_at)}
                           </span>
@@ -548,6 +823,37 @@ function Chat() {
                             </span>
                           )}
                         </div>
+                        <div className="chat-message__actions-wrap">
+                          <button
+                            type="button"
+                            className="chat-message__actions-btn"
+                            onClick={() =>
+                              setOpenActionsForMessageId((prev) =>
+                                prev === msg.id ? null : msg.id,
+                              )
+                            }
+                          >
+                            ⋯
+                          </button>
+                          {openActionsForMessageId === msg.id && (
+                            <div className="chat-message__actions-menu">
+                              <button
+                                type="button"
+                                onClick={() => handleReplyMessage(msg)}
+                              >
+                                Reply
+                              </button>
+                              {isMine && !msg.is_deleted && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMessage(msg)}
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })
@@ -556,15 +862,25 @@ function Chat() {
               </div>
 
               <form className="chat-input-form" onSubmit={handleSendMessage}>
-                <input
-                  type="text"
-                  placeholder={t("chat.type_message")}
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                />
-                <button type="submit" disabled={!messageInput.trim()}>
-                  {t("chat.send")}
-                </button>
+                {replyTarget && (
+                  <div className="chat-input-form__replying">
+                    <span>Đang trả lời: {messagePreviewText(replyTarget)}</span>
+                    <button type="button" onClick={() => setReplyTarget(null)}>
+                      Hủy
+                    </button>
+                  </div>
+                )}
+                <div className="chat-input-form__row">
+                  <input
+                    type="text"
+                    placeholder={t("chat.type_message")}
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                  />
+                  <button type="submit" disabled={!messageInput.trim()}>
+                    {t("chat.send")}
+                  </button>
+                </div>
               </form>
             </>
           )}
@@ -689,6 +1005,107 @@ function Chat() {
                   ? t("common.loading")
                   : t("chat.create_group_button")}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isConversationInfoOpen && conversationDetail && (
+        <div
+          className="chat-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setIsConversationInfoOpen(false)}
+        >
+          <div className="chat-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="chat-modal__header">
+              <h3 className="chat-modal__title">Thông tin đoạn chat</h3>
+              <button
+                type="button"
+                className="chat-modal__close"
+                onClick={() => setIsConversationInfoOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="chat-modal__body">
+              <p>
+                <strong>Ngày tạo:</strong>{" "}
+                {formatDateTime(conversationDetail.created_at)}
+              </p>
+              <p>
+                <strong>Tạo bởi:</strong> {conversationDetail.created_by_name}
+              </p>
+              <div className="chat-conversation-info__members">
+                {isCurrentUserAdmin && (
+                  <div className="chat-conversation-info__add-member">
+                    <strong>Thêm thành viên</strong>
+                    <input
+                      type="text"
+                      className="chat-modal__input"
+                      placeholder="Tìm user..."
+                      value={memberSearchQuery}
+                      onChange={(e) => setMemberSearchQuery(e.target.value)}
+                    />
+                    {memberSearching && (
+                      <div className="chat-modal__status">Đang tìm...</div>
+                    )}
+                    {memberSearchResults.length > 0 && (
+                      <div className="chat-conversation-info__add-results">
+                        {memberSearchResults.map((user) => (
+                          <div
+                            key={user.id}
+                            className="chat-conversation-info__add-result"
+                          >
+                            <span>{user.username}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleAddMember(user)}
+                            >
+                              Thêm
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {(conversationDetail.participants || []).map((member) => (
+                  <div
+                    key={member.user_id}
+                    className="chat-conversation-info__member"
+                  >
+                    <div>
+                      {member.avatar ? (
+                        <img
+                          src={member.avatar}
+                          alt={member.name}
+                          className="chat-conversation-info__member-avatar"
+                        />
+                      ) : (
+                        <span className="chat-conversation-info__member-avatar chat-conversation-info__member-avatar--fallback">
+                          {member.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="chat-conversation-info__member-meta">
+                      <strong>{member.name}</strong>
+                      <span>Join: {formatDateTime(member.joined_at)}</span>
+                      <span>{member.is_admin ? "Admin" : "Member"}</span>
+                    </div>
+                    {isCurrentUserAdmin &&
+                      member.user_id !== currentUser?.id && (
+                        <button
+                          type="button"
+                          className="chat-conversation-info__admin-btn"
+                          onClick={() => handleToggleAdmin(member)}
+                        >
+                          {member.is_admin ? "Bỏ admin" : "Đặt admin"}
+                        </button>
+                      )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

@@ -40,13 +40,25 @@ async def websocket_endpoint(
             content = (data.get("content") or "").strip()
             if not content:
                 continue
+            reply_to_message_id = data.get("reply_to_message_id")
+            if reply_to_message_id is not None:
+                try:
+                    reply_to_message_id = int(reply_to_message_id)
+                except (TypeError, ValueError):
+                    reply_to_message_id = None
 
             db = SessionLocal()
             try:
                 message = chat_service.create_message(
-                    db, conversation_id, user_id, content
+                    db,
+                    conversation_id,
+                    user_id,
+                    content,
+                    reply_to_message_id=reply_to_message_id,
                 )
                 chat_service.mark_conversation_read(db, conversation_id, user_id)
+            except ValueError:
+                continue
             finally:
                 db.close()
 

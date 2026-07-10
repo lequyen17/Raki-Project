@@ -23,6 +23,7 @@ class GroupConversationCreate(BaseModel):
 
 class MessageCreate(BaseModel):
     content: str = Field(..., min_length=1, max_length=5000)
+    reply_to_message_id: Optional[int] = None
 
 
 class MessageOut(BaseModel):
@@ -44,6 +45,8 @@ class ParticipantOut(BaseModel):
     name: str
     avatar: Optional[str] = None
     last_read_message_id: Optional[int] = None
+    joined_at: Optional[datetime] = None
+    is_admin: bool = False
 
 
 class ConversationOut(BaseModel):
@@ -72,6 +75,29 @@ class MessageListResponse(BaseModel):
     results: list[MessageOut]
     has_more: bool = False
     participants: list[ParticipantOut] = Field(default_factory=list)
+
+
+class ConversationDetailOut(BaseModel):
+    id: int
+    type: str
+    name: Optional[str]
+    avatar: Optional[str]
+    created_at: datetime
+    created_by: int
+    created_by_name: str
+    participants: list[ParticipantOut] = Field(default_factory=list)
+
+
+class ConversationUpdateName(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+
+
+class MembersAddBody(BaseModel):
+    participant_ids: list[int] = Field(default_factory=list)
+
+
+class MemberAdminUpdateBody(BaseModel):
+    is_admin: bool = False
 
 
 class ReadConversationResponse(BaseModel):
