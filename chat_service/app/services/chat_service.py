@@ -116,8 +116,6 @@ def update_group_name(
     )
     if not conversation:
         raise ValueError("CONVERSATION_NOT_FOUND")
-    if conversation.type != ConversationType.GROUP:
-        raise ValueError("NOT_GROUP_CONVERSATION")
 
     conversation.name = name.strip()
     db.commit()
