@@ -675,6 +675,12 @@ function Chat() {
     };
   }, [memberSearchQuery, isConversationInfoOpen]);
 
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
   return (
     <div className="chat-page">
       <div className="chat-container">

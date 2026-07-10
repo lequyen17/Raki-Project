@@ -93,7 +93,7 @@ def create_group_conversation(
 def get_messages(
     conversation_id: int,
     before_id: int | None = Query(None),
-    limit: int = Query(50, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):

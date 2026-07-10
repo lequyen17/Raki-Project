@@ -30,7 +30,11 @@ def _serialize_message(message: Message) -> MessageOut:
         type=message.type.value,
         reply_to_message_id=message.reply_to_message_id,
         is_deleted=message.is_deleted,
-        created_at=message.created_at.replace(tzinfo=timezone.utc) if message.created_at else None,
+        created_at=(
+            message.created_at.replace(tzinfo=timezone.utc)
+            if message.created_at
+            else None
+        ),
     )
 
 
@@ -58,7 +62,11 @@ def _get_conversation_participants(
                 name=user.username if user else f"user_{participant.user_id}",
                 avatar=user.avatar if user else None,
                 last_read_message_id=participant.last_read_message_id,
-                joined_at=participant.joined_at.replace(tzinfo=timezone.utc) if participant.joined_at else None,
+                joined_at=(
+                    participant.joined_at.replace(tzinfo=timezone.utc)
+                    if participant.joined_at
+                    else None
+                ),
                 is_admin=participant.is_admin,
             )
         )
@@ -86,7 +94,11 @@ def get_conversation_detail(db: Session, conversation_id: int, user_id: int) -> 
         "type": conversation.type.value,
         "name": conversation.name,
         "avatar": conversation.avatar,
-        "created_at": conversation.created_at.replace(tzinfo=timezone.utc) if conversation.created_at else None,
+        "created_at": (
+            conversation.created_at.replace(tzinfo=timezone.utc)
+            if conversation.created_at
+            else None
+        ),
         "created_by": conversation.created_by,
         "created_by_name": creator_name,
         "participants": participants,
@@ -302,7 +314,11 @@ def list_conversations(db: Session, user_id: int) -> list[ConversationOut]:
                     last_message.reply_to_message_id if last_message else None
                 ),
                 is_deleted=last_message.is_deleted if last_message else None,
-                message_created_at=last_message.created_at.replace(tzinfo=timezone.utc) if last_message and last_message.created_at else None,
+                message_created_at=(
+                    last_message.created_at.replace(tzinfo=timezone.utc)
+                    if last_message and last_message.created_at
+                    else None
+                ),
             )
         )
 
@@ -408,7 +424,7 @@ def list_messages(
     db: Session,
     conversation_id: int,
     user_id: int,
-    limit: int = 50,
+    limit: int = 20,
     before_id: int | None = None,
 ) -> tuple[list[MessageOut], bool, list[ParticipantOut]]:
     if not user_is_participant(db, conversation_id, user_id):
