@@ -17,7 +17,6 @@ import chatApi, {
 import { AuthContext } from "../../context/AuthContext";
 import "./Chat.css";
 
-
 function formatTime(isoString) {
   if (!isoString) return "";
 
@@ -42,7 +41,6 @@ function formatTime(isoString) {
     year: "numeric",
   });
 }
-
 
 function displayName(user) {
   if (!user) return "";
@@ -133,14 +131,10 @@ function Chat() {
 
   const wsRef = useRef(null);
   const wsReconnectAttemptRef = useRef(0);
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const searchTimeoutRef = useRef(null);
   const modalSearchTimeoutRef = useRef(null);
   const activeConversationIdRef = useRef(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
 
   const fetchConversations = useCallback(async () => {
     try {
@@ -190,8 +184,8 @@ function Chat() {
           if (payload.type === "message_update" && payload.data) {
             setMessages((prev) =>
               prev.map((msg) =>
-                msg.id === payload.data.id ? { ...msg, ...payload.data } : msg
-              )
+                msg.id === payload.data.id ? { ...msg, ...payload.data } : msg,
+              ),
             );
             return;
           }
@@ -201,10 +195,10 @@ function Chat() {
               prev.map((msg) =>
                 msg.id === payload.data.message_id
                   ? {
-                    ...msg,
-                    seen_by_ids: payload.data.seen_by_ids || [],
-                    seen_count: (payload.data.seen_by_ids || []).length,
-                  }
+                      ...msg,
+                      seen_by_ids: payload.data.seen_by_ids || [],
+                      seen_count: (payload.data.seen_by_ids || []).length,
+                    }
                   : msg,
               ),
             );
@@ -277,10 +271,10 @@ function Chat() {
             prev.map((msg) =>
               msg.id === readRes.data.last_read_message_id
                 ? {
-                  ...msg,
-                  seen_by_ids: readRes.data.seen_by_ids || [],
-                  seen_count: (readRes.data.seen_by_ids || []).length,
-                }
+                    ...msg,
+                    seen_by_ids: readRes.data.seen_by_ids || [],
+                    seen_count: (readRes.data.seen_by_ids || []).length,
+                  }
                 : msg,
             ),
           );
@@ -573,10 +567,6 @@ function Chat() {
   }, [currentUser, fetchConversations, navigate]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
@@ -831,7 +821,7 @@ function Chat() {
                 </div>
               </div>
 
-              <div className="chat-messages">
+              <div className="chat-messages" ref={messagesContainerRef}>
                 {loadingMessages ? (
                   <div className="chat-empty">{t("common.loading")}</div>
                 ) : messages.length === 0 ? (
@@ -932,7 +922,6 @@ function Chat() {
                     );
                   })
                 )}
-                <div ref={messagesEndRef} />
               </div>
 
               <form className="chat-input-form" onSubmit={handleSendMessage}>
@@ -947,7 +936,13 @@ function Chat() {
                 {editTarget && (
                   <div className="chat-input-form__replying">
                     <span>Đang sửa: {messagePreviewText(editTarget)}</span>
-                    <button type="button" onClick={() => { setEditTarget(null); setMessageInput(""); }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditTarget(null);
+                        setMessageInput("");
+                      }}
+                    >
                       Hủy
                     </button>
                   </div>
