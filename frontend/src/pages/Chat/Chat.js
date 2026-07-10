@@ -17,11 +17,32 @@ import chatApi, {
 import { AuthContext } from "../../context/AuthContext";
 import "./Chat.css";
 
+
 function formatTime(isoString) {
   if (!isoString) return "";
+
   const date = new Date(isoString);
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const today = new Date();
+
+  const isToday =
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate();
+
+  if (isToday) {
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  return date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
+
 
 function displayName(user) {
   if (!user) return "";
@@ -170,10 +191,10 @@ function Chat() {
               prev.map((msg) =>
                 msg.id === payload.data.message_id
                   ? {
-                      ...msg,
-                      seen_by_ids: payload.data.seen_by_ids || [],
-                      seen_count: (payload.data.seen_by_ids || []).length,
-                    }
+                    ...msg,
+                    seen_by_ids: payload.data.seen_by_ids || [],
+                    seen_count: (payload.data.seen_by_ids || []).length,
+                  }
                   : msg,
               ),
             );
@@ -245,10 +266,10 @@ function Chat() {
             prev.map((msg) =>
               msg.id === readRes.data.last_read_message_id
                 ? {
-                    ...msg,
-                    seen_by_ids: readRes.data.seen_by_ids || [],
-                    seen_count: (readRes.data.seen_by_ids || []).length,
-                  }
+                  ...msg,
+                  seen_by_ids: readRes.data.seen_by_ids || [],
+                  seen_count: (readRes.data.seen_by_ids || []).length,
+                }
                 : msg,
             ),
           );
@@ -805,23 +826,27 @@ function Chat() {
                             )}
                           </div>
                         )}
-                        <div className="chat-message__bubble">
-                          {replyToMessage && (
-                            <div className="chat-message__reply-preview">
-                              {messagePreviewText(replyToMessage)}
-                            </div>
-                          )}
-                          <p>{displayedContent}</p>
-                          <span className="chat-message__time">
-                            {formatTime(msg.created_at)}
-                          </span>
-                          {isMine && (
-                            <span className="chat-message__seen">
-                              {msg.seen_count > 0
-                                ? `${t("chat.seen")} ${msg.seen_count}`
-                                : t("chat.sent")}
+                        <div className="chat-message__content">
+                          <div className="chat-message__bubble">
+                            {replyToMessage && (
+                              <div className="chat-message__reply-preview">
+                                {messagePreviewText(replyToMessage)}
+                              </div>
+                            )}
+                            <p>{displayedContent}</p>
+                          </div>
+                          <div className="chat-message__meta">
+                            <span className="chat-message__time">
+                              {formatTime(msg.created_at)}
                             </span>
-                          )}
+                            {isMine && (
+                              <span className="chat-message__seen">
+                                {msg.seen_count > 0
+                                  ? `${t("chat.seen")} ${msg.seen_count}`
+                                  : t("chat.sent")}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="chat-message__actions-wrap">
                           <button
@@ -846,6 +871,7 @@ function Chat() {
                               {isMine && !msg.is_deleted && (
                                 <button
                                   type="button"
+                                  className="delete-btn"
                                   onClick={() => handleDeleteMessage(msg)}
                                 >
                                   Delete
