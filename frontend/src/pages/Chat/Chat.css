@@ -423,7 +423,7 @@
 }
 
 .chat-message__bubble {
-  padding: 1rem 1.25rem;
+  padding: 0.6rem 0.8rem;
   border-radius: 20px 20px 20px 4px;
   background: #e4e6eb;
   color: #1e293b;
@@ -569,10 +569,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f8fafc;
+  background: #e4e6eb;
   padding: 0.75rem 1rem;
   border-radius: 12px;
-  border-left: 4px solid #095ce2;
   font-size: 0.9rem;
   color: #475569;
   animation: slideUp 0.2s ease;

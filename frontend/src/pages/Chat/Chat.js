@@ -114,6 +114,7 @@ function Chat() {
   const [modalSearching, setModalSearching] = useState(false);
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [replyTarget, setReplyTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
   const [openActionsForMessageId, setOpenActionsForMessageId] = useState(null);
   const [isConversationMenuOpen, setIsConversationMenuOpen] = useState(false);
   const [isConversationInfoOpen, setIsConversationInfoOpen] = useState(false);
@@ -186,6 +187,15 @@ function Chat() {
             return;
           }
 
+          if (payload.type === "message_update" && payload.data) {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === payload.data.id ? { ...msg, ...payload.data } : msg
+              )
+            );
+            return;
+          }
+
           if (payload.type === "read_update" && payload.data) {
             setMessages((prev) =>
               prev.map((msg) =>
@@ -240,6 +250,7 @@ function Chat() {
     async (conversation) => {
       setActiveConversation(conversation);
       setReplyTarget(null);
+      setEditTarget(null);
       setOpenActionsForMessageId(null);
       setIsConversationMenuOpen(false);
       setIsConversationInfoOpen(false);
@@ -370,6 +381,27 @@ function Chat() {
     const content = messageInput.trim();
     if (!content || !activeConversation) return;
 
+    if (editTarget) {
+      try {
+        const res = await chatApi.patch(
+          `/conversations/${activeConversation.id}/messages/${editTarget.id}`,
+          { content },
+        );
+        setMessages((prev) =>
+          prev.map((item) =>
+            item.id === editTarget.id ? { ...item, ...res.data } : item,
+          ),
+        );
+        setEditTarget(null);
+        setMessageInput("");
+        fetchConversations();
+      } catch (err) {
+        console.error(err);
+        toast.error("Không thể sửa tin nhắn");
+      }
+      return;
+    }
+
     setMessageInput("");
 
     const replyToMessageId = replyTarget?.id || null;
@@ -401,6 +433,14 @@ function Chat() {
 
   const handleReplyMessage = (msg) => {
     setReplyTarget(msg);
+    setEditTarget(null);
+    setOpenActionsForMessageId(null);
+  };
+
+  const handleEditMessage = (msg) => {
+    setEditTarget(msg);
+    setMessageInput(msg.content);
+    setReplyTarget(null);
     setOpenActionsForMessageId(null);
   };
 
@@ -871,6 +911,14 @@ function Chat() {
                               {isMine && !msg.is_deleted && (
                                 <button
                                   type="button"
+                                  onClick={() => handleEditMessage(msg)}
+                                >
+                                  Edit
+                                </button>
+                              )}
+                              {isMine && !msg.is_deleted && (
+                                <button
+                                  type="button"
                                   className="delete-btn"
                                   onClick={() => handleDeleteMessage(msg)}
                                 >
@@ -892,6 +940,14 @@ function Chat() {
                   <div className="chat-input-form__replying">
                     <span>Đang trả lời: {messagePreviewText(replyTarget)}</span>
                     <button type="button" onClick={() => setReplyTarget(null)}>
+                      Hủy
+                    </button>
+                  </div>
+                )}
+                {editTarget && (
+                  <div className="chat-input-form__replying">
+                    <span>Đang sửa: {messagePreviewText(editTarget)}</span>
+                    <button type="button" onClick={() => { setEditTarget(null); setMessageInput(""); }}>
                       Hủy
                     </button>
                   </div>

@@ -15,6 +15,7 @@ from app.schemas.chat import (
     MessageCreate,
     MessageListResponse,
     MessageOut,
+    MessageUpdate,
     ReadConversationResponse,
 )
 from app.services import chat_service
@@ -229,6 +230,32 @@ def send_message(
         raise HTTPException(status_code=400, detail=str(exc))
     except PermissionError:
         raise HTTPException(status_code=403, detail="NOT_PARTICIPANT")
+
+
+@router.patch("/{conversation_id}/messages/{message_id}", response_model=MessageOut)
+async def update_message(
+    conversation_id: int,
+    message_id: int,
+    body: MessageUpdate,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    try:
+        message = chat_service.update_message(
+            db, conversation_id, message_id, user_id, body.content
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except PermissionError as exc:
+        if str(exc) == "NOT_MESSAGE_OWNER":
+            raise HTTPException(status_code=403, detail="NOT_MESSAGE_OWNER")
+        raise HTTPException(status_code=403, detail="NOT_PARTICIPANT")
+
+    await manager.broadcast(
+        conversation_id,
+        {"type": "message_update", "data": message.model_dump()},
+    )
+    return message
 
 
 @router.delete("/{conversation_id}/messages/{message_id}", response_model=MessageOut)

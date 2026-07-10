@@ -474,6 +474,34 @@ def create_message(
     return _serialize_message(message)
 
 
+def update_message(
+    db: Session,
+    conversation_id: int,
+    message_id: int,
+    user_id: int,
+    content: str,
+) -> MessageOut:
+    message = (
+        db.query(Message)
+        .filter(
+            Message.id == message_id,
+            Message.conversation_id == conversation_id,
+        )
+        .first()
+    )
+    if not message:
+        raise ValueError("MESSAGE_NOT_FOUND")
+    if message.sender_id != user_id:
+        raise PermissionError("NOT_MESSAGE_OWNER")
+    if message.is_deleted:
+        raise ValueError("MESSAGE_DELETED")
+
+    message.content = content.strip()
+    db.commit()
+    db.refresh(message)
+    return _serialize_message(message)
+
+
 def delete_message(
     db: Session,
     conversation_id: int,

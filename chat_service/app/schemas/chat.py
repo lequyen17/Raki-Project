@@ -26,6 +26,10 @@ class MessageCreate(BaseModel):
     reply_to_message_id: Optional[int] = None
 
 
+class MessageUpdate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=5000)
+
+
 class MessageOut(BaseModel):
     id: int
     conversation_id: int
