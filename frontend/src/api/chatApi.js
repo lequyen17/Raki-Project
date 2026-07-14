@@ -69,10 +69,10 @@ chatApi.interceptors.response.use(
   },
 );
 
-export const getChatWebSocketUrl = (conversationId) => {
+export const getChatWebSocketUrl = (userId) => {
   const token = localStorage.getItem("access_token");
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}/api/chat/ws/${conversationId}?token=${token}`;
+  return `${protocol}//${window.location.host}/api/chat/ws/chat/${userId}?token=${token}`;
 };
 
 export default chatApi;

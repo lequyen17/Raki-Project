@@ -447,6 +447,30 @@ def list_messages(
     return [_serialize_message(m) for m in messages], has_more, participants
 
 
+def create_system_message(
+    db: Session,
+    conversation_id: int,
+    content: str,
+) -> MessageOut:
+    message = Message(
+        conversation_id=conversation_id,
+        sender_id=0,
+        content=content.strip(),
+        type=MessageType.SYSTEM,
+    )
+    db.add(message)
+    
+    conversation = (
+        db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    )
+    if conversation:
+        conversation.updated_at = datetime.utcnow()
+        
+    db.commit()
+    db.refresh(message)
+    return _serialize_message(message)
+
+
 def create_message(
     db: Session,
     conversation_id: int,

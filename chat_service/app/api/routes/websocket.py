@@ -12,62 +12,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["WebSocket"])
 
 
-@router.websocket("/ws/{conversation_id}")
-async def websocket_endpoint(
-    websocket: WebSocket,
-    conversation_id: int,
-    token: str = Query(...),
-):
-    try:
-        user_id = get_user_id_from_token(token)
-    except Exception:
-        await websocket.close(code=4001)
-        return
-
-    db: Session = SessionLocal()
-    try:
-        if not chat_service.user_is_participant(db, conversation_id, user_id):
-            await websocket.close(code=4003)
-            return
-    finally:
-        db.close()
-
-    await manager.connect(conversation_id, user_id, websocket)
+@router.websocket("/ws/chat/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: int):
+    # 1. Chấp nhận kết nối và ghi tên vào "sổ hộ khẩu"
+    await manager.connect(user_id, websocket)
 
     try:
         while True:
-            data = await websocket.receive_json()
-            content = (data.get("content") or "").strip()
-            if not content:
-                continue
-            reply_to_message_id = data.get("reply_to_message_id")
-            if reply_to_message_id is not None:
-                try:
-                    reply_to_message_id = int(reply_to_message_id)
-                except (TypeError, ValueError):
-                    reply_to_message_id = None
+            # Giữ cho đường ống luôn mở và lắng nghe nếu client gửi gì đó lên qua WS
+            # (Nếu bạn chỉ dùng WS để nhận tin nhắn từ server, dòng này chỉ để giữ kết nối)
+            data = await websocket.receive_text()
 
-            db = SessionLocal()
-            try:
-                message = chat_service.create_message(
-                    db,
-                    conversation_id,
-                    user_id,
-                    content,
-                    reply_to_message_id=reply_to_message_id,
-                )
-                chat_service.mark_conversation_read(db, conversation_id, user_id)
-            except ValueError:
-                continue
-            finally:
-                db.close()
-
-            await manager.broadcast(
-                conversation_id,
-                {"type": "message", "data": message.model_dump()},
-            )
     except WebSocketDisconnect:
-        manager.disconnect(conversation_id, user_id)
-    except Exception as exc:
-        logger.error("WebSocket error: %s", exc)
-        manager.disconnect(conversation_id, user_id)
+        # 2. Nếu user tắt trình duyệt hoặc mất mạng, xóa họ khỏi "sổ hộ khẩu"
+        manager.disconnect(user_id)

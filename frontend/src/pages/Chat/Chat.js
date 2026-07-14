@@ -162,7 +162,7 @@ function Chat() {
   }, [t]);
 
   const connectWebSocket = useCallback(
-    (conversationId, isReconnect = false) => {
+    (userId, isReconnect = false) => {
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
@@ -170,42 +170,72 @@ function Chat() {
 
       if (!isReconnect) wsReconnectAttemptRef.current = 0;
 
-      const ws = new WebSocket(getChatWebSocketUrl(conversationId));
+      const ws = new WebSocket(getChatWebSocketUrl(userId));
       wsRef.current = ws;
 
       ws.onmessage = (event) => {
         try {
           const payload = JSON.parse(event.data);
           if (payload.type === "message" && payload.data) {
-            shouldScrollToBottomRef.current = true;
-            setMessages((prev) => {
-              if (prev.some((m) => m.id === payload.data.id)) return prev;
-              return [...prev, payload.data];
-            });
+            fetchConversations();
+            if (
+              payload.data.conversation_id === activeConversationIdRef.current
+            ) {
+              shouldScrollToBottomRef.current = true;
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === payload.data.id)) return prev;
+                return [...prev, payload.data];
+              });
+            }
             return;
           }
 
           if (payload.type === "message_update" && payload.data) {
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === payload.data.id ? { ...msg, ...payload.data } : msg,
-              ),
-            );
+            fetchConversations();
+            if (
+              payload.data.conversation_id === activeConversationIdRef.current
+            ) {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === payload.data.id
+                    ? { ...msg, ...payload.data }
+                    : msg,
+                ),
+              );
+            }
             return;
           }
 
           if (payload.type === "read_update" && payload.data) {
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === payload.data.message_id
-                  ? {
-                      ...msg,
-                      seen_by_ids: payload.data.seen_by_ids || [],
-                      seen_count: (payload.data.seen_by_ids || []).length,
-                    }
-                  : msg,
-              ),
-            );
+            if (
+              payload.data.conversation_id === activeConversationIdRef.current
+            ) {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === payload.data.message_id
+                    ? {
+                        ...msg,
+                        seen_by_ids: payload.data.seen_by_ids || [],
+                        seen_count: (payload.data.seen_by_ids || []).length,
+                      }
+                    : msg,
+                ),
+              );
+            }
+            return;
+          }
+
+          if (payload.type === "conversation_update" && payload.data) {
+            fetchConversations();
+            if (payload.data.id === activeConversationIdRef.current) {
+              setConversationDetail(payload.data);
+              setParticipants(payload.data.participants || []);
+              setRenameValue(payload.data.name || "");
+              setActiveConversation((prev) => 
+                prev ? { ...prev, name: payload.data.name } : prev
+              );
+            }
+            return;
           }
         } catch (e) {
           console.error(e);
@@ -221,12 +251,12 @@ function Chat() {
         if (
           event.code === 4001 &&
           wsReconnectAttemptRef.current < 1 &&
-          activeConversationIdRef.current === conversationId
+          currentUser?.id === userId
         ) {
           wsReconnectAttemptRef.current += 1;
           try {
             await refreshAccessToken();
-            connectWebSocket(conversationId, true);
+            connectWebSocket(userId, true);
             fetchConversations();
             return;
           } catch (e) {
@@ -237,7 +267,7 @@ function Chat() {
         }
       };
     },
-    [t, fetchConversations, navigate],
+    [t, fetchConversations, navigate, currentUser],
   );
 
   useEffect(() => {
@@ -285,7 +315,6 @@ function Chat() {
             ),
           );
         }
-        connectWebSocket(conversation.id);
         fetchConversations();
       } catch (err) {
         console.error(err);
@@ -294,7 +323,7 @@ function Chat() {
         setLoadingMessages(false);
       }
     },
-    [connectWebSocket, fetchConversations, t],
+    [fetchConversations, t],
   );
 
   const loadMoreMessages = async () => {
@@ -306,18 +335,18 @@ function Chat() {
       const firstMessageId = messages[0].id;
       const res = await chatApi.get(
         `/conversations/${activeConversation.id}/messages`,
-        { params: { before_id: firstMessageId, limit: 20 } }
+        { params: { before_id: firstMessageId, limit: 20 } },
       );
-      
+
       const newMessages = res.data.results || [];
       if (newMessages.length > 0) {
         shouldScrollToBottomRef.current = false;
         const container = messagesContainerRef.current;
         const previousScrollHeight = container ? container.scrollHeight : 0;
-        
-        setMessages(prev => [...newMessages, ...prev]);
+
+        setMessages((prev) => [...newMessages, ...prev]);
         setHasMoreMessages(res.data.has_more || false);
-        
+
         if (container) {
           setTimeout(() => {
             container.scrollTop = container.scrollHeight - previousScrollHeight;
@@ -442,26 +471,13 @@ function Chat() {
     setMessageInput("");
 
     const replyToMessageId = replyTarget?.id || null;
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(
-        JSON.stringify({
-          content,
-          reply_to_message_id: replyToMessageId,
-        }),
-      );
-      setReplyTarget(null);
-      return;
-    }
 
     try {
-      const res = await chatApi.post(
-        `/conversations/${activeConversation.id}/messages`,
-        { content, reply_to_message_id: replyToMessageId },
-      );
-      shouldScrollToBottomRef.current = true;
-      setMessages((prev) => [...prev, res.data]);
+      await chatApi.post(`/conversations/${activeConversation.id}/messages`, {
+        content,
+        reply_to_message_id: replyToMessageId,
+      });
       setReplyTarget(null);
-      fetchConversations();
     } catch (err) {
       console.error(err);
       toast.error(t("chat.send_error"));
@@ -608,7 +624,8 @@ function Chat() {
       return;
     }
     fetchConversations();
-  }, [currentUser, fetchConversations, navigate]);
+    connectWebSocket(currentUser.id);
+  }, [currentUser, fetchConversations, navigate, connectWebSocket]);
 
   useEffect(() => {
     return () => {
@@ -721,7 +738,8 @@ function Chat() {
 
   useEffect(() => {
     if (shouldScrollToBottomRef.current && messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
@@ -877,7 +895,11 @@ function Chat() {
                 </div>
               </div>
 
-              <div className="chat-messages" ref={messagesContainerRef} onScroll={handleScroll}>
+              <div
+                className="chat-messages"
+                ref={messagesContainerRef}
+                onScroll={handleScroll}
+              >
                 {loadingMessages ? (
                   <div className="chat-empty">{t("common.loading")}</div>
                 ) : messages.length === 0 ? (
@@ -885,105 +907,123 @@ function Chat() {
                 ) : (
                   <>
                     {hasMoreMessages && loadingMoreMessages && (
-                      <div className="chat-load-more" style={{ textAlign: "center", padding: "10px" }}>
-                        <span style={{ color: "var(--color-primary)", fontSize: "0.9rem" }}>Đang tải...</span>
+                      <div
+                        className="chat-load-more"
+                        style={{ textAlign: "center", padding: "10px" }}
+                      >
+                        <span
+                          style={{
+                            color: "var(--color-primary)",
+                            fontSize: "0.9rem",
+                          }}
+                        >
+                          Đang tải...
+                        </span>
                       </div>
                     )}
                     {messages.map((msg) => {
-                    const isMine = msg.sender_id === currentUser?.id;
-                    const sender = participantByUserId(msg.sender_id);
-                    const replyToMessage = messages.find(
-                      (item) => item.id === msg.reply_to_message_id,
-                    );
-                    const displayedContent = msg.is_deleted
-                      ? "Người dùng đã xóa tin nhắn này"
-                      : msg.content;
-                    return (
-                      <div
-                        key={msg.id}
-                        className={`chat-message${isMine ? " chat-message--mine" : ""}`}
-                      >
-                        {!isMine && (
-                          <div className="chat-message__sender">
-                            {sender?.avatar ? (
-                              <img
-                                src={sender.avatar}
-                                alt={sender?.name || "user"}
-                                className="chat-message__sender-avatar"
-                              />
-                            ) : (
-                              <span className="chat-message__sender-avatar chat-message__sender-avatar--fallback">
-                                {(sender?.name || "U").charAt(0).toUpperCase()}
-                              </span>
-                            )}
+                      if (msg.type === "system") {
+                        return (
+                          <div key={msg.id} className="chat-message-system">
+                            <span>{msg.content}</span>
                           </div>
-                        )}
-                        <div className="chat-message__content">
-                          <div className="chat-message__bubble">
-                            {replyToMessage && (
-                              <div className="chat-message__reply-preview">
-                                {messagePreviewText(replyToMessage)}
-                              </div>
-                            )}
-                            <p>{displayedContent}</p>
-                          </div>
-                          <div className="chat-message__meta">
-                            <span className="chat-message__time">
-                              {formatTime(msg.created_at)}
-                            </span>
-                            {isMine && (
-                              <span className="chat-message__seen">
-                                {msg.seen_count > 0
-                                  ? `${t("chat.seen")} ${msg.seen_count}`
-                                  : t("chat.sent")}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="chat-message__actions-wrap">
-                          <button
-                            type="button"
-                            className="chat-message__actions-btn"
-                            onClick={() =>
-                              setOpenActionsForMessageId((prev) =>
-                                prev === msg.id ? null : msg.id,
-                              )
-                            }
-                          >
-                            ⋯
-                          </button>
-                          {openActionsForMessageId === msg.id && (
-                            <div className="chat-message__actions-menu">
-                              <button
-                                type="button"
-                                onClick={() => handleReplyMessage(msg)}
-                              >
-                                Reply
-                              </button>
-                              {isMine && !msg.is_deleted && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleEditMessage(msg)}
-                                >
-                                  Edit
-                                </button>
-                              )}
-                              {isMine && !msg.is_deleted && (
-                                <button
-                                  type="button"
-                                  className="delete-btn"
-                                  onClick={() => handleDeleteMessage(msg)}
-                                >
-                                  Delete
-                                </button>
+                        );
+                      }
+                      const isMine = msg.sender_id === currentUser?.id;
+                      const sender = participantByUserId(msg.sender_id);
+                      const replyToMessage = messages.find(
+                        (item) => item.id === msg.reply_to_message_id,
+                      );
+                      const displayedContent = msg.is_deleted
+                        ? "Người dùng đã xóa tin nhắn này"
+                        : msg.content;
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`chat-message${isMine ? " chat-message--mine" : ""}`}
+                        >
+                          {!isMine && (
+                            <div className="chat-message__sender">
+                              {sender?.avatar ? (
+                                <img
+                                  src={sender.avatar}
+                                  alt={sender?.name || "user"}
+                                  className="chat-message__sender-avatar"
+                                />
+                              ) : (
+                                <span className="chat-message__sender-avatar chat-message__sender-avatar--fallback">
+                                  {(sender?.name || "U")
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </span>
                               )}
                             </div>
                           )}
+                          <div className="chat-message__content">
+                            <div className="chat-message__bubble">
+                              {replyToMessage && (
+                                <div className="chat-message__reply-preview">
+                                  {messagePreviewText(replyToMessage)}
+                                </div>
+                              )}
+                              <p>{displayedContent}</p>
+                            </div>
+                            <div className="chat-message__meta">
+                              <span className="chat-message__time">
+                                {formatTime(msg.created_at)}
+                              </span>
+                              {isMine && (
+                                <span className="chat-message__seen">
+                                  {msg.seen_count > 0
+                                    ? `${t("chat.seen")} ${msg.seen_count}`
+                                    : t("chat.sent")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="chat-message__actions-wrap">
+                            <button
+                              type="button"
+                              className="chat-message__actions-btn"
+                              onClick={() =>
+                                setOpenActionsForMessageId((prev) =>
+                                  prev === msg.id ? null : msg.id,
+                                )
+                              }
+                            >
+                              ⋯
+                            </button>
+                            {openActionsForMessageId === msg.id && (
+                              <div className="chat-message__actions-menu">
+                                <button
+                                  type="button"
+                                  onClick={() => handleReplyMessage(msg)}
+                                >
+                                  Reply
+                                </button>
+                                {isMine && !msg.is_deleted && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEditMessage(msg)}
+                                  >
+                                    Edit
+                                  </button>
+                                )}
+                                {isMine && !msg.is_deleted && (
+                                  <button
+                                    type="button"
+                                    className="delete-btn"
+                                    onClick={() => handleDeleteMessage(msg)}
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })
-                  }
+                      );
+                    })}
                   </>
                 )}
               </div>

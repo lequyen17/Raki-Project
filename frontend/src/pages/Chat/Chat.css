@@ -378,6 +378,24 @@
   border-radius: 10px;
 }
 
+.chat-message-system {
+  width: 100%;
+  text-align: center;
+  margin: 1rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+.chat-message-system span {
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.85rem;
+  padding: 0.4rem 1rem;
+  border-radius: 16px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
 .chat-message {
   display: flex;
   align-items: flex-end;
