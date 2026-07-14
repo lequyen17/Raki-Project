@@ -231,8 +231,8 @@ function Chat() {
               setConversationDetail(payload.data);
               setParticipants(payload.data.participants || []);
               setRenameValue(payload.data.name || "");
-              setActiveConversation((prev) => 
-                prev ? { ...prev, name: payload.data.name } : prev
+              setActiveConversation((prev) =>
+                prev ? { ...prev, name: payload.data.name } : prev,
               );
             }
             return;
@@ -257,7 +257,7 @@ function Chat() {
           try {
             await refreshAccessToken();
             connectWebSocket(userId, true);
-            fetchConversations();
+
             return;
           } catch (e) {
             localStorage.clear();
@@ -267,7 +267,7 @@ function Chat() {
         }
       };
     },
-    [t, fetchConversations, navigate, currentUser],
+    [t, navigate, currentUser],
   );
 
   useEffect(() => {
@@ -618,22 +618,31 @@ function Chat() {
     }
   };
 
+  const currentUserId = currentUser?.id;
+
   useEffect(() => {
-    if (!currentUser) {
+    if (!currentUserId) {
       navigate("/login");
       return;
     }
-    fetchConversations();
-    connectWebSocket(currentUser.id);
-  }, [currentUser, fetchConversations, navigate, connectWebSocket]);
 
-  useEffect(() => {
+    // Gọi fetchConversations bình thường
+    fetchConversations();
+
+    // Khởi tạo kết nối WebSocket
+    connectWebSocket(currentUserId);
+
+    // CLEANUP FUNCTION: Chỉ đóng kết nối khi Component thực sự bị hủy (Unmount)
+    // hoặc khi currentUser thay đổi (đăng xuất / đổi tài khoản)
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
+        wsRef.current = null;
       }
     };
-  }, []);
+    // CHÚ Ý: Loại bỏ connectWebSocket và fetchConversations ra khỏi dependency của useEffect này
+    // để tránh việc re-render component kích hoạt kết nối lại.
+  }, [currentUserId, navigate]);
 
   useEffect(() => {
     if (searchTimeoutRef.current) {

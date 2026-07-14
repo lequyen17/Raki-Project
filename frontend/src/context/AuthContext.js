@@ -45,21 +45,21 @@ export const AuthProvider = ({ children }) => {
   }, [fetchUserData]);
 
   // 2. TỰ ĐỘNG GỌI KHI CHUYỂN ROUTE (Yêu cầu của bạn)
-  // useEffect(() => {
-  //   const token = localStorage.getItem("access_token");
-  //   const publicPages = ["/", "/login", "/register"];
-  //   const isPublicPage = publicPages.includes(location.pathname);
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    const publicPages = ["/", "/login", "/register"];
+    const isPublicPage = publicPages.includes(location.pathname);
 
-  //   if (token) {
-  //     // 1. Nếu có token mà cố tình vào Login/Register -> Đẩy ra Dashboard
-  //     if (isPublicPage) {
-  //       navigate("/decks"); // Hoặc trang nào bạn muốn
-  //     }
+    if (token) {
+      // 1. Nếu có token mà cố tình vào Login/Register -> Đẩy ra Dashboard
+      if (isPublicPage) {
+        navigate("/decks"); // Hoặc trang nào bạn muốn
+      }
 
-  //     // 2. Vẫn giữ logic fetch dữ liệu để đồng bộ
-  //     fetchUserData();
-  //   }
-  // }, [location.pathname, fetchUserData, navigate]);
+      // 2. Vẫn giữ logic fetch dữ liệu để đồng bộ
+      fetchUserData();
+    }
+  }, [location.pathname, fetchUserData, navigate]);
 
   const logout = () => {
     localStorage.clear();
