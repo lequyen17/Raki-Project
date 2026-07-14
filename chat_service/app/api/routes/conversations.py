@@ -369,8 +369,15 @@ async def mark_read(
     except PermissionError:
         raise HTTPException(status_code=403, detail="NOT_PARTICIPANT")
 
+    seen_by_ids = []
     if last_read_message_id:
         participants = chat_service._get_conversation_participants(db, conversation_id)
+        
+        seen_by_ids = [
+            p.user_id for p in participants
+            if p.last_read_message_id is not None and p.last_read_message_id >= last_read_message_id
+        ]
+        
         for p in participants:
             await manager.send_personal_message(
                 {
@@ -378,7 +385,7 @@ async def mark_read(
                     "data": {
                         "conversation_id": conversation_id,
                         "message_id": last_read_message_id,
-                        "reader_id": user_id,
+                        "seen_by_ids": seen_by_ids,
                     },
                 },
                 p.user_id
@@ -388,5 +395,5 @@ async def mark_read(
         "success": True,
         "conversation_id": conversation_id,
         "last_read_message_id": last_read_message_id,
-        "seen_by_ids": [],
+        "seen_by_ids": seen_by_ids,
     }

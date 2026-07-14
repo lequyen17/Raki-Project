@@ -497,6 +497,38 @@
   font-weight: 500;
 }
 
+.chat-message__watermarks {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+  align-self: flex-start;
+  padding: 0 0.5rem;
+}
+
+.chat-message--mine .chat-message__watermarks {
+  align-self: flex-end;
+}
+
+.chat-message__watermark-avatar {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.chat-message__watermark-fallback {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(9, 92, 226, 0.15);
+  color: #095ce2;
+  font-size: 8px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .chat-message__actions-wrap {
   position: relative;
   opacity: 0;

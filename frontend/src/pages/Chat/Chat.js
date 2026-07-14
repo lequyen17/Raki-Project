@@ -132,6 +132,29 @@ function Chat() {
     );
   }, [conversationDetail, currentUser]);
 
+  const watermarksMap = useMemo(() => {
+    const map = {};
+    participants.forEach((p) => {
+      if (p.user_id === currentUser?.id) return;
+      if (!p.last_read_message_id) return;
+
+      let effectiveMsgId = null;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i];
+        if (m.id <= p.last_read_message_id && m.sender_id !== p.user_id) {
+          effectiveMsgId = m.id;
+          break;
+        }
+      }
+
+      if (effectiveMsgId) {
+        if (!map[effectiveMsgId]) map[effectiveMsgId] = [];
+        map[effectiveMsgId].push(p);
+      }
+    });
+    return map;
+  }, [participants, messages, currentUser?.id]);
+
   const wsRef = useRef(null);
   const wsReconnectAttemptRef = useRef(0);
   const messagesContainerRef = useRef(null);
@@ -216,10 +239,23 @@ function Chat() {
                     ? {
                         ...msg,
                         seen_by_ids: payload.data.seen_by_ids || [],
-                        seen_count: (payload.data.seen_by_ids || []).length,
+                        seen_count: (payload.data.seen_by_ids || []).filter(id => id !== currentUser?.id).length,
                       }
                     : msg,
                 ),
+              );
+              setParticipants((prev) =>
+                prev.map((p) =>
+                  (payload.data.seen_by_ids || []).includes(p.user_id)
+                    ? {
+                        ...p,
+                        last_read_message_id: Math.max(
+                          p.last_read_message_id || 0,
+                          payload.data.message_id
+                        ),
+                      }
+                    : p
+                )
               );
             }
             return;
@@ -290,10 +326,22 @@ function Chat() {
         const res = await chatApi.get(
           `/conversations/${conversation.id}/messages`,
         );
+        const fetchedParticipants = res.data.participants || [];
+        const fetchedMessages = (res.data.results || []).map((msg) => {
+          const readers = fetchedParticipants
+            .filter((p) => p.last_read_message_id && p.last_read_message_id >= msg.id)
+            .map((p) => p.user_id);
+          return {
+            ...msg,
+            seen_by_ids: readers,
+            seen_count: readers.filter((id) => id !== currentUser?.id).length,
+          };
+        });
+        
         shouldScrollToBottomRef.current = true;
-        setMessages(res.data.results || []);
+        setMessages(fetchedMessages);
         setHasMoreMessages(res.data.has_more || false);
-        setParticipants(res.data.participants || []);
+        setParticipants(fetchedParticipants);
         const detailRes = await chatApi.get(
           `/conversations/${conversation.id}`,
         );
@@ -309,10 +357,17 @@ function Chat() {
                 ? {
                     ...msg,
                     seen_by_ids: readRes.data.seen_by_ids || [],
-                    seen_count: (readRes.data.seen_by_ids || []).length,
+                    seen_count: (readRes.data.seen_by_ids || []).filter(id => id !== currentUser?.id).length,
                   }
                 : msg,
             ),
+          );
+          setParticipants((prev) =>
+            prev.map((p) =>
+              p.user_id === currentUser?.id
+                ? { ...p, last_read_message_id: readRes.data.last_read_message_id }
+                : p
+            )
           );
         }
         fetchConversations();
@@ -344,7 +399,18 @@ function Chat() {
         const container = messagesContainerRef.current;
         const previousScrollHeight = container ? container.scrollHeight : 0;
 
-        setMessages((prev) => [...newMessages, ...prev]);
+        const enrichedNewMessages = newMessages.map((msg) => {
+          const readers = participants
+            .filter((p) => p.last_read_message_id && p.last_read_message_id >= msg.id)
+            .map((p) => p.user_id);
+          return {
+            ...msg,
+            seen_by_ids: readers,
+            seen_count: readers.filter((id) => id !== currentUser?.id).length,
+          };
+        });
+
+        setMessages((prev) => [...enrichedNewMessages, ...prev]);
         setHasMoreMessages(res.data.has_more || false);
 
         if (container) {
@@ -439,6 +505,37 @@ function Chat() {
       console.error(err);
       toast.error(t("chat.group_create_error"));
       setCreatingGroup(false);
+    }
+  };
+
+  const handleInputFocus = async () => {
+    if (!activeConversation) return;
+    try {
+      const readRes = await chatApi.post(
+        `/conversations/${activeConversation.id}/read`,
+      );
+      if (readRes.data?.last_read_message_id) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === readRes.data.last_read_message_id
+              ? {
+                  ...msg,
+                  seen_by_ids: readRes.data.seen_by_ids || [],
+                  seen_count: (readRes.data.seen_by_ids || []).filter(id => id !== currentUser?.id).length,
+                }
+              : msg,
+          ),
+        );
+        setParticipants((prev) =>
+          prev.map((p) =>
+            p.user_id === currentUser?.id
+              ? { ...p, last_read_message_id: readRes.data.last_read_message_id }
+              : p
+          )
+        );
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -943,6 +1040,7 @@ function Chat() {
                       const replyToMessage = messages.find(
                         (item) => item.id === msg.reply_to_message_id,
                       );
+                      const messageReaders = watermarksMap[msg.id] || [];
                       const displayedContent = msg.is_deleted
                         ? "Người dùng đã xóa tin nhắn này"
                         : msg.content;
@@ -989,6 +1087,29 @@ function Chat() {
                                 </span>
                               )}
                             </div>
+                            {messageReaders.length > 0 && (
+                              <div className="chat-message__watermarks">
+                                {messageReaders.map((reader) =>
+                                  reader.avatar ? (
+                                    <img
+                                      key={reader.user_id}
+                                      src={reader.avatar}
+                                      alt={reader.name}
+                                      className="chat-message__watermark-avatar"
+                                      title={reader.name}
+                                    />
+                                  ) : (
+                                    <span
+                                      key={reader.user_id}
+                                      className="chat-message__watermark-fallback"
+                                      title={reader.name}
+                                    >
+                                      {reader.name.charAt(0).toUpperCase()}
+                                    </span>
+                                  )
+                                )}
+                              </div>
+                            )}
                           </div>
                           <div className="chat-message__actions-wrap">
                             <button
@@ -1066,6 +1187,7 @@ function Chat() {
                     placeholder={t("chat.type_message")}
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
+                    onFocus={handleInputFocus}
                   />
                   <button type="submit" disabled={!messageInput.trim()}>
                     {t("chat.send")}
