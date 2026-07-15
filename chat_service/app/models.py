@@ -128,9 +128,6 @@ class Attachment(Base):
     mime_type = Column(String(100))
     size = Column(BigInteger)
 
-    duration = Column(Integer, nullable=True)
-    thumbnail_url = Column(String, nullable=True)
-
     message = relationship("Message", back_populates="attachments")
 
     def __repr__(self):

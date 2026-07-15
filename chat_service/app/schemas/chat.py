@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class UserBrief(BaseModel):
@@ -22,12 +22,31 @@ class GroupConversationCreate(BaseModel):
 
 
 class MessageCreate(BaseModel):
-    content: str = Field(..., min_length=1, max_length=5000)
+    """Schema nội bộ / JSON text-only (backward compatible)."""
+
+    content: Optional[str] = Field(None, max_length=5000)
     reply_to_message_id: Optional[int] = None
+
+    @model_validator(mode="after")
+    def require_content(self):
+        if not (self.content and self.content.strip()):
+            raise ValueError("content is required for text messages")
+        return self
 
 
 class MessageUpdate(BaseModel):
     content: str = Field(..., min_length=1, max_length=5000)
+
+
+class AttachmentOut(BaseModel):
+    id: int
+    file_name: str
+    file_url: str
+    mime_type: Optional[str] = None
+    size: Optional[int] = None
+
+    class Config:
+        from_attributes = True
 
 
 class MessageOut(BaseModel):
@@ -39,6 +58,7 @@ class MessageOut(BaseModel):
     reply_to_message_id: Optional[int] = None
     is_deleted: Optional[bool] = None
     created_at: datetime
+    attachments: list[AttachmentOut] = Field(default_factory=list)
 
     class Config:
         from_attributes = True

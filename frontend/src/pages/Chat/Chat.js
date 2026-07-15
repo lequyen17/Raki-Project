@@ -53,6 +53,21 @@ function conversationTitle(conversation, t) {
   return conversation.name || t("chat.unknown_user");
 }
 
+function messageTypeLabel(type) {
+  switch (type) {
+    case "image":
+      return "Ảnh";
+    case "video":
+      return "Video";
+    case "audio":
+      return "Audio";
+    case "file":
+      return "File";
+    default:
+      return "";
+  }
+}
+
 function conversationPreview(conversation, currentUserId) {
   if (!conversation) return "";
 
@@ -62,24 +77,60 @@ function conversationPreview(conversation, currentUserId) {
 
   const hasReply = Boolean(conversation.reply_to_message_id);
   const content = (conversation.content || "").trim();
+  const typeLabel = messageTypeLabel(conversation.message_type);
 
   if (hasReply) {
     return "Đã trả lời tin nhắn";
   }
 
-  if (!content) return "";
-
-  if (conversation.sender_id === currentUserId) {
-    return `Bạn: ${content}`;
+  let preview = content;
+  if (!preview && typeLabel) {
+    preview = `[${typeLabel}]`;
   }
 
-  return content;
+  if (!preview) return "";
+
+  if (conversation.sender_id === currentUserId) {
+    return `Bạn: ${preview}`;
+  }
+
+  return preview;
 }
 
 function messagePreviewText(message) {
   if (!message) return "";
   if (message.is_deleted) return "Người dùng đã xóa tin nhắn này";
-  return (message.content || "").trim();
+  const content = (message.content || "").trim();
+  if (content) return content;
+  const typeLabel = messageTypeLabel(message.type);
+  if (typeLabel) return `[${typeLabel}]`;
+  const firstFile = message.attachments?.[0]?.file_name;
+  return firstFile || "";
+}
+
+function formatFileSize(bytes) {
+  if (!bytes && bytes !== 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function isImageAttachment(attachment) {
+  const mime = (attachment?.mime_type || "").toLowerCase();
+  if (mime.startsWith("image/")) return true;
+  return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(attachment?.file_name || "");
+}
+
+function isVideoAttachment(attachment) {
+  const mime = (attachment?.mime_type || "").toLowerCase();
+  if (mime.startsWith("video/")) return true;
+  return /\.(mp4|webm|ogg|mov|m4v)$/i.test(attachment?.file_name || "");
+}
+
+function isAudioAttachment(attachment) {
+  const mime = (attachment?.mime_type || "").toLowerCase();
+  if (mime.startsWith("audio/")) return true;
+  return /\.(mp3|wav|ogg|m4a|aac)$/i.test(attachment?.file_name || "");
 }
 
 function formatDateTime(isoString) {
@@ -104,6 +155,9 @@ function Chat() {
   const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
   const shouldScrollToBottomRef = useRef(true);
   const [messageInput, setMessageInput] = useState("");
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const fileInputRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -315,6 +369,8 @@ function Chat() {
       setActiveConversation(conversation);
       setReplyTarget(null);
       setEditTarget(null);
+      setPendingFiles([]);
+      setMessageInput("");
       setOpenActionsForMessageId(null);
       setIsConversationMenuOpen(false);
       setIsConversationInfoOpen(false);
@@ -539,13 +595,39 @@ function Chat() {
     }
   };
 
+  const handleSelectFiles = (e) => {
+    const selected = Array.from(e.target.files || []);
+    if (selected.length === 0) return;
+
+    setPendingFiles((prev) => {
+      const existingKeys = new Set(
+        prev.map((f) => `${f.name}-${f.size}-${f.lastModified}`),
+      );
+      const next = [...prev];
+      selected.forEach((file) => {
+        const key = `${file.name}-${file.size}-${file.lastModified}`;
+        if (!existingKeys.has(key)) next.push(file);
+      });
+      return next;
+    });
+
+    // Cho phép chọn lại cùng file
+    e.target.value = "";
+  };
+
+  const removePendingFile = (index) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     const content = messageInput.trim();
-    if (!content || !activeConversation) return;
+    if (!activeConversation || sendingMessage) return;
 
     if (editTarget) {
+      if (!content) return;
       try {
+        setSendingMessage(true);
         const res = await chatApi.patch(
           `/conversations/${activeConversation.id}/messages/${editTarget.id}`,
           { content },
@@ -561,24 +643,65 @@ function Chat() {
       } catch (err) {
         console.error(err);
         toast.error("Không thể sửa tin nhắn");
+      } finally {
+        setSendingMessage(false);
       }
       return;
     }
 
-    setMessageInput("");
+    if (!content && pendingFiles.length === 0) return;
 
     const replyToMessageId = replyTarget?.id || null;
+    const filesToSend = [...pendingFiles];
+    const previousInput = content;
+
+    setMessageInput("");
+    setPendingFiles([]);
+    setSendingMessage(true);
 
     try {
-      await chatApi.post(`/conversations/${activeConversation.id}/messages`, {
-        content,
-        reply_to_message_id: replyToMessageId,
-      });
+      if (filesToSend.length > 0) {
+        const formData = new FormData();
+        if (content) formData.append("content", content);
+        if (replyToMessageId != null) {
+          formData.append("reply_to_message_id", String(replyToMessageId));
+        }
+        filesToSend.forEach((file) => formData.append("files", file));
+
+        await chatApi.post(
+          `/conversations/${activeConversation.id}/messages`,
+          formData,
+          {
+            // Để browser tự set boundary cho multipart
+            transformRequest: [
+              (data, headers) => {
+                if (headers && typeof headers.delete === "function") {
+                  headers.delete("Content-Type");
+                } else if (headers) {
+                  delete headers["Content-Type"];
+                }
+                return data;
+              },
+            ],
+          },
+        );
+      } else {
+        await chatApi.post(
+          `/conversations/${activeConversation.id}/messages`,
+          {
+            content,
+            reply_to_message_id: replyToMessageId,
+          },
+        );
+      }
       setReplyTarget(null);
     } catch (err) {
       console.error(err);
       toast.error(t("chat.send_error"));
-      setMessageInput(content);
+      setMessageInput(previousInput);
+      setPendingFiles(filesToSend);
+    } finally {
+      setSendingMessage(false);
     }
   };
 
@@ -590,7 +713,8 @@ function Chat() {
 
   const handleEditMessage = (msg) => {
     setEditTarget(msg);
-    setMessageInput(msg.content);
+    setMessageInput(msg.content || "");
+    setPendingFiles([]);
     setReplyTarget(null);
     setOpenActionsForMessageId(null);
   };
@@ -1044,6 +1168,9 @@ function Chat() {
                       const displayedContent = msg.is_deleted
                         ? "Người dùng đã xóa tin nhắn này"
                         : msg.content;
+                      const attachments = msg.is_deleted
+                        ? []
+                        : msg.attachments || [];
                       return (
                         <div
                           key={msg.id}
@@ -1073,7 +1200,71 @@ function Chat() {
                                   {messagePreviewText(replyToMessage)}
                                 </div>
                               )}
-                              <p>{displayedContent}</p>
+                              {attachments.length > 0 && (
+                                <div className="chat-message__attachments">
+                                  {attachments.map((att) => {
+                                    if (isImageAttachment(att)) {
+                                      return (
+                                        <a
+                                          key={att.id}
+                                          href={att.file_url}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="chat-message__attachment-image"
+                                        >
+                                          <img
+                                            src={att.file_url}
+                                            alt={att.file_name}
+                                          />
+                                        </a>
+                                      );
+                                    }
+                                    if (isVideoAttachment(att)) {
+                                      return (
+                                        <video
+                                          key={att.id}
+                                          className="chat-message__attachment-video"
+                                          src={att.file_url}
+                                          controls
+                                          preload="metadata"
+                                        />
+                                      );
+                                    }
+                                    if (isAudioAttachment(att)) {
+                                      return (
+                                        <audio
+                                          key={att.id}
+                                          className="chat-message__attachment-audio"
+                                          src={att.file_url}
+                                          controls
+                                          preload="metadata"
+                                        />
+                                      );
+                                    }
+                                    return (
+                                      <a
+                                        key={att.id}
+                                        href={att.file_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="chat-message__attachment-file"
+                                        download={att.file_name}
+                                      >
+                                        <span className="chat-message__attachment-file-icon">
+                                          📎
+                                        </span>
+                                        <span className="chat-message__attachment-file-meta">
+                                          <strong>{att.file_name}</strong>
+                                          <small>
+                                            {formatFileSize(att.size)}
+                                          </small>
+                                        </span>
+                                      </a>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              {displayedContent ? <p>{displayedContent}</p> : null}
                             </div>
                             <div className="chat-message__meta">
                               <span className="chat-message__time">
@@ -1131,7 +1322,9 @@ function Chat() {
                                 >
                                   Reply
                                 </button>
-                                {isMine && !msg.is_deleted && (
+                                {isMine &&
+                                  !msg.is_deleted &&
+                                  msg.type === "text" && (
                                   <button
                                     type="button"
                                     onClick={() => handleEditMessage(msg)}
@@ -1181,16 +1374,74 @@ function Chat() {
                     </button>
                   </div>
                 )}
+                {pendingFiles.length > 0 && !editTarget && (
+                  <div className="chat-input-form__files">
+                    {pendingFiles.map((file, index) => (
+                      <div
+                        key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+                        className="chat-input-form__file-chip"
+                      >
+                        <span className="chat-input-form__file-name">
+                          {file.name}
+                        </span>
+                        <span className="chat-input-form__file-size">
+                          {formatFileSize(file.size)}
+                        </span>
+                        <button
+                          type="button"
+                          className="chat-input-form__file-remove"
+                          onClick={() => removePendingFile(index)}
+                          aria-label="Xóa file"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="chat-input-form__row">
+                  {!editTarget && (
+                    <>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="chat-input-form__file-input"
+                        multiple
+                        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+                        onChange={handleSelectFiles}
+                        tabIndex={-1}
+                        aria-hidden="true"
+                      />
+                      <button
+                        type="button"
+                        className="chat-input-form__attach-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={sendingMessage}
+                        title="Đính kèm file"
+                        aria-label="Đính kèm file"
+                      >
+                        📎
+                      </button>
+                    </>
+                  )}
                   <input
                     type="text"
                     placeholder={t("chat.type_message")}
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
                     onFocus={handleInputFocus}
+                    disabled={sendingMessage}
                   />
-                  <button type="submit" disabled={!messageInput.trim()}>
-                    {t("chat.send")}
+                  <button
+                    type="submit"
+                    disabled={
+                      sendingMessage ||
+                      (editTarget
+                        ? !messageInput.trim()
+                        : !messageInput.trim() && pendingFiles.length === 0)
+                    }
+                  >
+                    {sendingMessage ? "..." : t("chat.send")}
                   </button>
                 </div>
               </form>

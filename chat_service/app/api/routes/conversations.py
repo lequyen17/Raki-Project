@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from app.api.endpoints.deps import get_db
@@ -19,6 +19,7 @@ from app.schemas.chat import (
     ReadConversationResponse,
 )
 from app.services import chat_service
+from app.services import storage as storage_service
 from app.services.user_client import fetch_users_by_ids
 from app.ws.manager import manager
 
@@ -42,6 +43,15 @@ async def _broadcast_system_message(db: Session, conversation_id: int, message: 
         await manager.send_personal_message(
             {"type": "message", "data": message.model_dump(mode="json")}, 
             p.user_id
+        )
+
+
+async def _broadcast_new_message(db: Session, conversation_id: int, message: MessageOut):
+    participants = chat_service._get_conversation_participants(db, conversation_id)
+    for p in participants:
+        await manager.send_personal_message(
+            {"type": "message", "data": message.model_dump(mode="json")},
+            p.user_id,
         )
 
 @router.get("", response_model=ConversationListResponse)
@@ -275,27 +285,103 @@ async def leave_group(
 @router.post("/{conversation_id}/messages", response_model=MessageOut)
 async def send_message(
     conversation_id: int,
-    body: MessageCreate,
+    request: Request,
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
+    """
+    Gửi tin nhắn text và/hoặc file.
+
+    Hỗ trợ 2 kiểu request:
+      1) application/json — text only (backward compatible)
+         body: {"content": "...", "reply_to_message_id": null}
+      2) multipart/form-data — text + file(s)
+         fields: content, reply_to_message_id, files (multiple)
+
+    File được upload lên Cloudflare R2; metadata lưu bảng `attachment`.
+    Message.type tự suy ra từ mime (image/video/audio/file), hoặc text nếu không có file.
+    """
+    content_type = (request.headers.get("content-type") or "").lower()
+
+    content: str | None = None
+    reply_to_message_id: int | None = None
+    attachments_data: list[dict] = []
+
     try:
+        if "application/json" in content_type:
+            try:
+                body = MessageCreate.model_validate(await request.json())
+            except Exception as exc:
+                raise HTTPException(status_code=422, detail=str(exc))
+            content = body.content
+            reply_to_message_id = body.reply_to_message_id
+
+        elif "multipart/form-data" in content_type:
+            form = await request.form()
+            raw_content = form.get("content")
+            content = str(raw_content) if raw_content not in (None, "") else None
+
+            raw_reply = form.get("reply_to_message_id")
+            if raw_reply not in (None, ""):
+                try:
+                    reply_to_message_id = int(str(raw_reply))
+                except ValueError:
+                    raise HTTPException(
+                        status_code=422, detail="INVALID_REPLY_TO_MESSAGE_ID"
+                    )
+
+            uploads = form.getlist("files")
+            for upload in uploads:
+                if not hasattr(upload, "read") or not getattr(upload, "filename", None):
+                    continue
+                data = await upload.read()
+                if not data:
+                    continue
+                mime_type = getattr(upload, "content_type", None) or "application/octet-stream"
+                try:
+                    file_url = storage_service.upload_bytes(
+                        data=data,
+                        conversation_id=conversation_id,
+                        filename=upload.filename or "file",
+                        content_type=mime_type,
+                    )
+                except ValueError as exc:
+                    detail = str(exc)
+                    if detail == "FILE_TOO_LARGE":
+                        raise HTTPException(status_code=413, detail="FILE_TOO_LARGE")
+                    raise HTTPException(status_code=400, detail=detail)
+                except RuntimeError as exc:
+                    raise HTTPException(status_code=503, detail=str(exc))
+
+                attachments_data.append(
+                    {
+                        "file_name": upload.filename or "file",
+                        "file_url": file_url,
+                        "mime_type": mime_type,
+                        "size": len(data),
+                    }
+                )
+        else:
+            raise HTTPException(
+                status_code=415,
+                detail="Use application/json or multipart/form-data",
+            )
+
+        if not (content and str(content).strip()) and not attachments_data:
+            raise HTTPException(status_code=400, detail="EMPTY_MESSAGE")
+
         new_message = chat_service.create_message(
             db,
             conversation_id,
             user_id,
-            body.content,
-            reply_to_message_id=body.reply_to_message_id,
+            content=content,
+            reply_to_message_id=reply_to_message_id,
+            attachments_data=attachments_data,
         )
-        
-        participants = chat_service._get_conversation_participants(db, conversation_id)
-        for p in participants:
-            await manager.send_personal_message(
-                {"type": "message", "data": new_message.model_dump(mode="json")}, 
-                p.user_id
-            )
-            
+        await _broadcast_new_message(db, conversation_id, new_message)
         return new_message
+    except HTTPException:
+        raise
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except PermissionError:

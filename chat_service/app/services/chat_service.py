@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
-
+from typing import Sequence
 
 from sqlalchemy import desc, func
-from sqlalchemy.orm import Session
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import Session, aliased, joinedload
 
 from app.models import (
+    Attachment,
     Conversation,
     ConversationParticipant,
     ConversationType,
@@ -13,15 +13,51 @@ from app.models import (
     MessageType,
 )
 from app.schemas.chat import (
+    AttachmentOut,
     ConversationOut,
     MessageOut,
     ParticipantOut,
-    UserBrief,
 )
 from app.services.user_client import fetch_users_by_ids
 
 
+def _mime_to_message_type(mime_type: str | None) -> MessageType:
+    mime = (mime_type or "").lower()
+    if mime.startswith("image/"):
+        return MessageType.IMAGE
+    if mime.startswith("video/"):
+        return MessageType.VIDEO
+    if mime.startswith("audio/"):
+        return MessageType.AUDIO
+    return MessageType.FILE
+
+
+def _resolve_message_type(
+    content: str | None,
+    attachment_mime_types: Sequence[str | None],
+) -> MessageType:
+    if not attachment_mime_types:
+        return MessageType.TEXT
+
+    types = {_mime_to_message_type(m) for m in attachment_mime_types}
+    if len(types) == 1:
+        return next(iter(types))
+    # Nhiều loại file khác nhau trong cùng một tin nhắn -> FILE
+    return MessageType.FILE
+
+
+def _serialize_attachment(attachment: Attachment) -> AttachmentOut:
+    return AttachmentOut(
+        id=attachment.id,
+        file_name=attachment.file_name,
+        file_url=attachment.file_url,
+        mime_type=attachment.mime_type,
+        size=attachment.size,
+    )
+
+
 def _serialize_message(message: Message) -> MessageOut:
+    attachments = [_serialize_attachment(a) for a in (message.attachments or [])]
     return MessageOut(
         id=message.id,
         conversation_id=message.conversation_id,
@@ -35,6 +71,7 @@ def _serialize_message(message: Message) -> MessageOut:
             if message.created_at
             else None
         ),
+        attachments=attachments,
     )
 
 
@@ -430,8 +467,10 @@ def list_messages(
     if not user_is_participant(db, conversation_id, user_id):
         raise PermissionError("NOT_PARTICIPANT")
 
-    query = db.query(Message).filter(
-        Message.conversation_id == conversation_id,
+    query = (
+        db.query(Message)
+        .options(joinedload(Message.attachments))
+        .filter(Message.conversation_id == conversation_id)
     )
 
     if before_id:
@@ -459,13 +498,13 @@ def create_system_message(
         type=MessageType.SYSTEM,
     )
     db.add(message)
-    
+
     conversation = (
         db.query(Conversation).filter(Conversation.id == conversation_id).first()
     )
     if conversation:
         conversation.updated_at = datetime.utcnow()
-        
+
     db.commit()
     db.refresh(message)
     return _serialize_message(message)
@@ -475,11 +514,24 @@ def create_message(
     db: Session,
     conversation_id: int,
     sender_id: int,
-    content: str,
+    content: str | None = None,
     reply_to_message_id: int | None = None,
+    attachments_data: list[dict] | None = None,
 ) -> MessageOut:
+    """
+    Tạo tin nhắn text và/hoặc kèm file.
+
+    attachments_data: danh sách dict đã upload xong lên R2, mỗi item gồm:
+        file_name, file_url, mime_type, size, duration?, thumbnail_url?
+    """
     if not user_is_participant(db, conversation_id, sender_id):
         raise PermissionError("NOT_PARTICIPANT")
+
+    text = (content or "").strip() or None
+    attachments_data = attachments_data or []
+
+    if not text and not attachments_data:
+        raise ValueError("EMPTY_MESSAGE")
 
     if reply_to_message_id is not None:
         reply_to = (
@@ -493,23 +545,39 @@ def create_message(
         if not reply_to:
             raise ValueError("REPLY_MESSAGE_NOT_FOUND")
 
+    message_type = _resolve_message_type(
+        text,
+        [a.get("mime_type") for a in attachments_data],
+    )
+
     message = Message(
         conversation_id=conversation_id,
         sender_id=sender_id,
-        content=content.strip(),
-        type=MessageType.TEXT,
+        content=text,
+        type=message_type,
         reply_to_message_id=reply_to_message_id,
     )
     db.add(message)
+    db.flush()
 
-    conversation = (
-        db.query(Conversation).filter(Conversation.id == conversation_id).first()
-    )
-    if conversation:
-        conversation.updated_at = datetime.utcnow()
+    for item in attachments_data:
+        db.add(
+            Attachment(
+                message_id=message.id,
+                file_name=item["file_name"],
+                file_url=item["file_url"],
+                mime_type=item.get("mime_type") or "application/octet-stream",
+                size=item.get("size") or 0,
+            )
+        )
 
     db.commit()
-    db.refresh(message)
+    message = (
+        db.query(Message)
+        .options(joinedload(Message.attachments))
+        .filter(Message.id == message.id)
+        .first()
+    )
 
     return _serialize_message(message)
 
@@ -538,7 +606,12 @@ def update_message(
 
     message.content = content.strip()
     db.commit()
-    db.refresh(message)
+    message = (
+        db.query(Message)
+        .options(joinedload(Message.attachments))
+        .filter(Message.id == message.id)
+        .first()
+    )
     return _serialize_message(message)
 
 
@@ -564,7 +637,12 @@ def delete_message(
     message.is_deleted = True
     message.content = "This message has been deleted by the user."
     db.commit()
-    db.refresh(message)
+    message = (
+        db.query(Message)
+        .options(joinedload(Message.attachments))
+        .filter(Message.id == message.id)
+        .first()
+    )
     return _serialize_message(message)
 
 
