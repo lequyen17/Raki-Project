@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AuthContext } from "../../../context/AuthContext.js";
 import "./Header.css";
-import Button from "../../../components/Common/Button/Button.js";
 
 const Header = () => {
   const { t } = useTranslation();
@@ -106,44 +105,109 @@ const Header = () => {
             <div className="raki-profile" ref={menuRef}>
               <button
                 type="button"
-                className="raki-profile__toggle"
+                className={`raki-profile__toggle${menuOpen ? " raki-profile__toggle--open" : ""}`}
                 onClick={handleToggleMenu}
+                aria-expanded={menuOpen}
+                aria-haspopup="menu"
               >
-                {currentUser.username}
+                {currentUser.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt=""
+                    className="raki-profile__avatar"
+                  />
+                ) : (
+                  <span
+                    className="raki-profile__avatar raki-profile__avatar--fallback"
+                    aria-hidden="true"
+                  >
+                    {(
+                      currentUser.first_name ||
+                      currentUser.username ||
+                      "?"
+                    )
+                      .charAt(0)
+                      .toUpperCase()}
+                  </span>
+                )}
+                <span className="raki-profile__name">{currentUser.username}</span>
+                <span className="raki-profile__caret" aria-hidden="true" />
               </button>
 
               {menuOpen && (
-                <div className="raki-profile__menu">
+                <div className="raki-profile__menu" role="menu">
+                  <div className="raki-profile__menu-head">
+                    {currentUser.avatar ? (
+                      <img
+                        src={currentUser.avatar}
+                        alt=""
+                        className="raki-profile__menu-avatar"
+                      />
+                    ) : (
+                      <span className="raki-profile__menu-avatar raki-profile__menu-avatar--fallback">
+                        {(
+                          currentUser.first_name ||
+                          currentUser.username ||
+                          "?"
+                        )
+                          .charAt(0)
+                          .toUpperCase()}
+                      </span>
+                    )}
+                    <div className="raki-profile__menu-meta">
+                      <span className="raki-profile__menu-username">
+                        {currentUser.username}
+                      </span>
+                      {(currentUser.first_name || currentUser.last_name) && (
+                        <span className="raki-profile__menu-fullname">
+                          {[currentUser.first_name, currentUser.last_name]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
                   <button
+                    type="button"
                     className="raki-profile__item"
+                    role="menuitem"
                     onClick={handleDecksClick}
                   >
                     {t("header.my_decks")}
                   </button>
 
                   <button
+                    type="button"
                     className="raki-profile__item"
+                    role="menuitem"
                     onClick={handleProfileClick}
                   >
                     {t("header.my_profile")}
                   </button>
 
                   <button
+                    type="button"
                     className="raki-profile__item"
+                    role="menuitem"
                     onClick={handleWalletClick}
                   >
                     {t("header.wallet")}
                   </button>
 
                   <button
+                    type="button"
                     className="raki-profile__item"
+                    role="menuitem"
                     onClick={handleSettingClick}
                   >
                     {t("header.settings")}
                   </button>
 
                   <button
+                    type="button"
                     className="raki-profile__item raki-profile__item--danger"
+                    role="menuitem"
                     onClick={logout}
                   >
                     {t("header.logout")}

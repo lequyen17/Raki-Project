@@ -86,47 +86,171 @@
 /* ===== PROFILE (KHI ĐÃ LOGGED IN) ===== */
 .raki-profile {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .raki-profile__toggle {
+  box-sizing: border-box;
+  height: 40px;
   border: 1px solid #334155;
   background: #273449;
   color: #e2e8f0;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 0 10px 0 4px;
+  border-radius: 999px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 220px;
 }
 
-.raki-profile__toggle:hover {
+.raki-profile__toggle:hover,
+.raki-profile__toggle--open {
   background: #334155;
   border-color: #60a5fa;
+}
+
+.raki-profile__avatar {
+  box-sizing: border-box;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+  background: #475569;
+}
+
+.raki-profile__avatar--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #e2e8f0;
+}
+
+.raki-profile__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.raki-profile__caret {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #94a3b8;
+  flex-shrink: 0;
+  margin-left: 2px;
+  transition: transform 0.15s ease;
+}
+
+.raki-profile__toggle--open .raki-profile__caret {
+  transform: rotate(180deg);
 }
 
 /* DROPDOWN MENU */
 .raki-profile__menu {
   position: absolute;
   right: 0;
-  top: calc(100% + 10px);
-  width: 180px;
+  top: calc(100% + 8px);
+  width: 220px;
   background: #1f2937;
   border: 1px solid #334155;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
   overflow: hidden;
+  z-index: 120;
   animation: dropdownFade 0.15s ease;
 }
 
+.raki-profile__menu-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #334155;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.raki-profile__menu-avatar {
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+  background: #475569;
+}
+
+.raki-profile__menu-avatar--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #e2e8f0;
+}
+
+.raki-profile__menu-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.raki-profile__menu-username {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.raki-profile__menu-fullname {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .raki-profile__item {
+  box-sizing: border-box;
   width: 100%;
-  padding: 10px 15px;
+  height: 40px;
+  padding: 0 14px;
   border: none;
   background: transparent;
   text-align: left;
   cursor: pointer;
-  font-size: 0.9rem;
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1;
   color: #e5e7eb;
+  display: flex;
+  align-items: center;
 }
 
 .raki-profile__item:hover {
@@ -138,6 +262,11 @@
   color: #f87171;
   border-top: 1px solid #334155;
 }
+
+.raki-profile__item--danger:hover {
+  color: #fca5a5;
+}
+
 
 .raki-header__inner {
   display: flex;
