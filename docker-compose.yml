@@ -74,6 +74,16 @@ services:
       R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
 
+  raki-java:
+    build: ./raki_java
+    container_name: raki-java
+    expose:
+      - "8080"
+    volumes:
+      - ./raki_java:/app             # Mount toàn bộ thư mục code hiện tại vào /app trong container
+      - ~/.m2:/root/.m2    # Giữ lại cache thư viện Maven trên máy thật để tránh container tải lại từ đầu mỗi khi khởi động
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
 
   backend:
     image: 103487/raki-backend:v3.0
