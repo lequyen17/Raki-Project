@@ -54,6 +54,20 @@ def _build_object_key(
     return f"chat/{conversation_id}/{uuid.uuid4().hex}_{safe_name}"
 
 
+def _build_avatar_key(conversation_id: int, original_filename: str) -> str:
+    safe_name = PurePosixPath(original_filename or "avatar.jpg").name
+    return f"chat/{conversation_id}/avatar/{uuid.uuid4().hex}_{safe_name}"
+
+
+ALLOWED_AVATAR_CONTENT_TYPES = {
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+}
+
+
 def upload_bytes(
     *,
     data: bytes,
@@ -89,6 +103,47 @@ def upload_bytes(
         )
     except (BotoCoreError, ClientError) as exc:
         logger.exception("R2 upload failed: %s", exc)
+        raise RuntimeError("R2_UPLOAD_FAILED") from exc
+
+    public_base = config.R2_PUBLIC_URL.rstrip("/")
+    return f"{public_base}/{key}"
+
+
+def upload_conversation_avatar(
+    *,
+    data: bytes,
+    conversation_id: int,
+    filename: str,
+    content_type: str | None = None,
+) -> str:
+    """Upload ảnh đại diện cuộc trò chuyện lên R2."""
+    if not data:
+        raise ValueError("EMPTY_FILE")
+
+    max_avatar_size = min(config.MAX_UPLOAD_SIZE, 5 * 1024 * 1024)
+    if len(data) > max_avatar_size:
+        raise ValueError("FILE_TOO_LARGE")
+
+    normalized_type = (content_type or "").split(";")[0].strip().lower()
+    if normalized_type and normalized_type not in ALLOWED_AVATAR_CONTENT_TYPES:
+        raise ValueError("INVALID_AVATAR_TYPE")
+
+    key = _build_avatar_key(conversation_id, filename)
+    client = _get_r2_client()
+
+    extra_args: dict = {}
+    if content_type:
+        extra_args["ContentType"] = content_type
+
+    try:
+        client.put_object(
+            Bucket=config.R2_BUCKET_NAME,
+            Key=key,
+            Body=data,
+            **extra_args,
+        )
+    except (BotoCoreError, ClientError) as exc:
+        logger.exception("R2 conversation avatar upload failed: %s", exc)
         raise RuntimeError("R2_UPLOAD_FAILED") from exc
 
     public_base = config.R2_PUBLIC_URL.rstrip("/")

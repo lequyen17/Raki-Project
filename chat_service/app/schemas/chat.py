@@ -116,6 +116,11 @@ class ConversationUpdateName(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
 
 
+class ConversationAvatarOut(BaseModel):
+    id: int
+    avatar: Optional[str] = None
+
+
 class MembersAddBody(BaseModel):
     participant_ids: list[int] = Field(default_factory=list)
 

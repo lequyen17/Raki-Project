@@ -177,7 +177,10 @@ function Chat() {
   const [memberSearchQuery, setMemberSearchQuery] = useState("");
   const [memberSearchResults, setMemberSearchResults] = useState([]);
   const [memberSearching, setMemberSearching] = useState(false);
+  const [isUploadingConversationAvatar, setIsUploadingConversationAvatar] =
+    useState(false);
   const memberSearchTimeoutRef = useRef(null);
+  const conversationAvatarInputRef = useRef(null);
 
   const isCurrentUserAdmin = useMemo(() => {
     const list = conversationDetail?.participants || [];
@@ -322,7 +325,24 @@ function Chat() {
               setParticipants(payload.data.participants || []);
               setRenameValue(payload.data.name || "");
               setActiveConversation((prev) =>
-                prev ? { ...prev, name: payload.data.name } : prev,
+                prev
+                  ? {
+                      ...prev,
+                      name: payload.data.name,
+                      avatar: payload.data.avatar,
+                    }
+                  : prev,
+              );
+              setConversations((prev) =>
+                prev.map((conv) =>
+                  conv.id === payload.data.id
+                    ? {
+                        ...conv,
+                        name: payload.data.name,
+                        avatar: payload.data.avatar,
+                      }
+                    : conv,
+                ),
               );
             }
             return;
@@ -757,6 +777,73 @@ function Chat() {
     [participants],
   );
 
+  const applyConversationAvatar = useCallback((conversationId, avatarUrl) => {
+    setActiveConversation((prev) =>
+      prev && prev.id === conversationId ? { ...prev, avatar: avatarUrl } : prev,
+    );
+    setConversationDetail((prev) =>
+      prev && prev.id === conversationId ? { ...prev, avatar: avatarUrl } : prev,
+    );
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.id === conversationId ? { ...conv, avatar: avatarUrl } : conv,
+      ),
+    );
+  }, []);
+
+  const handleConversationAvatarClick = () => {
+    if (isUploadingConversationAvatar) return;
+    conversationAvatarInputRef.current?.click();
+  };
+
+  const handleConversationAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !activeConversation) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error(t("chat.conversation_avatar_type_error"));
+      return;
+    }
+
+    try {
+      setIsUploadingConversationAvatar(true);
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const res = await chatApi.post(
+        `/conversations/${activeConversation.id}/avatar`,
+        formData,
+        {
+          transformRequest: [
+            (data, headers) => {
+              if (headers && typeof headers.delete === "function") {
+                headers.delete("Content-Type");
+              } else if (headers) {
+                delete headers["Content-Type"];
+              }
+              return data;
+            },
+          ],
+        },
+      );
+
+      const avatarUrl = res.data?.avatar;
+      if (!avatarUrl) {
+        toast.error(t("chat.conversation_avatar_upload_error"));
+        return;
+      }
+
+      applyConversationAvatar(activeConversation.id, avatarUrl);
+      toast.success(t("chat.conversation_avatar_upload_success"));
+    } catch (err) {
+      console.error(err);
+      toast.error(t("chat.conversation_avatar_upload_error"));
+    } finally {
+      setIsUploadingConversationAvatar(false);
+    }
+  };
+
   const handleUpdateConversationName = async () => {
     if (!activeConversation || !renameValue.trim()) return;
     try {
@@ -767,15 +854,23 @@ function Chat() {
         },
       );
       setActiveConversation((prev) =>
-        prev ? { ...prev, name: res.data.name } : prev,
+        prev
+          ? { ...prev, name: res.data.name, avatar: res.data.avatar ?? prev.avatar }
+          : prev,
       );
       setConversationDetail((prev) =>
-        prev ? { ...prev, name: res.data.name } : prev,
+        prev
+          ? { ...prev, name: res.data.name, avatar: res.data.avatar ?? prev.avatar }
+          : prev,
       );
       setConversations((prev) =>
         prev.map((conv) =>
           conv.id === activeConversation.id
-            ? { ...conv, name: res.data.name }
+            ? {
+                ...conv,
+                name: res.data.name,
+                avatar: res.data.avatar ?? conv.avatar,
+              }
             : conv,
         ),
       );
@@ -1621,6 +1716,64 @@ function Chat() {
               </button>
             </div>
             <div className="chat-modal__body">
+              <div className="chat-conversation-info__avatar-section">
+                <div
+                  className={`chat-conversation-info__avatar-wrap${isUploadingConversationAvatar ? " chat-conversation-info__avatar-wrap--loading" : ""}`}
+                >
+                  {conversationDetail.avatar ? (
+                    <img
+                      src={conversationDetail.avatar}
+                      alt={conversationTitle(conversationDetail, t)}
+                      className="chat-conversation-info__avatar"
+                    />
+                  ) : (
+                    <span className="chat-conversation-info__avatar chat-conversation-info__avatar--fallback">
+                      {(conversationTitle(conversationDetail, t) || "?")
+                        .charAt(0)
+                        .toUpperCase()}
+                    </span>
+                  )}
+                  {isUploadingConversationAvatar && (
+                    <span className="chat-conversation-info__avatar-loading">
+                      {t("common.loading")}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="chat-conversation-info__avatar-edit"
+                    onClick={handleConversationAvatarClick}
+                    disabled={isUploadingConversationAvatar}
+                    aria-label={t("chat.change_conversation_avatar")}
+                    title={t("chat.change_conversation_avatar")}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                  </button>
+                </div>
+                <p className="chat-conversation-info__avatar-hint">
+                  {t("chat.conversation_avatar_hint")}
+                </p>
+                <input
+                  ref={conversationAvatarInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                  className="chat-conversation-info__avatar-input"
+                  onChange={handleConversationAvatarChange}
+                />
+              </div>
+
               <p>
                 <strong>Ngày tạo:</strong>{" "}
                 {formatDateTime(conversationDetail.created_at)}

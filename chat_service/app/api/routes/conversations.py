@@ -9,6 +9,7 @@ from app.schemas.chat import (
     ConversationListResponse,
     ConversationOut,
     ConversationUpdateName,
+    ConversationAvatarOut,
     MembersAddBody,
     MemberAdminUpdateBody,
     GroupConversationCreate,
@@ -194,6 +195,68 @@ async def update_conversation_name(
         is_deleted=None,
         message_created_at=None,
     )
+
+
+@router.post("/{conversation_id}/avatar", response_model=ConversationAvatarOut)
+async def upload_conversation_avatar(
+    conversation_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    """
+    Upload ảnh đại diện cuộc trò chuyện lên Cloudflare R2.
+    Ảnh lưu vào conversation.avatar — hiển thị chung cho mọi thành viên.
+    """
+    content_type = (request.headers.get("content-type") or "").lower()
+    if "multipart/form-data" not in content_type:
+        raise HTTPException(status_code=400, detail="AVATAR_REQUIRED")
+
+    form = await request.form()
+    upload = form.get("avatar")
+    if not upload or not hasattr(upload, "read"):
+        raise HTTPException(status_code=400, detail="AVATAR_REQUIRED")
+
+    data = await upload.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="EMPTY_FILE")
+
+    mime_type = getattr(upload, "content_type", None) or "image/jpeg"
+    filename = getattr(upload, "filename", None) or "avatar.jpg"
+
+    try:
+        avatar_url = storage_service.upload_conversation_avatar(
+            data=data,
+            conversation_id=conversation_id,
+            filename=filename,
+            content_type=mime_type,
+        )
+        conversation = chat_service.update_conversation_avatar(
+            db, conversation_id, user_id, avatar_url
+        )
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="NOT_PARTICIPANT")
+    except ValueError as exc:
+        detail = str(exc)
+        if detail == "FILE_TOO_LARGE":
+            raise HTTPException(status_code=413, detail="FILE_TOO_LARGE")
+        if detail == "CONVERSATION_NOT_FOUND":
+            raise HTTPException(status_code=404, detail=detail)
+        raise HTTPException(status_code=400, detail=detail)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    user_map = fetch_users_by_ids([user_id])
+    username = (
+        user_map.get(user_id).username if user_map.get(user_id) else f"user_{user_id}"
+    )
+    sys_msg = chat_service.create_system_message(
+        db, conversation_id, f"{username} đã đổi ảnh đại diện đoạn chat"
+    )
+    await _broadcast_system_message(db, conversation_id, sys_msg)
+    await _broadcast_conversation_update(db, conversation_id)
+
+    return ConversationAvatarOut(id=conversation.id, avatar=conversation.avatar)
 
 
 @router.post("/{conversation_id}/members")

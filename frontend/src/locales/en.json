@@ -60,7 +60,12 @@
         "remove_from_group": "Remove",
         "no_group_members_selected": "No members selected.",
         "seen": "Seen by",
-        "sent": "Sent"
+        "sent": "Sent",
+        "change_conversation_avatar": "Change conversation photo",
+        "conversation_avatar_hint": "This photo is visible to all members",
+        "conversation_avatar_upload_success": "Conversation photo updated",
+        "conversation_avatar_upload_error": "Could not upload conversation photo",
+        "conversation_avatar_type_error": "Please select an image file"
     },
     "community": {
         "title": "Community Decks",

@@ -177,6 +177,36 @@ def update_group_name(
     return conversation
 
 
+def update_conversation_avatar(
+    db: Session,
+    conversation_id: int,
+    user_id: int,
+    avatar_url: str,
+) -> Conversation:
+    participant = (
+        db.query(ConversationParticipant)
+        .filter(
+            ConversationParticipant.conversation_id == conversation_id,
+            ConversationParticipant.user_id == user_id,
+            ConversationParticipant.left_at.is_(None),
+        )
+        .first()
+    )
+    if not participant:
+        raise PermissionError("NOT_PARTICIPANT")
+
+    conversation = (
+        db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    )
+    if not conversation:
+        raise ValueError("CONVERSATION_NOT_FOUND")
+
+    conversation.avatar = avatar_url
+    db.commit()
+    db.refresh(conversation)
+    return conversation
+
+
 def leave_group(db: Session, conversation_id: int, user_id: int) -> None:
     participant = (
         db.query(ConversationParticipant)

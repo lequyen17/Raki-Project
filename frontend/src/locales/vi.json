@@ -59,7 +59,12 @@
         "remove_from_group": "Bỏ",
         "no_group_members_selected": "Chưa chọn thành viên nào.",
         "seen": "Đã xem bởi",
-        "sent": "Đã gửi"
+        "sent": "Đã gửi",
+        "change_conversation_avatar": "Đổi ảnh đoạn chat",
+        "conversation_avatar_hint": "Ảnh hiển thị chung cho tất cả thành viên",
+        "conversation_avatar_upload_success": "Đã cập nhật ảnh đoạn chat",
+        "conversation_avatar_upload_error": "Không thể tải ảnh đoạn chat",
+        "conversation_avatar_type_error": "Vui lòng chọn file ảnh"
     },
     "community": {
         "title": "Bộ thẻ cộng đồng",
