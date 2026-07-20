@@ -126,11 +126,16 @@ def get_conversation_detail(db: Session, conversation_id: int, user_id: int) -> 
     creator = creator_map.get(conversation.created_by)
     creator_name = creator.username if creator else f"user_{conversation.created_by}"
 
+    avatar = conversation.avatar
+    if not avatar and conversation.type == ConversationType.PRIVATE:
+        other = next((p for p in participants if p.user_id != user_id), None)
+        avatar = other.avatar if other else None
+
     return {
         "id": conversation.id,
         "type": conversation.type.value,
         "name": conversation.name,
-        "avatar": conversation.avatar,
+        "avatar": avatar,
         "created_at": (
             conversation.created_at.replace(tzinfo=timezone.utc)
             if conversation.created_at
@@ -333,16 +338,48 @@ def list_conversations(db: Session, user_id: int) -> list[ConversationOut]:
         .all()
     )
 
+    # Với private chat: lấy avatar người đối diện từ Django profile
+    private_ids = [
+        conversation.id
+        for conversation, _ in conversations
+        if conversation.type == ConversationType.PRIVATE and not conversation.avatar
+    ]
+    other_user_by_conv: dict[int, int] = {}
+    if private_ids:
+        other_participants = (
+            db.query(ConversationParticipant)
+            .filter(
+                ConversationParticipant.conversation_id.in_(private_ids),
+                ConversationParticipant.user_id != user_id,
+                ConversationParticipant.left_at.is_(None),
+            )
+            .all()
+        )
+        for participant in other_participants:
+            other_user_by_conv[participant.conversation_id] = participant.user_id
+
+        users_map = fetch_users_by_ids(list(other_user_by_conv.values()))
+    else:
+        users_map = {}
+
     results: list[ConversationOut] = []
 
     for conversation, last_message in conversations:
+        avatar = conversation.avatar
+        if (
+            not avatar
+            and conversation.type == ConversationType.PRIVATE
+            and conversation.id in other_user_by_conv
+        ):
+            other_user = users_map.get(other_user_by_conv[conversation.id])
+            avatar = other_user.avatar if other_user else None
 
         results.append(
             ConversationOut(
                 id=conversation.id,
                 type=conversation.type.value,
                 name=conversation.name,
-                avatar=conversation.avatar,
+                avatar=avatar,
                 last_message_id=last_message.id if last_message else None,
                 sender_id=last_message.sender_id if last_message else None,
                 message_type=last_message.type.value if last_message else None,

@@ -25,6 +25,11 @@ class UserProfileUpdateSerializer(serializers.Serializer):
             )
         ],
     )
+    # CharField thay vì URLField: URL R2 có thể dài / dạng public domain
+    # không luôn pass Django URLValidator mặc định.
+    avatar = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, max_length=500
+    )
 
     def validate(self, attrs):
         user = self.context["user"]
@@ -35,8 +40,16 @@ class UserProfileUpdateSerializer(serializers.Serializer):
 
         try:
             phone = str(attrs.get("phone", user.profile.phone or "")).strip()
+            current_avatar = user.profile.avatar or ""
         except AttributeError:
             phone = str(attrs.get("phone", "")).strip()
+            current_avatar = ""
+
+        if "avatar" in attrs:
+            avatar_raw = attrs.get("avatar")
+            avatar = str(avatar_raw).strip() if avatar_raw else ""
+        else:
+            avatar = current_avatar
 
         if email != user.email:
 
@@ -48,6 +61,7 @@ class UserProfileUpdateSerializer(serializers.Serializer):
             "first_name": first_name,
             "last_name": last_name,
             "phone": phone,
+            "avatar": avatar or None,
         }
 
 
@@ -111,6 +125,7 @@ class CurrentUserSerializer(serializers.Serializer):
     username = serializers.CharField()
     first_name = serializers.CharField()
     last_name = serializers.CharField()
+    avatar = serializers.URLField(allow_null=True, required=False)
 
 
 class UserProfileSerializer(serializers.Serializer):
@@ -120,9 +135,14 @@ class UserProfileSerializer(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     phone = serializers.CharField()
+    avatar = serializers.URLField(allow_null=True, required=False)
     total_cards = serializers.IntegerField()
     total_learned_cards = serializers.IntegerField()
     is_staff = serializers.BooleanField()
+
+
+class AvatarUploadResponseSerializer(serializers.Serializer):
+    avatar = serializers.URLField()
 
 
 class RegisteredUserSerializer(serializers.Serializer):

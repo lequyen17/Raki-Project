@@ -189,3 +189,14 @@ REDIS_DB = 0
 MAIL_SERVICE_URL = "http://mail-service:8000"
 CHAT_SERVICE_URL = "http://chat-service:8000"
 INTERNAL_API_TOKEN = "dev-secret-internal-token"
+
+# ---------------------------------------------------------------------------
+# Cloudflare R2 (S3-compatible) — dùng chung biến môi trường với chat-service
+# ---------------------------------------------------------------------------
+R2_ACCOUNT_ID = os.getenv("R2_ACCOUNT_ID", "")
+R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID", "")
+R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY", "")
+R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME", "")
+R2_ENDPOINT_URL = os.getenv("R2_ENDPOINT_URL", "")
+R2_PUBLIC_URL = os.getenv("R2_PUBLIC_URL", "")
+MAX_AVATAR_UPLOAD_SIZE = int(os.getenv("MAX_AVATAR_UPLOAD_SIZE", str(5 * 1024 * 1024)))

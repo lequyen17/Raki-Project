@@ -78,11 +78,14 @@ async def create_conversation(
 
     await _broadcast_conversation_update(db, conversation.id)
 
+    other_users = fetch_users_by_ids([body.other_user_id])
+    other_user = other_users.get(body.other_user_id)
+
     return ConversationOut(
         id=conversation.id,
         type=conversation.type.value,
         name=conversation.name,
-        avatar=None,
+        avatar=other_user.avatar if other_user else None,
         last_message_id=None,
         sender_id=None,
         message_type=None,

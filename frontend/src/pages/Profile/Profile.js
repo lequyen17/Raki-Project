@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useCallback } from "react";
+import React, { useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AuthContext } from "../../context/AuthContext";
@@ -17,8 +17,46 @@ const Profile = () => {
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [editData, setEditData] = useState({});
   const [formErrors, setFormErrors] = useState({});
+  const avatarInputRef = useRef(null);
+
+  const syncLocalUser = useCallback(
+    (user) => {
+      localStorage.setItem("user_data", JSON.stringify(user));
+      setCurrentUser((prev) => ({
+        ...(prev || {}),
+        id: user.id,
+        username: user.username,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        avatar: user.avatar,
+      }));
+    },
+    [setCurrentUser],
+  );
+
+  const applyAvatarUrl = useCallback(
+    (avatarUrl) => {
+      setProfileData((prev) => (prev ? { ...prev, avatar: avatarUrl } : prev));
+      setEditData((prev) => ({ ...prev, avatar: avatarUrl }));
+      setCurrentUser((prev) => (prev ? { ...prev, avatar: avatarUrl } : prev));
+      const saved = localStorage.getItem("user_data");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          localStorage.setItem(
+            "user_data",
+            JSON.stringify({ ...parsed, avatar: avatarUrl }),
+          );
+        } catch (_) {
+          /* ignore */
+        }
+      }
+    },
+    [setCurrentUser],
+  );
 
   const fetchProfileData = useCallback(async () => {
     try {
@@ -35,7 +73,8 @@ const Profile = () => {
         email: res.data.email,
         first_name: res.data.first_name,
         last_name: res.data.last_name,
-        phone: res.data.phone,
+        phone: res.data.phone || "",
+        avatar: res.data.avatar || "",
       });
       setError("");
     } catch (err) {
@@ -85,6 +124,61 @@ const Profile = () => {
     return errors;
   };
 
+  const handleAvatarEditClick = (e) => {
+    e.stopPropagation();
+    if (isUploadingAvatar) return;
+    avatarInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError(t("profile.error_avatar_type"));
+      return;
+    }
+
+    try {
+      setIsUploadingAvatar(true);
+      setError("");
+
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const res = await api.post("/api/profile/avatar/", formData, {
+        transformRequest: [
+          (data, headers) => {
+            if (headers && typeof headers.delete === "function") {
+              headers.delete("Content-Type");
+            } else if (headers) {
+              delete headers["Content-Type"];
+            }
+            return data;
+          },
+        ],
+      });
+
+      const avatarUrl = res.data?.avatar;
+      if (!avatarUrl) {
+        setError(t("profile.error_avatar_upload"));
+        return;
+      }
+
+      applyAvatarUrl(avatarUrl);
+    } catch (err) {
+      const errorCode = getApiErrorCode(err.response?.data);
+      if (errorCode) {
+        setError(mapApiError(errorCode, t, "profile.error_avatar_upload"));
+      } else {
+        setError(t("profile.error_avatar_upload"));
+      }
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     const errors = validateForm();
 
@@ -97,12 +191,24 @@ const Profile = () => {
       setIsSaving(true);
       setError("");
 
-      const res = await api.put("/api/profile/", editData);
+      // Chỉ cập nhật thông tin text — avatar đổi riêng qua POST /api/profile/avatar/
+      const res = await api.put("/api/profile/", {
+        email: editData.email,
+        first_name: editData.first_name,
+        last_name: editData.last_name,
+        phone: editData.phone,
+      });
 
       if (res.data.success) {
         setProfileData(res.data.user);
-        localStorage.setItem("user_data", JSON.stringify(res.data.user));
-        setCurrentUser(res.data.user);
+        setEditData({
+          email: res.data.user.email,
+          first_name: res.data.user.first_name,
+          last_name: res.data.user.last_name,
+          phone: res.data.user.phone || "",
+          avatar: res.data.user.avatar || "",
+        });
+        syncLocalUser(res.data.user);
         setIsEditing(false);
       }
     } catch (err) {
@@ -120,11 +226,13 @@ const Profile = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setError("");
+    setFormErrors({});
     setEditData({
       email: profileData.email,
       first_name: profileData.first_name,
       last_name: profileData.last_name,
-      phone: profileData.phone,
+      phone: profileData.phone || "",
+      avatar: profileData.avatar || "",
     });
   };
 
@@ -144,12 +252,71 @@ const Profile = () => {
     );
   }
 
+  const displayAvatar = profileData.avatar;
+  const avatarInitial =
+    (profileData.first_name || profileData.username || "?").charAt(0).toUpperCase();
+
   return (
     <div className="profile-container">
       <div className="profile-card">
         <h1 className="profile-title">{t("profile.title")}</h1>
 
         {error && <div className="error-box">{error}</div>}
+
+        <div className="profile-avatar-section">
+          <div
+            className={`profile-avatar-wrap${isUploadingAvatar ? " profile-avatar-wrap--loading" : ""}`}
+          >
+            <div className="profile-avatar-frame" aria-hidden={false}>
+              {displayAvatar ? (
+                <img
+                  src={displayAvatar}
+                  alt={profileData.username}
+                  className="profile-avatar-frame__image"
+                />
+              ) : (
+                <span className="profile-avatar-frame__fallback">
+                  {avatarInitial}
+                </span>
+              )}
+              {isUploadingAvatar && (
+                <span className="profile-avatar-frame__loading">
+                  {t("common.loading")}
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              className="profile-avatar-edit-btn"
+              onClick={handleAvatarEditClick}
+              disabled={isUploadingAvatar}
+              aria-label={t("profile.change_avatar")}
+              title={t("profile.change_avatar")}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+              </svg>
+            </button>
+          </div>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+            className="profile-avatar-input"
+            onChange={handleAvatarChange}
+          />
+        </div>
 
         {!isEditing ? (
           <>
@@ -257,7 +424,7 @@ const Profile = () => {
             <div className="button-group">
               <Button
                 onClick={handleSaveProfile}
-                disabled={isSaving}
+                disabled={isSaving || isUploadingAvatar}
                 color="blue"
                 size="lg"
               >
@@ -266,7 +433,7 @@ const Profile = () => {
 
               <Button
                 onClick={handleCancel}
-                disabled={isSaving}
+                disabled={isSaving || isUploadingAvatar}
                 size="lg"
                 color="green"
               >

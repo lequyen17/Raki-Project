@@ -116,6 +116,11 @@ urlpatterns = [
         name="user_profile",
     ),
     path(
+        "api/profile/avatar/",
+        accounts_views.ProfileAvatarUploadView.as_view(),
+        name="user_profile_avatar",
+    ),
+    path(
         "api/wallet/",
         payment_views.WalletSummaryView.as_view(),
         name="wallet_summary",

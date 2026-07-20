@@ -52,8 +52,10 @@ class UserService:
                 profile.total_learned_cards = total_learned_cards
                 profile.save(update_fields=["total_learned_cards"])
             phone = profile.phone
+            avatar = profile.avatar
         except AttributeError:
             phone = ""
+            avatar = None
             total_learned_cards = 0
 
         return {
@@ -63,6 +65,7 @@ class UserService:
             "first_name": user.first_name,
             "last_name": user.last_name,
             "phone": phone,
+            "avatar": avatar,
             "total_cards": total_cards,
             "total_learned_cards": total_learned_cards,
             "is_staff": user.is_staff,
@@ -81,6 +84,8 @@ class UserService:
         # Update Profile
         profile = user.profile
         profile.phone = validated_data["phone"]
+        if "avatar" in validated_data:
+            profile.avatar = validated_data["avatar"]
         profile.save()
 
         # Lấy lại dữ liệu mới nhất để trả về
@@ -90,6 +95,37 @@ class UserService:
             "message": "Cập nhật hồ sơ thành công!",
             "user": profile_data,
         }
+
+    @staticmethod
+    @transaction.atomic
+    def upload_user_avatar(user, uploaded_file):
+        """Upload avatar lên Cloudflare R2 và lưu URL vào profile."""
+        from core.storage import upload_avatar_bytes
+
+        data = uploaded_file.read()
+        content_type = getattr(uploaded_file, "content_type", None) or "image/jpeg"
+        filename = getattr(uploaded_file, "name", None) or "avatar.jpg"
+
+        try:
+            avatar_url = upload_avatar_bytes(
+                data=data,
+                user_id=user.id,
+                filename=filename,
+                content_type=content_type,
+            )
+        except ValueError as exc:
+            code = str(exc)
+            if code in {"EMPTY_FILE", "FILE_TOO_LARGE", "INVALID_AVATAR_TYPE"}:
+                raise BadRequestException(code) from exc
+            raise BadRequestException("AVATAR_UPLOAD_FAILED") from exc
+        except RuntimeError as exc:
+            raise InternalServerException("R2_UPLOAD_FAILED") from exc
+
+        profile = user.profile
+        profile.avatar = avatar_url
+        profile.save(update_fields=["avatar"])
+
+        return {"avatar": avatar_url}
 
     # ------------------------------------------------------------------
     # OTP Registration Flow

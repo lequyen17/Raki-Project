@@ -403,6 +403,20 @@ function Chat() {
         );
         setConversationDetail(detailRes.data);
         setRenameValue(detailRes.data?.name || "");
+        if (detailRes.data?.avatar) {
+          setActiveConversation((prev) =>
+            prev && prev.id === conversation.id
+              ? { ...prev, avatar: detailRes.data.avatar }
+              : prev,
+          );
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.id === conversation.id
+                ? { ...conv, avatar: detailRes.data.avatar }
+                : conv,
+            ),
+          );
+        }
         const readRes = await chatApi.post(
           `/conversations/${conversation.id}/read`,
         );
@@ -1083,7 +1097,22 @@ function Chat() {
           ) : (
             <>
               <div className="chat-main__header">
-                <h2>{conversationTitle(activeConversation, t)}</h2>
+                <div className="chat-main__header-identity">
+                  {activeConversation.avatar ? (
+                    <img
+                      src={activeConversation.avatar}
+                      alt={conversationTitle(activeConversation, t)}
+                      className="chat-main__header-avatar"
+                    />
+                  ) : (
+                    <span className="chat-main__header-avatar chat-main__header-avatar--fallback">
+                      {(conversationTitle(activeConversation, t) || "?")
+                        .charAt(0)
+                        .toUpperCase()}
+                    </span>
+                  )}
+                  <h2>{conversationTitle(activeConversation, t)}</h2>
+                </div>
                 <div className="chat-main__header-actions">
                   <button
                     type="button"
