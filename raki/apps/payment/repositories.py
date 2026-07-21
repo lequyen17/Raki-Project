@@ -1,5 +1,5 @@
 from django.db import transaction
-from apps.payment.models import CoinHistory, PaymentHistory
+from apps.payment.models import CoinHistory
 
 
 class WalletRepository:
@@ -17,26 +17,29 @@ class WalletRepository:
 
     @staticmethod
     def get_payment_histories(user):
-        return PaymentHistory.objects.filter(user=user)
+        # return PaymentHistory.objects.filter(user=user)
+        return CoinHistory.objects.filter(user=user)
 
 
 class PaymentRepository:
 
     @staticmethod
     def create_payment(user, amount_vnd, coin_received, status="pending"):
-        return PaymentHistory.objects.create(
-            user=user,
-            amount_vnd=amount_vnd,
-            coin_received=coin_received,
-            status=status,
-        )
+        # return PaymentHistory.objects.create(
+        #     user=user,
+        #     amount_vnd=amount_vnd,
+        #     coin_received=coin_received,
+        #     status=status,
+        # )
+        return CoinHistory.objects.filter(user=user)
 
     @staticmethod
     def get_payment_by_id(payment_id, for_update=False):
-        qs = PaymentHistory.objects
-        if for_update:
-            qs = qs.select_for_update()
-        return qs.get(id=payment_id)
+        # qs = PaymentHistory.objects
+        # if for_update:
+        #     qs = qs.select_for_update()
+        # return qs.get(id=payment_id)
+        return CoinHistory.objects.filter(user=user)
 
     @staticmethod
     def update_payment_status(payment, status):

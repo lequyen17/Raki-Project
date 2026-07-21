@@ -31,40 +31,6 @@ class CoinTransaction(models.Model):
         return f"Tx #{self.id}: {self.buyer.username} bought {self.deck.name} for {self.coin} coins"
 
 
-class PaymentHistory(models.Model):
-    # Các trạng thái có thể có của một giao dịch nạp tiền
-    STATUS_CHOICES = [
-        ("pending", "Pending"),  # Đang chờ thanh toán
-        ("completed", "Completed"),  # Thành công
-        ("failed", "Failed"),  # Thất bại
-        ("canceled", "Canceled"),  # Hủy bỏ
-    ]
-
-    # Khóa ngoại liên kết tới User thực hiện nạp tiền
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="payment_histories"
-    )
-
-    # Số tiền nạp thực tế bằng VND (sử dụng DecimalField để chính xác tuyệt đối về tiền tệ)
-    amount_vnd = models.DecimalField(max_digits=12, decimal_places=2)
-
-    # Số lượng xu nhận được tương ứng sau khi nạp thành công
-    coin_received = models.PositiveIntegerField()
-
-    # Trạng thái của giao dịch thanh toán
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
-
-    # Thời gian tạo yêu cầu nạp tiền
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-        verbose_name_plural = "Payment Histories"
-
-    def __str__(self):
-        return f"Payment #{self.id} - {self.user.username}: {self.amount_vnd} VND ({self.status})"
-
-
 class CoinHistory(models.Model):
     REASON_CHOICES = [
         ("TOPUP", "Top Up"),
@@ -86,6 +52,8 @@ class CoinHistory(models.Model):
 
     # Lý do biến động số dư (Ví dụ: "Nạp tiền qua VNPay", "Mua bộ thẻ Oxford", "Nhận tiền bán thẻ",...)
     reason = models.CharField(max_length=100, choices=REASON_CHOICES)
+
+    reference_id = models.IntegerField(default=None, null=True, blank=True)
 
     # Thời gian biến động số dư xu
     created_at = models.DateTimeField(auto_now_add=True)

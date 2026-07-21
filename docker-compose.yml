@@ -74,16 +74,29 @@ services:
       R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
 
-  raki-java:
-    build: ./raki_java
-    container_name: raki-java
+  payment_service:
+    build: ./payment_service
+    container_name: payment-service
     expose:
       - "8080"
     volumes:
-      - ./raki_java:/app             # Mount toàn bộ thư mục code hiện tại vào /app trong container
-      - ~/.m2:/root/.m2    # Giữ lại cache thư viện Maven trên máy thật để tránh container tải lại từ đầu mỗi khi khởi động
+      - ./payment_service:/app             # Mount toàn bộ thư mục code hiện tại vào /app trong container
+      - ~/.m2:/root/.m2 
+    depends_on:
+      - payment_db   # Giữ lại cache thư viện Maven trên máy thật để tránh container tải lại từ đầu mỗi khi khởi động
+    
+
+  payment_db:
+    image: postgres:15-alpine
+    container_name: payment-db
     environment:
-      - SPRING_PROFILES_ACTIVE=dev
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    expose:
+      - "5432"
+    volumes:
+      - payment_postgres_data:/var/lib/postgresql/data
 
   backend:
     image: 103487/raki-backend:v3.0
@@ -158,3 +171,4 @@ services:
 volumes:
   postgres_data:
   chat_postgres_data:
+  payment_postgres_data:
