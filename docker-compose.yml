@@ -74,7 +74,7 @@ services:
       R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
 
-  payment_service:
+  payment-service:
     build: ./payment_service
     container_name: payment-service
     expose:

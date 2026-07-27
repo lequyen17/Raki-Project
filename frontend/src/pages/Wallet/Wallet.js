@@ -128,9 +128,7 @@ const Wallet = () => {
 
   useEffect(() => {
     // VNPay Check
-    const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");
-    const vnp_TxnRef = searchParams.get("vnp_TxnRef");
-    const vnp_SecureHash = searchParams.get("vnp_SecureHash");
+    const vnpayStatus = searchParams.get("vnpay");
 
     // Stripe Check
     const stripeStatus = searchParams.get("stripe");
@@ -142,12 +140,12 @@ const Wallet = () => {
     let isSuccess = false;
     let coinsReceived = 0;
 
-    if (vnp_ResponseCode && vnp_TxnRef && vnp_SecureHash) {
+    if (vnpayStatus) {
       isHandled = true;
-      if (vnp_ResponseCode === "00") {
+      if (vnpayStatus === "success") {
         isSuccess = true;
-        const vnp_Amount = searchParams.get("vnp_Amount");
-        coinsReceived = vnp_Amount ? parseInt(vnp_Amount, 10) / 100 : 0;
+        const amount = searchParams.get("amount");
+        coinsReceived = amount ? parseInt(amount, 10) : 0;
       }
     } else if (stripeStatus) {
       isHandled = true;

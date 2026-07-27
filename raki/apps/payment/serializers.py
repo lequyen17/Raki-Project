@@ -30,6 +30,7 @@ class PaymentHistoryListResponseSerializer(serializers.Serializer):
 
 class VnpayTopupRequestSerializer(serializers.Serializer):
     amount = serializers.IntegerField(min_value=10000, help_text="Amount in VND, minimum 10,000")
+    redirectUrl = serializers.URLField(required=False)
 
 
 class VnpayTopupResponseSerializer(serializers.Serializer):

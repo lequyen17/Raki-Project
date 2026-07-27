@@ -9,20 +9,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-VNPAY_RETURN_URL = "https://navigate-backward-sage.ngrok-free.dev/api/wallet/topup/vnpay/result/"  # get from config
-VNPAY_PAYMENT_URL = (
-    "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"  # get from config
+# Payment Service (Spring Boot) — Docker internal network
+PAYMENT_SERVICE_URL = "http://payment-service:8080"
+FRONTEND_WALLET_URL = os.getenv(
+    "FRONTEND_WALLET_URL",
+    "https://trilogy-had-train.ngrok-free.dev/app/wallet",
 )
-VNPAY_API_URL = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction"
-VNPAY_TMN_CODE = "VNPAY202"  # Website ID in VNPAY System, get from config
-VNPAY_HASH_SECRET_KEY = (
-    "9U0RE0VREK9L3K159B5O32UXR24X79OF"  # Secret key for create checksum,get from config
-)
-
-# Stripe configuration
-STRIPE_PUBLISHABLE_KEY = "pk_test_51TkpnARuDgugaDReYpp9OI45GWrJ6Ceq8UGaJibhmHd9QZ00uNWgoPXXNfIA1iIjwCwX4UVzsbdWsGlq8k69VGaj00q9ueOXwm"
-STRIPE_SECRET_KEY = "sk_test_51TkpnARuDgugaDRen1N64IetOEcfhioMyHcbIZfVHjmHbP64mhkriEApk1bMiBWn1RvCNlF43Z4KiZmWl5qBxT0Z00gRqfMhIe"
-STRIPE_WEBHOOK_SECRET = "whsec_jeYVUSC8RMR865OWOiWmqSKTVF6UZWnU"  # Set this when you configure Stripe webhooks in the dashboard
+# Public base URL for payment callbacks (ngrok/domain). Falls back to forwarded headers.
+VNPAY_PUBLIC_BASE_URL = os.getenv("VNPAY_PUBLIC_BASE_URL", "").rstrip("/")
 
 SECRET_KEY = "django-insecure-th-%d0roim2x$t-+inu!(v_eav@635=c30k*-=igvm$-uq_8jy"
 
@@ -31,6 +25,8 @@ DEBUG = True
 
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 # Application definition
@@ -51,7 +47,6 @@ INSTALLED_APPS = [
     "apps.note",
     "apps.card",
     "apps.payment",
-    "infrastructure.payment",
     "drf_spectacular",
 ]
 

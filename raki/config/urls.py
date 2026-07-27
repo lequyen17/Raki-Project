@@ -45,15 +45,7 @@ from apps.deck import views as deck_views
 from apps.card import views as card_views
 from apps.note import views as note_views
 from apps.payment import views as payment_views
-from apps.payment.serializers import (
-    WalletSummarySerializer,
-    CoinHistoryListResponseSerializer,
-    PaymentHistoryListResponseSerializer,
-    VnpayTopupRequestSerializer,
-    VnpayTopupResponseSerializer,
-    VnpayIpnResponseSerializer,
-    StripeTopupResponseSerializer,
-)
+# Payment serializers — views handle their own imports via extend_schema
 from core.utils.openapi_common import (
     TokenObtainPairRequestSerializer,
     TokenPairResponseSerializer,

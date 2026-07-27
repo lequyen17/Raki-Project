@@ -1,20 +1,62 @@
 import logging
 
-from django.shortcuts import render
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.shortcuts import redirect
 from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.payment.repositories import WalletRepository
 from apps.payment.serializers import (
     VnpayIpnResponseSerializer,
     VnpayTopupRequestSerializer,
     VnpayTopupResponseSerializer,
 )
-from apps.payment.services import PaymentService
-from apps.payment.views.utils import get_client_ip
+from apps.payment.services import PaymentServiceClient
+from apps.payment.views.utils import build_public_uri, get_client_ip
 
 logger = logging.getLogger(__name__)
+FRONTEND_WALLET_URL = settings.FRONTEND_WALLET_URL
+
+
+def _credit_coins_from_vnpay_result(result):
+    if not (
+        result.get("success")
+        and result.get("userId")
+        and result.get("coinReceived")
+    ):
+        return
+
+    try:
+        user = User.objects.get(id=result["userId"])
+        WalletRepository.add_coin(
+            user=user,
+            amount=result["coinReceived"],
+            reason="TOPUP",
+        )
+    except User.DoesNotExist:
+        logger.error("User %s not found for coin addition", result["userId"])
+    except Exception as e:
+        logger.error(
+            "Failed to add coin for user %s: %s", result["userId"], str(e)
+        )
+
+
+def _is_vnpay_payment_successful(params, result):
+    if result.get("success"):
+        return True
+    return (
+        params.get("vnp_ResponseCode") == "00"
+        and result.get("rspCode") == "00"
+    )
+
+
+def _handle_vnpay_callback(params):
+    result = PaymentServiceClient.process_vnpay_ipn(params)
+    _credit_coins_from_vnpay_result(result)
+    return result
 
 
 @extend_schema(
@@ -28,13 +70,22 @@ class VnpayTopupView(APIView):
 
     def post(self, request):
         amount_val = request.data.get("amount")
+        result_url = build_public_uri(request, "/api/wallet/topup/vnpay/result/")
+        ipn_url = build_public_uri(request, "/api/wallet/topup/vnpay/ipn/")
 
-        success, message, data = PaymentService.create_topup(
+        logger.info(
+            "Creating VNPay payment. returnUrl=%s ipnUrl=%s "
+            "(configure ipnUrl in VNPay merchant portal)",
+            result_url,
+            ipn_url,
+        )
+
+        success, message, data = PaymentServiceClient.create_topup(
             user=request.user,
             amount=amount_val,
             gateway_type="vnpay",
             ipaddr=get_client_ip(request),
-            return_url=request.data.get("redirectUrl"),
+            return_url=result_url,
         )
 
         if not success:
@@ -52,41 +103,35 @@ class VnpayIpnView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        print("\n=== [VNPay IPN Request GET Data] ===")
-        print(request.GET.dict())
-        print("=====================================\n")
+        input_data = request.GET.dict()
+        logger.info("VNPay IPN received: %s", input_data)
+        result = _handle_vnpay_callback(input_data)
 
-        input_data = request.GET
-        result_data = PaymentService.process_vnpay_ipn(input_data.dict())
-
-        return Response(result_data)
+        return Response(
+            {
+                "RspCode": result.get("rspCode", "99"),
+                "Message": result.get("message", "Unknown error"),
+            }
+        )
 
 
 class VnpayResultView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        print("\n=== [VNPay RESULT Request GET Data] ===")
-        print(request.GET.dict())
-        print("========================================\n")
+        params = request.GET.dict()
+        logger.info("VNPay result callback received: %s", params)
 
-        valid, is_success = PaymentService.verify_vnpay_result(request.GET.dict())
+        # Fallback when VNPay IPN has not reached the server yet.
+        result = _handle_vnpay_callback(params)
 
-        context = {
-            "valid": valid,
-            "status": valid,
-            "message": "Missing payment information.",
-        }
+        amount = request.GET.get("vnp_Amount", "0")
+        try:
+            amount_vnd = str(int(amount) // 100)
+        except (TypeError, ValueError):
+            amount_vnd = "0"
 
-        if (
-            request.GET.get("vnp_ResponseCode")
-            and request.GET.get("vnp_TxnRef")
-            and request.GET.get("vnp_SecureHash")
-        ):
-            if is_success:
-                context["is_success"] = True
-                context["message"] = "Thanh toán thành công!"
-            else:
-                context["message"] = "Thanh toán không thành công. Vui lòng thử lại."
+        if _is_vnpay_payment_successful(params, result):
+            return redirect(f"{FRONTEND_WALLET_URL}?vnpay=success&amount={amount_vnd}")
 
-        return render(request, "payment/result.html", context)
+        return redirect(f"{FRONTEND_WALLET_URL}?vnpay=failed")

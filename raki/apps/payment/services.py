@@ -1,11 +1,14 @@
-import uuid
 import logging
+import requests
 from django.conf import settings
-from django.db import transaction
-from apps.payment.registry import PaymentGatewayRegistry
-from apps.payment.repositories import WalletRepository, PaymentRepository
+from django.contrib.auth.models import User
+from apps.payment.repositories import WalletRepository
 
 logger = logging.getLogger(__name__)
+
+PAYMENT_SERVICE_URL = getattr(
+    settings, "PAYMENT_SERVICE_URL", "http://payment-service:8080"
+)
 
 
 class WalletService:
@@ -33,208 +36,151 @@ class WalletService:
 
     @staticmethod
     def get_payment_histories(user):
-        payments = WalletRepository.get_payment_histories(user)
-        return {
-            "results": [
-                {
-                    "id": item.id,
-                    "amount_vnd": str(item.amount_vnd),
-                    "coin_received": item.coin_received,
-                    "status": item.status,
-                    "created_at": item.created_at,
-                }
-                for item in payments
-            ]
-        }
+        """Gọi Payment Service để lấy lịch sử nạp tiền."""
+        try:
+            resp = requests.get(
+                f"{PAYMENT_SERVICE_URL}/api/payment/history/{user.id}",
+                timeout=10,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            if data.get("success"):
+                return {"results": data.get("data", [])}
+            return {"results": []}
+        except Exception as e:
+            logger.error(
+                "Failed to get payment histories from Payment Service: %s", str(e)
+            )
+            return {"results": []}
 
 
-class PaymentService:
+class PaymentServiceClient:
+    """
+    Client gọi HTTP đến Payment Service (Spring Boot) qua Docker internal network.
+    Raki backend là orchestrator — gọi Payment Service rồi tự xử lý cộng coin.
+    """
 
     @staticmethod
     def create_topup(user, amount, gateway_type, **kwargs):
+        """
+        Tạo giao dịch nạp tiền qua Payment Service.
+        Returns: (success, message, data)
+        """
+        payload = {
+            "userId": user.id,
+            "amount": int(amount),
+            "provider": gateway_type.upper(),
+        }
+
+        # Gateway-specific params
+        if gateway_type == "vnpay":
+            payload["ipaddr"] = kwargs.get("ipaddr")
+            payload["returnUrl"] = kwargs.get("return_url")
+        elif gateway_type == "momo":
+            payload["redirectUrl"] = kwargs.get("redirect_url")
+            payload["ipnUrl"] = kwargs.get("ipn_url")
+        elif gateway_type == "stripe":
+            payload["successUrl"] = kwargs.get("success_url")
+            payload["cancelUrl"] = kwargs.get("cancel_url")
+            payload["userEmail"] = user.email or None
+
         try:
-            amount = int(amount)
-            if amount < 10000:
-                return False, "Minimum top up amount is 10,000 VND", None
-        except (ValueError, TypeError):
-            return False, "Invalid amount format", None
+            resp = requests.post(
+                f"{PAYMENT_SERVICE_URL}/api/payment/create",
+                json=payload,
+                timeout=30,
+            )
+            resp.raise_for_status()
+            result = resp.json()
 
-        payment_history = PaymentRepository.create_payment(
-            user=user, amount_vnd=amount, coin_received=amount, status="pending"
-        )
-
-        order_id = f"{payment_history.id}_{uuid.uuid4().hex[:8]}"
-        gateway = PaymentGatewayRegistry.get(gateway_type)
-
-        try:
-            if gateway_type == "vnpay":
-                result = gateway.create_payment(
-                    amount=amount,
-                    order_id=order_id,
-                    ipaddr=kwargs.get("ipaddr"),
-                    return_url=kwargs.get("return_url"),
-                )
-                return (
-                    True,
-                    "Success",
-                    {
-                        "payUrl": result["pay_url"],
-                        "paymentId": payment_history.id,
-                        "orderId": order_id,
-                    },
-                )
-
-            elif gateway_type == "momo":
-                result = gateway.create_payment(
-                    amount=amount,
-                    order_id=order_id,
-                    redirect_url=kwargs.get("redirect_url"),
-                    ipn_url=kwargs.get("ipn_url"),
-                )
-                return (
-                    True,
-                    "Success",
-                    {
-                        "payUrl": result["pay_url"],
-                        "paymentId": payment_history.id,
-                        "orderId": order_id,
-                    },
-                )
-
-            elif gateway_type == "stripe":
-                result = gateway.create_payment(
-                    amount=amount,
-                    order_id=order_id,
-                    success_url=kwargs.get("success_url"),
-                    cancel_url=kwargs.get("cancel_url"),
-                    user_email=user.email or None,
-                )
-                return (
-                    True,
-                    "Success",
-                    {
-                        "sessionId": result["session_id"],
-                        "paymentId": payment_history.id,
-                        "orderId": order_id,
-                        "payUrl": result["pay_url"],
-                    },
-                )
+            if result.get("success"):
+                data = result.get("data", {})
+                return True, "Success", data
             else:
-                return False, "Unsupported gateway", None
+                return False, result.get("message", "Payment creation failed"), None
+        except requests.Timeout:
+            logger.error("Payment Service timeout for create_topup")
+            return False, "Payment service timeout", None
         except Exception as e:
             logger.error("Payment creation failed: %s", str(e))
             return False, str(e), None
 
     @staticmethod
+    def process_vnpay_ipn(params):
+        """
+        Forward VNPay IPN params sang Payment Service để verify + update.
+        Returns: dict với success, userId, coinReceived, rspCode, message
+        """
+        try:
+            resp = requests.post(
+                f"{PAYMENT_SERVICE_URL}/api/payment/vnpay/ipn",
+                json=params,
+                timeout=10,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            logger.error("Error forwarding VNPay IPN to Payment Service: %s", str(e))
+            return {
+                "success": False,
+                "rspCode": "99",
+                "message": f"Internal error: {str(e)}",
+            }
+
+    @staticmethod
+    def verify_vnpay_result(params):
+        """
+        Forward VNPay result params sang Payment Service để verify signature.
+        Returns: dict với success, message
+        """
+        try:
+            resp = requests.post(
+                f"{PAYMENT_SERVICE_URL}/api/payment/vnpay/verify-result",
+                json=params,
+                timeout=10,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            logger.error("Error verifying VNPay result: %s", str(e))
+            return {"success": False, "message": "verification_error"}
+
+    @staticmethod
     def process_momo_callback(order_id, result_code):
-        if not order_id:
-            return False, "Missing orderId"
-
-        if str(result_code) == "0":
-            try:
-                payment_id = int(order_id.split("_")[0])
-                with transaction.atomic():
-                    payment = PaymentRepository.get_payment_by_id(
-                        payment_id, for_update=True
-                    )
-                    if payment.status == "pending":
-                        PaymentRepository.mark_payment_completed(payment)
-                return True, "Success"
-            except Exception as e:
-                logger.error("Error processing momo payment %s: %s", order_id, str(e))
-                return False, f"Internal error: {str(e)}"
-        else:
-            logger.warning(f"MoMo payment failed or canceled for order {order_id}")
-            return False, "Payment failed from MoMo"
-
-    @staticmethod
-    def process_vnpay_ipn(input_data):
-        gateway = PaymentGatewayRegistry.get("vnpay")
-
-        if not input_data:
-            return {"RspCode": "99", "Message": "Invalid request"}
-
-        if not gateway.verify_payment(input_data):
-            return {"RspCode": "97", "Message": "Invalid Signature"}
-
-        order_id = input_data.get("vnp_TxnRef")
-        vnp_ResponseCode = input_data.get("vnp_ResponseCode")
-
+        """
+        Forward MoMo callback sang Payment Service.
+        Returns: dict với success, userId, coinReceived, message
+        """
         try:
-            payment_id = int(order_id.split("_")[0])
-            payment = PaymentRepository.get_payment_by_id(payment_id)
-        except Exception:
-            return {"RspCode": "01", "Message": "Order not found"}
-
-        if payment.status != "pending":
-            return {"RspCode": "02", "Message": "Order Already Update"}
-
-        vnp_Amount = int(input_data.get("vnp_Amount", 0))
-        if vnp_Amount != payment.amount_vnd * 100:
-            return {"RspCode": "04", "Message": "invalid amount"}
-
-        if vnp_ResponseCode == "00":
-            with transaction.atomic():
-                payment = PaymentRepository.get_payment_by_id(
-                    payment_id, for_update=True
-                )
-                if payment.status == "pending":
-                    PaymentRepository.mark_payment_completed(payment)
-            return {"RspCode": "00", "Message": "Confirm Success"}
-        else:
-            PaymentRepository.update_payment_status(payment, "failed")
-            return {"RspCode": vnp_ResponseCode, "Message": "Payment Failed"}
+            resp = requests.post(
+                f"{PAYMENT_SERVICE_URL}/api/payment/momo/callback",
+                json={"orderId": order_id, "resultCode": str(result_code)},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            logger.error(
+                "Error forwarding MoMo callback to Payment Service: %s", str(e)
+            )
+            return {"success": False, "message": f"Internal error: {str(e)}"}
 
     @staticmethod
-    def verify_vnpay_result(input_data):
-        gateway = PaymentGatewayRegistry.get("vnpay")
-        vnp_ResponseCode = input_data.get("vnp_ResponseCode")
-        vnp_TxnRef = input_data.get("vnp_TxnRef")
-        vnp_SecureHash = input_data.get("vnp_SecureHash")
-
-        if vnp_ResponseCode and vnp_TxnRef and vnp_SecureHash:
-            valid = gateway.verify_payment(input_data)
-            is_success = valid and vnp_ResponseCode == "00"
-            return valid, is_success
-        return False, False
-
-    @staticmethod
-    def process_stripe_webhook(payload, sig_header, webhook_secret):
-        if webhook_secret:
-            gateway = PaymentGatewayRegistry.get("stripe")
-            if not gateway.verify_payment(
-                {"payload": payload, "sig_header": sig_header}
-            ):
-                return False, "Signature verification failed"
-
-        import json
-
+    def process_stripe_webhook(payload, sig_header):
+        """
+        Forward Stripe webhook sang Payment Service.
+        Returns: dict với success, userId, coinReceived, message
+        """
         try:
-            event_dict = json.loads(payload)
-        except Exception:
-            return False, "Failed to parse JSON"
-
-        event_type = event_dict.get("type")
-        if event_type == "checkout.session.completed":
-            session_data = event_dict.get("data", {}).get("object", {})
-            order_id = session_data.get("metadata", {}).get("order_id")
-
-            if not order_id:
-                return True, "Missing order_id"
-
-            try:
-                payment_id = int(order_id.split("_")[0])
-            except (ValueError, IndexError):
-                return True, "Invalid payment_id format"
-
-            with transaction.atomic():
-                try:
-                    payment = PaymentRepository.get_payment_by_id(
-                        payment_id, for_update=True
-                    )
-                    if payment.status == "pending":
-                        PaymentRepository.mark_payment_completed(payment)
-                except Exception:
-                    return True, "Payment not found"
-
-        return True, "Success"
+            resp = requests.post(
+                f"{PAYMENT_SERVICE_URL}/api/payment/stripe/webhook",
+                json={"payload": payload, "sigHeader": sig_header},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            logger.error(
+                "Error forwarding Stripe webhook to Payment Service: %s", str(e)
+            )
+            return {"success": False, "message": f"Internal error: {str(e)}"}

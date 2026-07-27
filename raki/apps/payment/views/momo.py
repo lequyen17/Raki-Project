@@ -1,16 +1,18 @@
 import logging
 
+from django.contrib.auth.models import User
 from django.shortcuts import redirect
 from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.payment.repositories import WalletRepository
 from apps.payment.serializers import (
     VnpayTopupRequestSerializer,
     VnpayTopupResponseSerializer,
 )
-from apps.payment.services import PaymentService
+from apps.payment.services import PaymentServiceClient
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ class MomoTopupView(APIView):
     def post(self, request):
         amount_val = request.data.get("amount")
 
-        success, message, data = PaymentService.create_topup(
+        success, message, data = PaymentServiceClient.create_topup(
             user=request.user,
             amount=amount_val,
             gateway_type="momo",
@@ -57,9 +59,23 @@ class MomoResultView(APIView):
         order_id = request.GET.get("orderId")
         amount = request.GET.get("amount", "0")
 
-        success, message = PaymentService.process_momo_callback(order_id, result_code)
+        # Forward sang Payment Service
+        result = PaymentServiceClient.process_momo_callback(order_id, result_code)
 
-        if success:
+        # Nếu thành công → cộng coin
+        if result.get("success") and result.get("userId") and result.get("coinReceived"):
+            try:
+                user = User.objects.get(id=result["userId"])
+                WalletRepository.add_coin(
+                    user=user,
+                    amount=result["coinReceived"],
+                    reason="TOPUP",
+                )
+            except User.DoesNotExist:
+                logger.error("User %s not found for coin addition", result["userId"])
+            except Exception as e:
+                logger.error("Failed to add coin for user %s: %s", result["userId"], str(e))
+
             return redirect(f"{FRONTEND_WALLET_URL}?momo=success&amount={amount}")
 
         return redirect(f"{FRONTEND_WALLET_URL}?momo=failed")
