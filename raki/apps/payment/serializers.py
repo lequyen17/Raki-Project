@@ -20,6 +20,7 @@ class PaymentHistoryItemSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     amount_vnd = serializers.CharField()
     coin_received = serializers.IntegerField()
+    provider = serializers.CharField()
     status = serializers.CharField()
     created_at = serializers.DateTimeField()
 

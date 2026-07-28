@@ -8,7 +8,8 @@ from apps.payment.serializers import (
     PaymentHistoryListResponseSerializer,
     WalletSummarySerializer,
 )
-from apps.payment.services import WalletService
+from apps.payment.services import PaymentServiceClient, WalletService
+from rest_framework import status as http_status
 
 
 @extend_schema(
@@ -46,5 +47,14 @@ class PaymentHistoriesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        data = WalletService.get_payment_histories(request.user)
+        success, message, data = PaymentServiceClient.get_payment_histories(
+            request.user
+        )
+        if not success:
+            return ApiResponse(
+                data={"results": []},
+                message=message,
+                status="error",
+                status_code=http_status.HTTP_502_BAD_GATEWAY,
+            )
         return ApiResponse(data=data)

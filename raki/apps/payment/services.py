@@ -1,7 +1,6 @@
 import logging
 import requests
 from django.conf import settings
-from django.contrib.auth.models import User
 from apps.payment.repositories import WalletRepository
 
 logger = logging.getLogger(__name__)
@@ -33,25 +32,6 @@ class WalletService:
                 for item in histories
             ]
         }
-
-    @staticmethod
-    def get_payment_histories(user):
-        """Gọi Payment Service để lấy lịch sử nạp tiền."""
-        try:
-            resp = requests.get(
-                f"{PAYMENT_SERVICE_URL}/api/payment/history/{user.id}",
-                timeout=10,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            if data.get("success"):
-                return {"results": data.get("data", [])}
-            return {"results": []}
-        except Exception as e:
-            logger.error(
-                "Failed to get payment histories from Payment Service: %s", str(e)
-            )
-            return {"results": []}
 
 
 class PaymentServiceClient:
@@ -103,6 +83,45 @@ class PaymentServiceClient:
             return False, "Payment service timeout", None
         except Exception as e:
             logger.error("Payment creation failed: %s", str(e))
+            return False, str(e), None
+
+    @staticmethod
+    def get_payment_histories(user):
+        """
+        Lấy lịch sử nạp tiền từ Payment Service.
+        Returns: (success, message, data) với data = {"results": [...]}
+        """
+        try:
+            resp = requests.get(
+                f"{PAYMENT_SERVICE_URL}/api/payment/history/{user.id}",
+                timeout=10,
+            )
+            resp.raise_for_status()
+            result = resp.json()
+
+            if not result.get("success"):
+                return False, result.get("message", "Failed to load payment history"), None
+
+            items = []
+            for item in result.get("data") or []:
+                items.append(
+                    {
+                        "id": item.get("id"),
+                        "amount_vnd": item.get("amountVnd"),
+                        "coin_received": item.get("coinReceived"),
+                        "provider": item.get("provider"),
+                        "status": item.get("status"),
+                        "created_at": item.get("createdAt"),
+                    }
+                )
+            return True, "Success", {"results": items}
+        except requests.Timeout:
+            logger.error("Payment Service timeout for get_payment_histories")
+            return False, "Payment service timeout", None
+        except Exception as e:
+            logger.error(
+                "Failed to get payment histories from Payment Service: %s", str(e)
+            )
             return False, str(e), None
 
     @staticmethod

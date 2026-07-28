@@ -79,13 +79,14 @@ const Wallet = () => {
     setPaymentError("");
     try {
       const res = await api.get("/api/wallet/payment-history/");
-      setPaymentHistory(res.data.results || []);
+      setPaymentHistory(res.data?.results || []);
     } catch (err) {
       if (err.response?.status === 401) {
         localStorage.removeItem("access_token");
         navigate("/login");
         return;
       }
+      setPaymentHistory([]);
       setPaymentError(t("wallet.error_load_payment"));
     } finally {
       setPaymentLoading(false);
@@ -556,6 +557,11 @@ const Wallet = () => {
                           defaultValue: item.status,
                         })}
                       </span>
+                      {item.provider && (
+                        <div className="wallet-payment-provider">
+                          {item.provider}
+                        </div>
+                      )}
                       <div className="wallet-payment-coin">
                         + {formatCoin(item.coin_received)}{" "}
                         {t("wallet.coin_unit")}
