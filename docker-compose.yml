@@ -85,6 +85,32 @@ services:
     depends_on:
       - payment_db   # Giữ lại cache thư viện Maven trên máy thật để tránh container tải lại từ đầu mỗi khi khởi động
     
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    expose:
+      - "8081"
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq-broker
+    ports:
+      - "5672:5672"     # AMQP Port cho Spring Boot
+      - "15672:15672"   # Web UI Management
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
   payment_db:
     image: postgres:15-alpine
