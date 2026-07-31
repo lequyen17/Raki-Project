@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -41,9 +42,23 @@ public class NotificationService {
         webSocketHandler.sendNotificationToUser(event.getUserId(), dto);
     }
     
+    @Transactional
     public List<NotificationDto> getNotificationsByUserId(Long userId) {
-        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId)
-                .stream()
+        List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        
+        boolean hasUnread = false;
+        for (Notification notification : notifications) {
+            if (Boolean.FALSE.equals(notification.getIsRead())) {
+                notification.setIsRead(true);
+                hasUnread = true;
+            }
+        }
+        
+        if (hasUnread) {
+            notificationRepository.saveAll(notifications);
+        }
+        
+        return notifications.stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
