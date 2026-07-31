@@ -3,6 +3,7 @@ package com.example.notification_service.config;
 import com.example.notification_service.dto.NotificationDto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -23,7 +24,7 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
 
     // Thread-safe map to store user sessions
     private final Map<Long, WebSocketSession> userSessions = new ConcurrentHashMap<>();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
