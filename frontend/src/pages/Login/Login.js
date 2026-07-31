@@ -22,16 +22,24 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(""); // Reset lỗi mỗi lần bấm submit
+    setError("");
 
     try {
-      const res = await api.post("/api/token/", formData);
-      const { access, refresh, user } = res.data;
+      // Đăng nhập
+      const loginRes = await api.post("/api/token/", formData);
+      const { access, refresh } = loginRes.data;
 
+      // Lưu token
       localStorage.setItem("access_token", access);
       localStorage.setItem("refresh_token", refresh);
 
+      // Lấy thông tin user
+      const userRes = await api.get("/api/auth/");
+      const user = userRes.data;
+
+      // Cập nhật Context và LocalStorage
       setCurrentUser(user);
+      localStorage.setItem("user_data", JSON.stringify(user));
 
       navigate("/decks");
     } catch (err) {

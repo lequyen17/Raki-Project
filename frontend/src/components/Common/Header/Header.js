@@ -2,7 +2,10 @@ import React, { useState, useContext, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AuthContext } from "../../../context/AuthContext.js";
-import { notificationApi, getNotificationWebSocketUrl } from "../../../api/notificationApi.js";
+import {
+  notificationApi,
+  getNotificationWebSocketUrl,
+} from "../../../api/notificationApi.js";
 import "./Header.css";
 
 const Header = () => {
@@ -12,7 +15,7 @@ const Header = () => {
   const [notiOpen, setNotiOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  
+
   const menuRef = useRef(null);
   const notiRef = useRef(null);
   const stompClientRef = useRef(null);
@@ -30,7 +33,7 @@ const Header = () => {
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [currentUser?.id]);
 
   // Fetch initial notifications
   useEffect(() => {
@@ -40,7 +43,7 @@ const Header = () => {
         setUnreadCount(data.filter((n) => !n.isRead).length);
       });
     }
-  }, [currentUser]);
+  }, [currentUser?.id]);
 
   // WebSocket Connection for Notifications
   useEffect(() => {
@@ -84,7 +87,7 @@ const Header = () => {
         stompClientRef.current.close();
       }
     };
-  }, [currentUser]);
+  }, [currentUser?.id]);
 
   const handleProfileClick = () => {
     setMenuOpen(false);
@@ -113,7 +116,7 @@ const Header = () => {
     setMenuOpen(false);
     if (!notiOpen && unreadCount > 0) {
       // In a real app, you might want to call an API to mark as read here
-      setUnreadCount(0); 
+      setUnreadCount(0);
     }
   };
 
@@ -155,7 +158,7 @@ const Header = () => {
             </Link>
 
             <Link to="/chat" className="raki-nav-item">
-                {t("header.CHAT")}
+              {t("header.CHAT")}
             </Link>
           </nav>
         </div>
@@ -174,8 +177,10 @@ const Header = () => {
               </Link>
             </div>
           ) : (
-            <div className="raki-actions-logged-in" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              
+            <div
+              className="raki-actions-logged-in"
+              style={{ display: "flex", alignItems: "center", gap: "16px" }}
+            >
               {/* Notification Bell */}
               <div className="raki-noti" ref={notiRef}>
                 <button
@@ -185,13 +190,23 @@ const Header = () => {
                   aria-expanded={notiOpen}
                   aria-haspopup="menu"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
                     <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
                   </svg>
                   {unreadCount > 0 && (
                     <span className="raki-noti__badge">
-                      {unreadCount > 99 ? '99+' : unreadCount}
+                      {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                   )}
                 </button>
@@ -204,11 +219,17 @@ const Header = () => {
                     <div className="raki-noti__list">
                       {notifications.length === 0 ? (
                         <div className="raki-noti__empty">
-                          {t("header.no_notifications", "No notifications yet.")}
+                          {t(
+                            "header.no_notifications",
+                            "No notifications yet.",
+                          )}
                         </div>
                       ) : (
                         notifications.map((noti, idx) => (
-                          <div key={noti.id || idx} className={`raki-noti__item ${!noti.isRead ? 'raki-noti__item--unread' : ''}`}>
+                          <div
+                            key={noti.id || idx}
+                            className={`raki-noti__item ${!noti.isRead ? "raki-noti__item--unread" : ""}`}
+                          >
                             <div className="raki-noti__content">
                               <strong>{noti.title}</strong>
                               <p>{noti.content}</p>
@@ -244,16 +265,14 @@ const Header = () => {
                       className="raki-profile__avatar raki-profile__avatar--fallback"
                       aria-hidden="true"
                     >
-                      {(
-                        currentUser.first_name ||
-                        currentUser.username ||
-                        "?"
-                      )
+                      {(currentUser.first_name || currentUser.username || "?")
                         .charAt(0)
                         .toUpperCase()}
                     </span>
                   )}
-                  <span className="raki-profile__name">{currentUser.username}</span>
+                  <span className="raki-profile__name">
+                    {currentUser.username}
+                  </span>
                   <span className="raki-profile__caret" aria-hidden="true" />
                 </button>
 
@@ -347,4 +366,3 @@ const Header = () => {
 };
 
 export default Header;
-

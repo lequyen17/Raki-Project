@@ -11,10 +11,21 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const location = useLocation(); // Theo dõi route hiện tại
 
+  const logout = useCallback(() => {
+    localStorage.clear();
+    setCurrentUser(null);
+    navigate("/login");
+  }, [navigate]);
+
   // Hàm gọi API lấy thông tin User mới nhất
   const fetchUserData = useCallback(async () => {
     const token = localStorage.getItem("access_token");
-    if (!token) return;
+    if (!token) {
+      localStorage.clear();
+      setCurrentUser(null);
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await api.get("/api/auth/");
@@ -29,7 +40,7 @@ export const AuthProvider = ({ children }) => {
       if (error.response?.status === 401) logout();
     }
     console.log("đã set user data");
-  }, []);
+  }, [logout]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user_data");
@@ -42,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     }
     setLoading(false);
     fetchUserData(); // Fetch bản mới nhất ngay khi vào app
-  }, [fetchUserData]);
+  }, []);
 
   // 2. TỰ ĐỘNG GỌI KHI CHUYỂN ROUTE (Yêu cầu của bạn)
   useEffect(() => {
@@ -57,15 +68,8 @@ export const AuthProvider = ({ children }) => {
       }
 
       // 2. Vẫn giữ logic fetch dữ liệu để đồng bộ
-      fetchUserData();
     }
-  }, [location.pathname, fetchUserData, navigate]);
-
-  const logout = () => {
-    localStorage.clear();
-    setCurrentUser(null);
-    navigate("/login");
-  };
+  }, [location.pathname, navigate]);
 
   const value = {
     currentUser,
