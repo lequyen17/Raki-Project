@@ -21,6 +21,8 @@ class WalletRepository:
         Cộng coin cho user và tạo CoinHistory.
         Được gọi khi Payment Service xác nhận giao dịch thành công.
         """
+        from core.rabbitmq_publisher import publish_notification_event
+
         with transaction.atomic():
             profile = user.profile
             profile.coin_balance += amount
@@ -31,4 +33,13 @@ class WalletRepository:
                 amount=amount,
                 reason=reason,
                 reference_id=reference_id,
+            )
+
+            # Send notification
+            publish_notification_event(
+                user_id=user.id,
+                noti_type="ADD_COIN",
+                title="Nạp/Nhận coin thành công",
+                content=f"Tài khoản của bạn vừa được cộng {amount} coin từ {reason}.",
+                action_url="/profile"
             )

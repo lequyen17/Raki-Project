@@ -154,10 +154,7 @@ class DeckService:
         all_decks_to_learn = DeckRepository.get_all_descendants(deck)
 
         coin_price = deck.coin_price or 0
-        if (
-            coin_price > 0
-            and not CoinTransaction.objects.filter(deck=deck, buyer=user).exists()
-        ):
+        if coin_price > 0:
             balance = WalletRepository.get_coin_balance(user)
             if balance < coin_price:
                 raise PaymentRequiredException("INSUFFICIENT_COINS")
@@ -188,6 +185,37 @@ class DeckService:
                     buyer=user,
                     coin=coin_price,
                 )
+
+                from core.rabbitmq_publisher import publish_notification_event
+
+                # Notify Buyer
+                publish_notification_event(
+                    user_id=user.id,
+                    noti_type="BUY_DECK",
+                    title="Mua Deck thành công",
+                    content=f"Bạn đã mua deck '{deck.name}' và bị trừ {coin_price} coin.",
+                    action_url=f"/deck/{deck.id}",
+                )
+
+                # Notify Seller
+                publish_notification_event(
+                    user_id=owner_ud.user.id,
+                    noti_type="SELL_DECK",
+                    title="Deck của bạn đã được mua!",
+                    content=f"Người dùng {user.username} đã mua deck '{deck.name}' của bạn. Bạn được cộng {coin_price} coin.",
+                    action_url=f"/deck/{deck.id}",
+                )
+        else:
+            from core.rabbitmq_publisher import publish_notification_event
+
+            # Notify Buyer for free deck
+            publish_notification_event(
+                user_id=user.id,
+                noti_type="BUY_DECK",
+                title="Lấy Deck thành công",
+                content=f"Bạn đã thêm deck '{deck.name}' vào thư viện thành công.",
+                action_url=f"/deck/{deck.id}",
+            )
 
         user_decks = []
         for d in all_decks_to_learn:
