@@ -6,7 +6,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "notifications")
-
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Notification {
 
     @Id
@@ -26,6 +29,7 @@ public class Notification {
     private String content;
 
     @Column(name = "is_read", nullable = false)
+    @Builder.Default
     private Boolean isRead = false; // Mặc định là chưa đọc
 
     @Column(name = "action_url")
@@ -33,4 +37,11 @@ public class Notification {
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+    
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 }

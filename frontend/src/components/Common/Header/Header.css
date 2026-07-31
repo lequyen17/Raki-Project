@@ -316,3 +316,135 @@
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ===== NOTIFICATION BELL ===== */
+.raki-noti {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.raki-noti__toggle {
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.raki-noti__toggle:hover,
+.raki-noti__toggle--open {
+  background: #334155;
+  color: #f8fafc;
+}
+
+.raki-noti__badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 10px;
+  line-height: 1;
+  border: 2px solid #1e293b;
+}
+
+/* NOTIFICATION DROPDOWN */
+.raki-noti__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 320px;
+  background: #1f2937;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  z-index: 120;
+  animation: dropdownFade 0.15s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.raki-noti__header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #334155;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.raki-noti__header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #f1f5f9;
+  font-weight: 600;
+}
+
+.raki-noti__list {
+  max-height: 360px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.raki-noti__empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.raki-noti__item {
+  padding: 12px 16px;
+  border-bottom: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background 0.2s;
+  text-decoration: none;
+}
+
+.raki-noti__item:last-child {
+  border-bottom: none;
+}
+
+.raki-noti__item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.raki-noti__item--unread {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.raki-noti__item--unread:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.raki-noti__content strong {
+  font-size: 0.9rem;
+  color: #e2e8f0;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.raki-noti__content p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+.raki-noti__time {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 4px;
+  display: block;
+}
