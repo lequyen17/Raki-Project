@@ -71,6 +71,7 @@ services:
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
 
   payment-service:
+    image: 103487/raki-payment-service:v1.0
     build: ./payment_service
     container_name: payment-service
     expose:
@@ -79,6 +80,7 @@ services:
       - payment_db   # Giữ lại cache thư viện Maven trên máy thật để tránh container tải lại từ đầu mỗi khi khởi động
     
   notification-service:
+    image: 103487/raki-notification-service:v1.0
     build: ./notification-service
     container_name: notification-service
     ports:
@@ -128,8 +130,6 @@ services:
       - "5432"
     volumes:
       - notification_postgres_data:/var/lib/postgresql/data
-
-
 
 
   backend:
