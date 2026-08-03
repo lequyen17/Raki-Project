@@ -22,8 +22,6 @@ services:
   mail-service:
     image: 103487/raki-mail-service:v1.0
     build: ./mail_service
-    volumes:
-    - ./mail_service:/app
     container_name: rakiproject-mail-service-1
     expose:
       - "8000"
@@ -47,8 +45,6 @@ services:
   chat-service:
     image: 103487/raki-chat-service:v1.0
     build: ./chat_service
-    volumes:
-    - ./chat_service:/app
     container_name: rakiproject-chat-service-1
     expose:
       - "8000"
@@ -79,9 +75,6 @@ services:
     container_name: payment-service
     expose:
       - "8080"
-    volumes:
-      - ./payment_service:/app             # Mount toàn bộ thư mục code hiện tại vào /app trong container
-      - ~/.m2:/root/.m2 
     depends_on:
       - payment_db   # Giữ lại cache thư viện Maven trên máy thật để tránh container tải lại từ đầu mỗi khi khởi động
     
@@ -143,8 +136,6 @@ services:
     image: 103487/raki-backend:v3.0
     container_name: rakiproject-backend-1
     build: ./raki
-    volumes:
-    - ./raki:/app
     expose:
       - "8000"
     ports:
@@ -168,14 +159,7 @@ services:
       R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
       R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
-    command: >
-      sh -c "until python -c 'import socket; s = socket.socket(); s.connect((\"db\", 5432))' 2>/dev/null; do 
-               echo 'Đang chờ Database khởi động...'; 
-               sleep 1; 
-             done;
-             echo 'Database đã sẵn sàng! Bắt đầu migrate...';
-             python manage.py migrate && 
-             python manage.py runserver 0.0.0.0:8000"
+    
 
   raki-page:
     image: 103487/raki-page:v1.0
@@ -189,8 +173,6 @@ services:
     image: 103487/raki-frontend:v4.0
     container_name: rakiproject-frontend-1
     build: ./frontend
-    volumes:
-    - ./frontend:/app
     expose:
       - "3000"
     depends_on:

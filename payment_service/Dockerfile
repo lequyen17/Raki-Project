@@ -1,11 +1,21 @@
-FROM maven:3.9.6-eclipse-temurin-21-alpine
+# Stage 1: Build
+FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /app
 
-# Chỉ copy pom.xml trước để tận dụng Docker cache cho các thư viện (Dependencies)
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
-# Lệnh mặc định sẽ chạy Spring Boot dưới dạng dòng lệnh phát triển
-# Lệnh này kết hợp với Spring Boot DevTools sẽ kích hoạt chế độ tự reload khi code thay đổi
-CMD ["mvn", "spring-boot:run"]
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# Stage 2: Runtime
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+
+COPY --from=builder /app/target/*.jar app.jar
+
+EXPOSE 8080
+
+CMD ["java", "-jar", "app.jar"]
