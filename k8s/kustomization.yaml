@@ -1,0 +1,62 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: raki
+
+resources:
+  # Base
+  - namespace.yaml
+
+  # Databases & Cache
+  - postgres/statefulset.yaml
+  - postgres/service.yaml
+  - redis/deployment.yaml
+  - redis/service.yaml
+  - rabbitmq/secret.yaml
+  - rabbitmq/deployment.yaml
+  - rabbitmq/service.yaml
+
+  # Core Backend (Django)
+  - backend/secret.yaml
+  - backend/configmap.yaml
+  - backend/deployment.yaml
+  - backend/service.yaml
+
+  # Chat Service & Chat DB (FastAPI)
+  - chat/secret.yaml
+  - chat/configmap.yaml
+  - chat/chat-db-statefulset.yaml
+  - chat/chat-db-service.yaml
+  - chat/deployment.yaml
+  - chat/service.yaml
+
+  # Mail Service (FastAPI)
+  - mail/secret.yaml
+  - mail/configmap.yaml
+  - mail/deployment.yaml
+  - mail/service.yaml
+
+  # Payment Service & Payment DB (Spring Boot)
+  - payment/secret.yaml
+  - payment/configmap.yaml
+  - payment/payment-db-statefulset.yaml
+  - payment/payment-db-service.yaml
+  - payment/deployment.yaml
+  - payment/service.yaml
+
+  # Notification Service & Notification DB (Spring Boot)
+  - notification/secret.yaml
+  - notification/configmap.yaml
+  - notification/notification-db-statefulset.yaml
+  - notification/notification-db-service.yaml
+  - notification/deployment.yaml
+  - notification/service.yaml
+
+  # Frontends
+  - frontend/deployment.yaml
+  - frontend/service.yaml
+  - raki-page/deployment.yaml
+  - raki-page/service.yaml
+
+  # Ingress Gateway
+  - ingress/ingress.yaml

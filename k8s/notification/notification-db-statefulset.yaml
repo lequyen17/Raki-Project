@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: postgres
+  name: notification-db
   namespace: raki
   labels:
-    app: postgres
-    app.kubernetes.io/name: postgres
+    app: notification-db
+    app.kubernetes.io/name: notification-db
     app.kubernetes.io/part-of: raki
 spec:
-  serviceName: db
+  serviceName: notification-db
   replicas: 1
   selector:
     matchLabels:
-      app: postgres
+      app: notification-db
   template:
     metadata:
       labels:
-        app: postgres
+        app: notification-db
     spec:
       containers:
         - name: postgres
@@ -27,24 +27,21 @@ spec:
               containerPort: 5432
           env:
             - name: POSTGRES_DB
-              valueFrom:
-                secretKeyRef:
-                  name: backend-secret
-                  key: DB_NAME
+              value: notification_db
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: backend-secret
-                  key: DB_USER
+                  name: notification-secret
+                  key: SPRING_DATASOURCE_USERNAME
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: backend-secret
-                  key: DB_PASSWORD
+                  name: notification-secret
+                  key: SPRING_DATASOURCE_PASSWORD
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           volumeMounts:
-            - name: postgres-data
+            - name: notification-postgres-data
               mountPath: /var/lib/postgresql/data
           resources:
             requests:
@@ -73,7 +70,7 @@ spec:
             timeoutSeconds: 5
   volumeClaimTemplates:
     - metadata:
-        name: postgres-data
+        name: notification-postgres-data
       spec:
         accessModes:
           - ReadWriteOnce

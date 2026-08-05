@@ -1,17 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend
+  name: mail-service
   namespace: raki
   labels:
-    app: frontend
-    app.kubernetes.io/name: frontend
+    app: mail-service
+    app.kubernetes.io/name: mail-service
     app.kubernetes.io/part-of: raki
 spec:
   type: ClusterIP
   selector:
-    app: frontend
+    app: mail-service
   ports:
     - name: http
-      port: 3000
-      targetPort: 3000
+      port: 8000
+      targetPort: 8000

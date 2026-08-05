@@ -1,52 +1,47 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
+  name: raki-page
   namespace: raki
   labels:
-    app: backend
-    app.kubernetes.io/name: backend
+    app: raki-page
+    app.kubernetes.io/name: raki-page
     app.kubernetes.io/part-of: raki
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: backend
+      app: raki-page
   template:
     metadata:
       labels:
-        app: backend
+        app: raki-page
     spec:
       containers:
-        - name: backend
-          image: 103487/raki-backend:v3.0
+        - name: raki-page
+          image: 103487/raki-page:v1.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
-              containerPort: 8000
-          envFrom:
-            - configMapRef:
-                name: backend-config
-            - secretRef:
-                name: backend-secret
+              containerPort: 3000
           resources:
             requests:
-              cpu: 200m
+              cpu: 100m
               memory: 256Mi
             limits:
-              cpu: 1000m
+              cpu: 500m
               memory: 512Mi
           livenessProbe:
             httpGet:
-              path: /api/schema/
-              port: 8000
+              path: /
+              port: 3000
             initialDelaySeconds: 30
             periodSeconds: 15
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
-              path: /api/schema/
-              port: 8000
+              path: /
+              port: 3000
             initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 5

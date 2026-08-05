@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: postgres
+  name: chat-db
   namespace: raki
   labels:
-    app: postgres
-    app.kubernetes.io/name: postgres
+    app: chat-db
+    app.kubernetes.io/name: chat-db
     app.kubernetes.io/part-of: raki
 spec:
-  serviceName: db
+  serviceName: chat-db
   replicas: 1
   selector:
     matchLabels:
-      app: postgres
+      app: chat-db
   template:
     metadata:
       labels:
-        app: postgres
+        app: chat-db
     spec:
       containers:
         - name: postgres
@@ -29,22 +29,22 @@ spec:
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: backend-secret
-                  key: DB_NAME
+                  name: chat-secret
+                  key: CHAT_DB_NAME
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: backend-secret
-                  key: DB_USER
+                  name: chat-secret
+                  key: CHAT_DB_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: backend-secret
-                  key: DB_PASSWORD
+                  name: chat-secret
+                  key: CHAT_DB_PASSWORD
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           volumeMounts:
-            - name: postgres-data
+            - name: chat-postgres-data
               mountPath: /var/lib/postgresql/data
           resources:
             requests:
@@ -73,7 +73,7 @@ spec:
             timeoutSeconds: 5
   volumeClaimTemplates:
     - metadata:
-        name: postgres-data
+        name: chat-postgres-data
       spec:
         accessModes:
           - ReadWriteOnce

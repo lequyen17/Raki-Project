@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mail-config
+  namespace: raki
+  labels:
+    app: mail-service
+    app.kubernetes.io/name: mail-service
+    app.kubernetes.io/part-of: raki
+data:
+  BACKEND_URL: "http://backend:8000"

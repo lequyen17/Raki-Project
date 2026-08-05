@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: postgres
+  name: payment-db
   namespace: raki
   labels:
-    app: postgres
-    app.kubernetes.io/name: postgres
+    app: payment-db
+    app.kubernetes.io/name: payment-db
     app.kubernetes.io/part-of: raki
 spec:
-  serviceName: db
+  serviceName: payment-db
   replicas: 1
   selector:
     matchLabels:
-      app: postgres
+      app: payment-db
   template:
     metadata:
       labels:
-        app: postgres
+        app: payment-db
     spec:
       containers:
         - name: postgres
@@ -27,24 +27,21 @@ spec:
               containerPort: 5432
           env:
             - name: POSTGRES_DB
-              valueFrom:
-                secretKeyRef:
-                  name: backend-secret
-                  key: DB_NAME
+              value: payment_db
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: backend-secret
-                  key: DB_USER
+                  name: payment-secret
+                  key: SPRING_DATASOURCE_USERNAME
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: backend-secret
-                  key: DB_PASSWORD
+                  name: payment-secret
+                  key: SPRING_DATASOURCE_PASSWORD
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           volumeMounts:
-            - name: postgres-data
+            - name: payment-postgres-data
               mountPath: /var/lib/postgresql/data
           resources:
             requests:
@@ -73,7 +70,7 @@ spec:
             timeoutSeconds: 5
   volumeClaimTemplates:
     - metadata:
-        name: postgres-data
+        name: payment-postgres-data
       spec:
         accessModes:
           - ReadWriteOnce

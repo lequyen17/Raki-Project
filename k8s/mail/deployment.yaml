@@ -1,52 +1,52 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
+  name: mail-service
   namespace: raki
   labels:
-    app: backend
-    app.kubernetes.io/name: backend
+    app: mail-service
+    app.kubernetes.io/name: mail-service
     app.kubernetes.io/part-of: raki
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: backend
+      app: mail-service
   template:
     metadata:
       labels:
-        app: backend
+        app: mail-service
     spec:
       containers:
-        - name: backend
-          image: 103487/raki-backend:v3.0
+        - name: mail-service
+          image: 103487/raki-mail-service:v1.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 8000
           envFrom:
             - configMapRef:
-                name: backend-config
+                name: mail-config
             - secretRef:
-                name: backend-secret
+                name: mail-secret
           resources:
             requests:
-              cpu: 200m
-              memory: 256Mi
+              cpu: 50m
+              memory: 128Mi
             limits:
-              cpu: 1000m
-              memory: 512Mi
+              cpu: 300m
+              memory: 256Mi
           livenessProbe:
             httpGet:
-              path: /api/schema/
-              port: 8000
-            initialDelaySeconds: 30
-            periodSeconds: 15
-            timeoutSeconds: 5
-          readinessProbe:
-            httpGet:
-              path: /api/schema/
+              path: /health
               port: 8000
             initialDelaySeconds: 15
             periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
             timeoutSeconds: 5

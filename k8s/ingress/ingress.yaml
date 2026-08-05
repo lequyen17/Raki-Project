@@ -1,0 +1,98 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: raki-main-ingress
+  namespace: raki
+  labels:
+    app.kubernetes.io/name: raki-ingress
+    app.kubernetes.io/part-of: raki
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+    - http:
+        paths:
+          # Landing Page Next.js
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: raki-page
+                port:
+                  number: 3000
+
+          # React Web App
+          - path: /app
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 3000
+
+          # Django REST API (giữ nguyên tiền tố /api)
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: raki-rewrite-ingress
+  namespace: raki
+  labels:
+    app.kubernetes.io/name: raki-rewrite-ingress
+    app.kubernetes.io/part-of: raki
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "86400"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "86400"
+    nginx.ingress.kubernetes.io/websocket-services: "chat-service,notification-service"
+spec:
+  rules:
+    - http:
+        paths:
+          # Chat Service WebSocket
+          - path: /api/chat/ws(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: chat-service
+                port:
+                  number: 8000
+
+          # Chat Service REST API
+          - path: /api/chat(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: chat-service
+                port:
+                  number: 8000
+
+          # Payment Service API
+          - path: /api/payment(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: payment-service
+                port:
+                  number: 8080
+
+          # Notification Service API & WebSocket
+          - path: /api/notifications(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 8081

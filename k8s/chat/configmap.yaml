@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chat-config
+  namespace: raki
+  labels:
+    app: chat-service
+    app.kubernetes.io/name: chat-service
+    app.kubernetes.io/part-of: raki
+data:
+  CHAT_DB_HOST: chat-db
+  CHAT_DB_PORT: "5432"
+  BACKEND_URL: "http://backend:8000"
+  R2_ACCOUNT_ID: "7c34a714657c5ca2b9945189fd8d88ab"
+  R2_BUCKET_NAME: "raki"
+  R2_ENDPOINT_URL: "https://7c34a714657c5ca2b9945189fd8d88ab.r2.cloudflarestorage.com"
+  R2_PUBLIC_URL: "https://pub-a05e0e21037d4d9b90bd153f517a5bde.r2.dev"
