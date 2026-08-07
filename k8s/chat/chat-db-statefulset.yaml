@@ -5,8 +5,7 @@ metadata:
   namespace: raki
   labels:
     app: chat-db
-    app.kubernetes.io/name: chat-db
-    app.kubernetes.io/part-of: raki
+
 spec:
   serviceName: chat-db
   replicas: 1

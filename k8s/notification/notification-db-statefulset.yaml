@@ -5,8 +5,6 @@ metadata:
   namespace: raki
   labels:
     app: notification-db
-    app.kubernetes.io/name: notification-db
-    app.kubernetes.io/part-of: raki
 spec:
   serviceName: notification-db
   replicas: 1

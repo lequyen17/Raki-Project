@@ -5,8 +5,6 @@ metadata:
   namespace: raki
   labels:
     app: payment-db
-    app.kubernetes.io/name: payment-db
-    app.kubernetes.io/part-of: raki
 spec:
   serviceName: payment-db
   replicas: 1

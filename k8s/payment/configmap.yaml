@@ -5,8 +5,6 @@ metadata:
   namespace: raki
   labels:
     app: payment-service
-    app.kubernetes.io/name: payment-service
-    app.kubernetes.io/part-of: raki
 data:
   SPRING_DATASOURCE_URL: "jdbc:postgresql://payment-db:5432/payment_db"
   SERVER_PORT: "8080"

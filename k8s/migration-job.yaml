@@ -1,0 +1,93 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backend-migration-job
+  namespace: raki
+  labels:
+    app: backend-migration
+    app.kubernetes.io/name: backend-migration
+    app.kubernetes.io/part-of: raki
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: backend-migration
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: backend-migrate
+          image: 103487/raki-backend:v3.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Đang đợi database Postgres 'db:5432' sẵn sàng..."
+              until python -c 'import socket; s = socket.socket(); s.connect(("db", 5432))' 2>/dev/null; do
+                echo "Postgres chưa sẵn sàng, thử lại sau 2s..."
+                sleep 2
+              done
+              echo "Database đã sẵn sàng! Đang thực hiện migrate Django schema..."
+              python manage.py migrate --noinput
+              echo "Django migration hoàn tất thành công!"
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secret
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: chat-db-migration-job
+  namespace: raki
+  labels:
+    app: chat-db-migration
+    app.kubernetes.io/name: chat-db-migration
+    app.kubernetes.io/part-of: raki
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: chat-db-migration
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: chat-migrate
+          image: 103487/raki-chat-service:v1.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Đang đợi chat-db 'chat-db:5432' sẵn sàng..."
+              until python -c 'import socket; s = socket.socket(); s.connect(("chat-db", 5432))' 2>/dev/null; do
+                echo "Chat DB chưa sẵn sàng, thử lại sau 2s..."
+                sleep 2
+              done
+              echo "Chat DB đã sẵn sàng! Đang khởi tạo/migrate SQLAlchemy schema..."
+              python -c "from app.db.init_db import init_db; init_db()"
+              echo "Chat DB schema initialization hoàn tất thành công!"
+          envFrom:
+            - configMapRef:
+                name: chat-config
+            - secretRef:
+                name: chat-secret
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi

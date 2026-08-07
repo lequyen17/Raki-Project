@@ -5,8 +5,6 @@ metadata:
   namespace: raki
   labels:
     app: rabbitmq
-    app.kubernetes.io/name: rabbitmq
-    app.kubernetes.io/part-of: raki
 spec:
   type: ClusterIP
   selector:

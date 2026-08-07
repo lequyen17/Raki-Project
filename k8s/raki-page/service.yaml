@@ -5,8 +5,6 @@ metadata:
   namespace: raki
   labels:
     app: raki-page
-    app.kubernetes.io/name: raki-page
-    app.kubernetes.io/part-of: raki
 spec:
   type: ClusterIP
   selector:

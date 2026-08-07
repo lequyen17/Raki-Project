@@ -41,7 +41,17 @@ kubectl apply --dry-run=client -k k8s/
 kubectl apply -k k8s/
 ```
 
-### Bước 3: Kiểm tra trạng thái Pods và Services
+### Bước 3: Chạy Database Migration Jobs
+```bash
+# Thực hiện migrate schema cho Django Backend và Chat Service
+kubectl apply -f k8s/migration-job.yaml
+
+# Kiểm tra log quá trình migrate
+kubectl logs -f job/backend-migration-job -n raki
+kubectl logs -f job/chat-db-migration-job -n raki
+```
+
+### Bước 4: Kiểm tra trạng thái Pods và Services
 ```bash
 # Xem toàn bộ tài nguyên trong namespace raki
 kubectl get all -n raki

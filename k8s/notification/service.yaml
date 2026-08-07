@@ -5,8 +5,6 @@ metadata:
   namespace: raki
   labels:
     app: notification-service
-    app.kubernetes.io/name: notification-service
-    app.kubernetes.io/part-of: raki
 spec:
   type: ClusterIP
   selector:

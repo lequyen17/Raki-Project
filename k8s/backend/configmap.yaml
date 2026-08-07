@@ -5,8 +5,6 @@ metadata:
   namespace: raki
   labels:
     app: backend
-    app.kubernetes.io/name: backend
-    app.kubernetes.io/part-of: raki
 data:
   DB_HOST: db
   DB_PORT: "5432"

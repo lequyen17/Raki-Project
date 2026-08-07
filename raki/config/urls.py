@@ -37,8 +37,14 @@ class SpectacularElementsView(APIView):
 
 from drf_spectacular.views import SpectacularAPIView
 
+from django.http import JsonResponse
 from django.contrib import admin
 from django.urls import path
+
+
+def health_check(request):
+    return JsonResponse({"status": "ok"})
+
 
 from apps.accounts import views as accounts_views
 from apps.deck import views as deck_views
@@ -74,6 +80,8 @@ TokenRefreshView = extend_schema(
 )(TokenRefreshView)
 
 urlpatterns = [
+    path("health/", health_check, name="health_check"),
+    path("api/health/", health_check, name="api_health_check"),
     path("api/admin/", admin.site.urls),
     # ======================
     # SWAGGER

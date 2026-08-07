@@ -5,8 +5,7 @@ metadata:
   namespace: raki
   labels:
     app: chat-service
-    app.kubernetes.io/name: chat-service
-    app.kubernetes.io/part-of: raki
+
 data:
   CHAT_DB_HOST: chat-db
   CHAT_DB_PORT: "5432"
