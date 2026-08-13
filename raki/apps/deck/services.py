@@ -105,9 +105,7 @@ class DeckService:
             "results": results,
         }
 
-    # =========================
-    # GET PUBLIC DECKS
-    # =========================
+    
     @staticmethod
     def get_public_decks(user):
         decks = DeckRepository.get_public_decks()
